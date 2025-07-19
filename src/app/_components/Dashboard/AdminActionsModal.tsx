@@ -1,0 +1,433 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+// Componentes UI e Tipos
+import CustomInput from "../Global/Custom/CustomInput";
+import CustomTextArea from "../Global/Custom/CustomTextArea";
+import CustomSelect from "../Global/Custom/CustomSelect";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+  DialogPortal,
+  DialogOverlay,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { User, Tag, ActionType } from "@prisma/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  actionTypeSchema,
+  addTagToUsersSchema,
+  tagSchema,
+} from "@/lib/schemas/pointsSchema";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+interface AdminActionsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  allUsers: User[];
+  allTags: Tag[];
+  allActionTypes: ActionType[];
+}
+
+const AdminActionsModal = ({
+  isOpen,
+  onClose,
+  allUsers,
+  allTags,
+  allActionTypes,
+}: AdminActionsModalProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const router = useRouter();
+
+  const addTagForm = useForm<z.infer<typeof addTagToUsersSchema>>({
+    resolver: zodResolver(addTagToUsersSchema),
+    defaultValues: { userIds: [], tagId: undefined },
+  });
+  const createActionTypeForm = useForm<z.infer<typeof actionTypeSchema>>({
+    resolver: zodResolver(actionTypeSchema),
+    defaultValues: { name: "", description: "" },
+  });
+  const createTagForm = useForm<z.infer<typeof tagSchema>>({
+    resolver: zodResolver(tagSchema),
+    defaultValues: {
+      description: "",
+      value: 0,
+      actionTypeId: undefined,
+      datePerformed: "",
+    },
+  });
+
+  // Função genérica para criar novas entidades (Tags ou Tipos de Ação)
+  const handleCreateSubmit = async (
+    endpoint: string,
+    data: any,
+    successMessage: string,
+    formToReset: any
+  ) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Ocorreu um erro.");
+
+      toast.success("Sucesso!", { description: successMessage });
+      formToReset.reset();
+      router.refresh();
+      onClose();
+    } catch (error: any) {
+      toast.error("Erro", { description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // CORREÇÃO: Função de submissão específica para a lógica de adicionar pontos,
+  // que agora diferencia entre utilizadores e a empresa.
+  const onAddTagSubmit = async (data: z.infer<typeof addTagToUsersSchema>) => {
+    setIsLoading(true);
+    const { userIds, tagId } = data;
+
+    // Separa o ID da empresa dos IDs dos utilizadores reais
+    const realUserIds = userIds.filter((id) => id !== "enterprise-points-id");
+    const isEnterpriseSelected = userIds.includes("enterprise-points-id");
+
+    const apiCalls = [];
+
+    // Se utilizadores reais foram selecionados, prepara a chamada à API para eles.
+    if (realUserIds.length > 0) {
+      apiCalls.push(
+        fetch("/api/tags/add-to-users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds: realUserIds, tagId }),
+        })
+      );
+    }
+    // Se a "Empresa" foi selecionada, prepara a chamada à API para ela.
+    if (isEnterpriseSelected) {
+      apiCalls.push(
+        fetch("/api/enterprise-points/add-tags", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tagIds: [tagId] }), // A API espera um array de tagIds
+        })
+      );
+    }
+
+    try {
+      // Executa todas as chamadas à API em paralelo
+      const responses = await Promise.all(apiCalls);
+
+      // Verifica se todas as respostas foram bem-sucedidas
+      for (const response of responses) {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Uma das operações de atribuição falhou."
+          );
+        }
+      }
+
+      toast.success("Sucesso!", {
+        description: "Pontos adicionados com sucesso!",
+      });
+      addTagForm.reset();
+      router.refresh();
+      onClose();
+    } catch (error: any) {
+      toast.error("Erro ao adicionar pontos", { description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+     <DialogPortal>
+                   <DialogOverlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+       <DialogContent className="scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent w-full max-w-[90vw] sm:max-w-2xl overflow-y-auto bg-[#010d26] border-2 border-[#0126fb] text-white">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold">
+            Ações Administrativas
+          </DialogTitle>
+          <DialogClose asChild>
+            <button className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
+              <X className="h-4 w-4" />
+            </button>
+          </DialogClose>
+        </DialogHeader>
+
+        <Tabs defaultValue="add-points" className="w-full mt-4 h-full relative">
+          <TabsList className="grid grid-cols-1 h-[150px] sm:h-fit sm:grid-cols-3 gap-2 w-full bg-[#00205e] z-0 relative mb-4">
+            <TabsTrigger className="w-full" value="add-points">
+              Adicionar Pontos
+            </TabsTrigger>
+            <TabsTrigger className="w-full" value="create-tag">
+              Criar Tag
+            </TabsTrigger>
+            <TabsTrigger className="w-full" value="create-action">
+              Criar Ação
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="add-points" className="mt-4">
+            <Form {...addTagForm}>
+              <form
+                // CORREÇÃO: Usa a nova função de submissão `onAddTagSubmit`
+                onSubmit={addTagForm.handleSubmit(onAddTagSubmit)}
+                className="space-y-4"
+              >
+                {/* CORREÇÃO: Substituído o CustomSelect por um Command (combobox) */}
+                <FormField
+                  control={addTagForm.control}
+                  name="tagId"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Tag a ser Adicionada</FormLabel>
+                      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between bg-transparent hover:bg-gray-700 text-white",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? allTags.find((tag) => tag.id === field.value)
+                                    ?.description
+                                : "Selecione uma tag..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] border-2 border-[#0126fb] bg-[#00205e] text-white">
+                          <Command className="bg-[#00205e] w-full scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent ">
+                            <CommandInput placeholder="Procurar tag..." />
+                            <CommandList>
+                              <CommandEmpty>
+                                Nenhuma tag encontrada.
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {allTags.map((tag) => (
+                                  <CommandItem
+                                    className="cursor-pointer bg-transparent px-4 py-3 text-white/80 transition-colors duration-200 data-[selected=true]:bg-[#0126fb] data-[selected=true]:text-white hover:!bg-white/10 hover:!text-[#f5b719]"
+                                    value={tag.description}
+                                    key={tag.id}
+                                    onSelect={() => {
+                                      addTagForm.setValue("tagId", tag.id);
+                                      setPopoverOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        tag.id === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {tag.description} (+{tag.value} pts)
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={addTagForm.control}
+                  name="userIds"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold text-white">
+                        Atribuir a
+                      </FormLabel>
+                      <div className="max-h-48 overflow-y-auto space-y-2 rounded-md border border-gray-700 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent p-4">
+                        {allUsers.map((user) => (
+                          <FormField
+                            key={user.id}
+                            control={addTagForm.control}
+                            name="userIds"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(user.id)}
+                                    onCheckedChange={(checked) => {
+                                      const currentValues = field.value || [];
+                                      return checked
+                                        ? field.onChange([
+                                            ...currentValues,
+                                            user.id,
+                                          ])
+                                        : field.onChange(
+                                            currentValues.filter(
+                                              (id) => id !== user.id
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal text-white">
+                                  {user.name}
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full bg-[#0126fb]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Adicionando..." : "Adicionar Pontos"}
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="create-tag" className="mt-4">
+            <Form {...createTagForm}>
+              <form
+                onSubmit={createTagForm.handleSubmit((data) =>
+                  handleCreateSubmit(
+                    "/api/tags",
+                    data,
+                    "Tag criada com sucesso!",
+                    createTagForm
+                  )
+                )}
+                className="space-y-4"
+              >
+                <CustomInput
+                  form={createTagForm}
+                  field="description"
+                  label="Descrição da Tag"
+                  placeholder="Ex: Participação em evento"
+                />
+                <CustomInput
+                  form={createTagForm}
+                  field="value"
+                  label="Valor em Pontos"
+                  type="number"
+                />
+                <CustomInput
+                  label="Data de Realização"
+                  field="datePerformed"
+                  placeholder="DD/MM/AAAA"
+                  mask="date"
+                  form={createTagForm}
+                />
+                <CustomSelect
+                  control={createTagForm.control}
+                  name="actionTypeId"
+                  label="Tipo de Ação Associada"
+                  placeholder="Selecione um tipo..."
+                  options={allActionTypes.map((at) => ({
+                    value: at.id,
+                    label: at.name,
+                  }))}
+                />
+                <Button
+                  type="submit"
+                  className="w-full bg-[#0126fb]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Criando..." : "Criar Tag"}
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="create-action" className="mt-4">
+            <Form {...createActionTypeForm}>
+              <form
+                onSubmit={createActionTypeForm.handleSubmit((data) =>
+                  handleCreateSubmit(
+                    "/api/action-types",
+                    data,
+                    "Tipo de Ação criado com sucesso!",
+                    createActionTypeForm
+                  )
+                )}
+                className="space-y-4"
+              >
+                <CustomInput
+                  form={createActionTypeForm}
+                  field="name"
+                  label="Nome da Ação"
+                  placeholder="Ex: Evento Interno"
+                />
+                <CustomTextArea
+                  form={createActionTypeForm}
+                  field="description"
+                  label="Descrição"
+                  placeholder="Descreva o que este tipo de ação representa..."
+                />
+                <Button
+                  type="submit"
+                  className="w-full bg-[#0126fb]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Criando..." : "Criar Tipo de Ação"}
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+     </DialogPortal>
+    </Dialog>
+  );
+};
+
+export default AdminActionsModal;
