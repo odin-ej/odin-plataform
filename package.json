@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npm run amp:deploy",
     "start": "next start",
     "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "npx prisma generate",
@@ -90,6 +90,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "ampx": "^0.2.2",
     "autoprefixer": "^10.4.21",
     "aws-cdk-lib": "^2.206.0",
     "constructs": "^10.4.2",
