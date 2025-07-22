@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run amp:deploy",
+    "build": "next build",
     "start": "next start",
     "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "npx prisma generate",
