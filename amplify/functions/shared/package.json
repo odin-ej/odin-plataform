@@ -30,6 +30,7 @@
     "@types/node": "^20.19.1",
     "@types/pdf-parse": "^1.1.5",
     "prisma": "^6.11.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "lambda-multipart-parser": "^1.0.1"
   }
 }
