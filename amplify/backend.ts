@@ -25,195 +25,259 @@ const dbSecretsManagerAccessPolicyStatement = new PolicyStatement({
 // 1. DEFINIÇÃO DO BACKEND E DE TODAS AS FUNÇÕES LAMBDA
 // =================================================================
 
-// Primeiro, definimos todas as nossas funções
+const commonLambdaEnvironment = {
+  DATABASE_URL: process.env.DATABASE_URL!, // Para Lambdas que usam Prisma (lida por lib/db.ts)
+  AWS_NODE_JS_CONNECTION_REUSE_ENABLED: "1",
+  
+  // Variáveis corrigidas para o ambiente da Lambda
+  AWS_REGION: process.env.AWS_REGION!, // Pega do seu ambiente local (terminal)
+  NODE_ENV: "production", // FORÇA explicitamente o ambiente como 'production' na Lambda
+
+  AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME!,
+  AWS_S3_CHAT_BUCKET_NAME: process.env.AWS_S3_CHAT_BUCKET_NAME!,
+  AWS_COGNITO_USER_POOL_ID: process.env.AWS_COGNITO_USER_POOL_ID!,
+  AWS_COGNITO_USER_POOL_CLIENT_ID: process.env.AWS_COGNITO_USER_POOL_CLIENT_ID!,
+  VERIFIED_EMAIL_FROM: process.env.VERIFIED_EMAIL_FROM!,
+  MONDAY_API_KEY: process.env.MONDAY_API_KEY!,
+  ALFA_BOARD: process.env.ALFA_BOARD!,
+  BETA_BOARD: process.env.BETA_BOARD!,
+  DELTA_BOARD: process.env.DELTA_BOARD!,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
+  GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY!,
+  GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID!,
+};
+
+// --- Política IAM para Acesso ao Secrets Manager (DATABASE_URL) ---
+// Substitua pelo ARN COMPLETO do seu segredo no Secrets Manager
+
 const backend = defineBackend({
   auth,
   // Cultura & Estratégia
   getVision: defineFunction({
     name: "getVision",
     entry: "./functions/getVision/handler.ts",
+    environment: commonLambdaEnvironment, // Passa vars de ambiente
   }),
   updateValue: defineFunction({
     name: "updateValue",
     entry: "./functions/updateValue/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   cultureHandler: defineFunction({
     name: "cultureHandler",
     entry: "./functions/cultureHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Metas e Objetivos
   getHouseGoals: defineFunction({
     name: "getHouseGoals",
     entry: "./functions/getHouseGoals/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   updateGoal: defineFunction({
     name: "updateGoal",
     entry: "./functions/updateGoal/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   updateObjective: defineFunction({
     name: "updateObjective",
     entry: "./functions/updateObjective/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Chat e Conversas
   conversationsHandler: defineFunction({
     name: "conversationsHandler",
     entry: "./functions/conversationsHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   getLatestConversation: defineFunction({
     name: "getLatestConversation",
     entry: "./functions/getLatestConversation/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   conversationByIdHandler: defineFunction({
     name: "conversationByIdHandler",
     entry: "./functions/conversationByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   chatHandler: defineFunction({
     entry: "./functions/chatHandler/handler.ts",
     name: "chatHandler",
-    timeoutSeconds: 28,
-    environment: {
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
-      GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY!,
-      GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID!,
+    timeoutSeconds: 28, // Tempo limite para a Lambda de chat
+    environment: { // Variáveis específicas para o chatHandler
+      ...commonLambdaEnvironment, // Herda as variáveis comuns
+      // Variáveis específicas para RDS Data API (usadas no chatHandler)
+      DB_CLUSTER_ARN: `arn:aws:rds:SEU_REGION:SEU_ID_DA_CONTA:cluster:SEU_CLUSTER_RDS_ID`, // ARN do seu cluster RDS
+      DB_SECRET_ARN: `arn:aws:secretsmanager:SEU_REGION:SEU_ID_DA_CONTA:secret:minha-app/prod/database-url-xxxxxx`, // ARN do seu segredo
+      DB_NAME: "odin",
     },
   }),
   // JR Points
   getJrPointsData: defineFunction({
     name: "getJrPointsData",
     entry: "./functions/getJrPointsData/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   updateRankingStatus: defineFunction({
     name: "updateRankingStatus",
     entry: "./functions/updateRankingStatus/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   addEnterpriseTags: defineFunction({
     name: "addEnterpriseTags",
     entry: "./functions/addEnterpriseTags/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Tarefas
   tasksHandler: defineFunction({
     name: "tasksHandler",
     entry: "./functions/tasksHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   taskByIdHandler: defineFunction({
     name: "taskByIdHandler",
     entry: "./functions/taskByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   getMyTasks: defineFunction({
     name: "getMyTasks",
     entry: "./functions/getMyTasks/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Pontos do Usuário
   getMyPoints: defineFunction({
     name: "getMyPoints",
     entry: "./functions/getMyPoints/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Cargos (Roles)
   rolesHandler: defineFunction({
     name: "rolesHandler",
     entry: "./functions/rolesHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   roleByIdHandler: defineFunction({
     name: "roleByIdHandler",
     entry: "./functions/roleByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Tags de Pontos
   tagsHandler: defineFunction({
     name: "tagsHandler",
     entry: "./functions/tagsHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   tagByIdHandler: defineFunction({
     name: "tagByIdHandler",
     entry: "./functions/tagByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   addTagToUsers: defineFunction({
     name: "addTagToUsers",
     entry: "./functions/addTagToUsers/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Usuários e Cadastros
   usersHandler: defineFunction({
     name: "usersHandler",
     entry: "./functions/usersHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   userByIdHandler: defineFunction({
     name: "userByIdHandler",
     entry: "./functions/userByIdHandler/handler.ts",
     environment: {
-      S3_BUCKET_NAME: process.env.S3_BUCKET_NAME!,
+      ...commonLambdaEnvironment,
+      S3_BUCKET_NAME: process.env.S3_BUCKET_NAME!, // Já existia
     },
   }),
   registerManyUsers: defineFunction({
     name: "registerManyUsers",
     entry: "./functions/registerManyUsers/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   registrationRequestsHandler: defineFunction({
     name: "registrationRequestsHandler",
     entry: "./functions/registrationRequestsHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   registrationRequestByIdHandler: defineFunction({
     name: "registrationRequestByIdHandler",
     entry: "./functions/registrationRequestByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   userTagsAndLinksHandler: defineFunction({
     name: "userTagsAndLinksHandler",
     entry: "./functions/userTagsAndLinksHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Reports
   reportsHandler: defineFunction({
     name: "reportsHandler",
     entry: "./functions/reportsHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   reportByIdHandler: defineFunction({
     name: "reportByIdHandler",
     entry: "./functions/reportByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Reservas
   reservationsHandler: defineFunction({
     name: "reservationsHandler",
     entry: "./functions/reservationsHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   reservationByIdHandler: defineFunction({
     name: "reservationByIdHandler",
     entry: "./functions/reservationByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   // Uploads
   getPresignedUrl: defineFunction({
     name: "getPresignedUrl",
     entry: "./functions/getPresignedUrl/handler.ts",
-    environment: { S3_BUCKET_NAME: process.env.S3_BUCKET_NAME! },
+    environment: { ...commonLambdaEnvironment, S3_BUCKET_NAME: process.env.S3_BUCKET_NAME! },
+    // Permissões S3 são dadas abaixo via grantReadWrite
   }),
   getChatPresignedUrl: defineFunction({
     name: "getChatPresignedUrl",
     entry: "./functions/getChatPresignedUrl/handler.ts",
-    environment: { S3_CHAT_BUCKET_NAME: process.env.S3_CHAT_BUCKET_NAME! },
+    environment: { ...commonLambdaEnvironment, S3_CHAT_BUCKET_NAME: process.env.S3_CHAT_BUCKET_NAME! },
+    // Permissões S3 são dadas abaixo via grantReadWrite
   }),
   uploadKnowledge: defineFunction({
     name: "uploadKnowledge",
     entry: "./functions/uploadKnowledge/handler.ts",
     timeoutSeconds: 60,
     environment: {
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
+      ...commonLambdaEnvironment,
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY!, // Já existia
     },
+    // Permissões S3 são dadas abaixo via grantReadWrite
   }),
   // Dados Externos
   getMondayStats: defineFunction({
     name: "getMondayStats",
     entry: "./functions/getMondayStats/handler.ts",
     environment: {
-      MONDAY_API_KEY: process.env.MONDAY_API_KEY!,
-      ALFA_BOARD: process.env.ALFA_BOARD!,
-      BETA_BOARD: process.env.BETA_BOARD!,
-      DELTA_BOARD: process.env.DELTA_BOARD!,
+      ...commonLambdaEnvironment,
+      MONDAY_API_KEY: process.env.MONDAY_API_KEY!, // Já existia
+      ALFA_BOARD: process.env.ALFA_BOARD!, // Já existia
+      BETA_BOARD: process.env.BETA_BOARD!, // Já existia
+      DELTA_BOARD: process.env.DELTA_BOARD!, // Já existia
     },
   }),
-  // Links Úteisa
+  // Links Úteis
   usefulLinksHandler: defineFunction({
     name: "usefulLinksHandler",
     entry: "./functions/usefulLinksHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
   usefulLinkByIdHandler: defineFunction({
     name: "usefulLinkByIdHandler",
     entry: "./functions/usefulLinkByIdHandler/handler.ts",
+    environment: commonLambdaEnvironment,
   }),
 });
 
