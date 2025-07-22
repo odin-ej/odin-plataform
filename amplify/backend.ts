@@ -31,7 +31,6 @@ const commonLambdaEnvironment = {
   
   // Variáveis corrigidas para o ambiente da Lambda
   REGION: process.env.REGION!, // Pega do seu ambiente local (terminal)
-  NODE_ENV: "production", // FORÇA explicitamente o ambiente como 'production' na Lambda
 
   S3_BUCKET_NAME: process.env.S3_BUCKET_NAME!,
   S3_CHAT_BUCKET_NAME: process.env.S3_CHAT_BUCKET_NAME!,
