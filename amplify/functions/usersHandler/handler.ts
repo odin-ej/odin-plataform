@@ -17,9 +17,9 @@ import {
 import { SESClient } from "@aws-sdk/client-ses";
 
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
+  region: process.env.REGION,
 });
-const sesClient = new SESClient({ region: process.env.AWS_REGION });
+const sesClient = new SESClient({ region: process.env.REGION });
 const registerManySchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
 export const handler = async (
@@ -57,7 +57,7 @@ export const handler = async (
         const userBirthDate = req.birthDate;
         const cognitoUser = await cognitoClient.send(
           new AdminCreateUserCommand({
-            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
             Username: req.email,
             UserAttributes: [
               { Name: "email", Value: req.email },
@@ -85,7 +85,7 @@ export const handler = async (
         );
         await cognitoClient.send(
           new AdminSetUserPasswordCommand({
-            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
             Username: req.email,
             Password: req.password,
             Permanent: true,

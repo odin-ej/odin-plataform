@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({ region: process.env.REGION });
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
@@ -31,7 +31,7 @@ export const handler = async (
 
     const key = `${generateFileName()}.${fileType.split("/")[1]}`;
     const command = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_CHAT_BUCKET_NAME!,
+      Bucket: process.env.S3_CHAT_BUCKET_NAME!,
       Key: key,
       ContentType: fileType,
       ContentLength: fileSize,

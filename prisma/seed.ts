@@ -1,20 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const {AdminCreateUserCommand, AdminGetUserCommand, AdminSetUserPasswordCommand,   CognitoIdentityProviderClient} = require('@aws-sdk/client-cognito-identity-provider');
 const {
-  AreaRoles,
-  PrismaClient,
-
-} = require("@prisma/client");
+  AdminCreateUserCommand,
+  AdminGetUserCommand,
+  AdminSetUserPasswordCommand,
+  CognitoIdentityProviderClient,
+} = require("@aws-sdk/client-cognito-identity-provider");
+const { AreaRoles, PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
 const hash = require("bcrypt");
 
 const prisma = new PrismaClient();
 
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
+  region: process.env.REGION,
 });
-
 
 // Dados fornecidos por si
 const cargos = [
@@ -283,61 +283,70 @@ async function main() {
   console.log(
     "Plano Estratégico, Valores, Objetivos e Metas semeados com sucesso."
   );
-  
+
   await prisma.room.createMany({
-    data: [
-      { name: "Talentos" },
-      { name: "Comitê" },
-    ],
-  })
+    data: [{ name: "Talentos" }, { name: "Comitê" }],
+  });
 
   const diretorRole = await prisma.role.findUnique({
-    where: { name: 'Diretor(a) Presidente' },
+    where: { name: "Diretor(a) Presidente" },
   });
 
   if (!diretorRole) {
-    console.error('O cargo "Diretor(a) Presidente" não foi encontrado. A seed não pode continuar.');
+    console.error(
+      'O cargo "Diretor(a) Presidente" não foi encontrado. A seed não pode continuar.'
+    );
     return;
   }
 
-  const adminEmail = 'plataforma@empresajr.org';
-  const adminPassword = 'Plataformaodin123@'; // Use uma senha segura nas suas variáveis de ambiente
+  const adminEmail = "plataforma@empresajr.org";
+  const adminPassword = "Plataformaodin123@"; // Use uma senha segura nas suas variáveis de ambiente
 
   // Faz o hash da senha
-    let cognitoUserSub: string | undefined;
+  let cognitoUserSub: string | undefined;
 
   try {
     // Verifica se o utilizador já existe no Cognito
-    const existingCognitoUser = await cognitoClient.send(new AdminGetUserCommand({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+    const existingCognitoUser = await cognitoClient.send(
+      new AdminGetUserCommand({
+        UserPoolId: process.env.COGNITO_USER_POOL_ID!,
         Username: adminEmail,
-    }));
-    cognitoUserSub = existingCognitoUser.UserAttributes?.find((attr: { Name: string; }) => attr.Name === 'sub')?.Value;
+      })
+    );
+    cognitoUserSub = existingCognitoUser.UserAttributes?.find(
+      (attr: { Name: string }) => attr.Name === "sub"
+    )?.Value;
     console.log(`Utilizador já existe no Cognito: ${adminEmail}`);
   } catch (error: any) {
-    if (error.name === 'UserNotFoundException') {
+    if (error.name === "UserNotFoundException") {
       // Se o utilizador não existe, cria-o no Cognito
       console.log(`Utilizador não encontrado no Cognito. A criar...`);
-      const createCognitoUserResponse = await cognitoClient.send(new AdminCreateUserCommand({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-        Username: adminEmail,
-        UserAttributes: [
-          { Name: 'email', Value: adminEmail },
-          { Name: 'name', Value: 'Admin Odin' },
-          { Name: 'email_verified', Value: 'true' },
-        ],
-        MessageAction: 'SUPPRESS',
-      }));
-      
-      cognitoUserSub = createCognitoUserResponse.User?.Attributes?.find((attr: { Name: string; }) => attr.Name === 'sub')?.Value;
+      const createCognitoUserResponse = await cognitoClient.send(
+        new AdminCreateUserCommand({
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          Username: adminEmail,
+          UserAttributes: [
+            { Name: "email", Value: adminEmail },
+            { Name: "name", Value: "Admin Odin" },
+            { Name: "email_verified", Value: "true" },
+          ],
+          MessageAction: "SUPPRESS",
+        })
+      );
+
+      cognitoUserSub = createCognitoUserResponse.User?.Attributes?.find(
+        (attr: { Name: string }) => attr.Name === "sub"
+      )?.Value;
 
       // Define a senha do novo utilizador como permanente
-      await cognitoClient.send(new AdminSetUserPasswordCommand({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-        Username: adminEmail,
-        Password: adminPassword,
-        Permanent: true,
-      }));
+      await cognitoClient.send(
+        new AdminSetUserPasswordCommand({
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          Username: adminEmail,
+          Password: adminPassword,
+          Permanent: true,
+        })
+      );
       console.log(`Utilizador criado no Cognito com sucesso: ${adminEmail}`);
     } else {
       throw error; // Lança outros erros do Cognito
@@ -345,31 +354,33 @@ async function main() {
   }
 
   if (!cognitoUserSub) {
-      console.error("Não foi possível obter o ID (sub) do utilizador do Cognito.");
-      return;
+    console.error(
+      "Não foi possível obter o ID (sub) do utilizador do Cognito."
+    );
+    return;
   }
 
   // Faz o hash da senha para guardar no Prisma
   const hashedPassword4 = await bcrypt.hash(adminPassword, 10);
 
   // Usa 'upsert' para criar o utilizador no Prisma se ele não existir
- await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
     create: {
       id: cognitoUserSub, // Usa o ID do Cognito como ID no Prisma
-      name: 'Admin Odin',
+      name: "Admin Odin",
       email: adminEmail,
-      emailEJ: 'plataforma@empresajr.org',
+      emailEJ: "plataforma@empresajr.org",
       password: hashedPassword4,
       birthDate: new Date(),
-      phone: '(00) 00000-0000',
-      imageUrl: 'https://placehold.co/100x100/0126fb/f5b719?text=AD',
-      semesterEntryEj: '2024.1',
+      phone: "(00) 00000-0000",
+      imageUrl: "https://placehold.co/100x100/0126fb/f5b719?text=AD",
+      semesterEntryEj: "2024.1",
       isExMember: false,
       alumniDreamer: false,
       currentRole: { connect: { id: diretorRole.id } },
-      roles: { connect: { id: diretorRole.id } }
+      roles: { connect: { id: diretorRole.id } },
     },
   });
   console.log("Seed concluído com sucesso!");

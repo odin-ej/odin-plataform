@@ -23,7 +23,7 @@ import bcrypt from "bcrypt";
 
 // Configuração do cliente Cognito
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
+  region: process.env.REGION,
 });
 
 // Schema de validação Zod para a atualização de um utilizador (todos os campos são opcionais)
@@ -120,7 +120,7 @@ export async function PATCH(
         if (oldKey) {
           await s3Client.send(
             new DeleteObjectCommand({
-              Bucket: process.env.AWS_S3_BUCKET_NAME!,
+              Bucket: process.env.S3_BUCKET_NAME!,
               Key: oldKey,
             })
           );
@@ -225,7 +225,7 @@ export async function PATCH(
     if (attributesToUpdate.length > 0) {
       await cognitoClient.send(
         new AdminUpdateUserAttributesCommand({
-          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
           Username: userToUpdate.email,
           UserAttributes: attributesToUpdate,
         })

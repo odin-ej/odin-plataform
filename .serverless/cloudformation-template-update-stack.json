@@ -29,27 +29,16 @@
             {
               "Effect": "Allow",
               "Principal": {
-                "Service": [
-                  "lambda.amazonaws.com"
-                ]
+                "Service": ["lambda.amazonaws.com"]
               },
-              "Action": [
-                "sts:AssumeRole"
-              ]
+              "Action": ["sts:AssumeRole"]
             }
           ]
         },
         "Policies": [
           {
             "PolicyName": {
-              "Fn::Join": [
-                "-",
-                [
-                  "odin-app-prod",
-                  "production",
-                  "lambda"
-                ]
-              ]
+              "Fn::Join": ["-", ["odin-app-prod", "production", "lambda"]]
             },
             "PolicyDocument": {
               "Version": "2012-10-17",
@@ -69,9 +58,7 @@
                 },
                 {
                   "Effect": "Allow",
-                  "Action": [
-                    "logs:PutLogEvents"
-                  ],
+                  "Action": ["logs:PutLogEvents"],
                   "Resource": [
                     {
                       "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/odin-app-prod-production*:*:*"
@@ -98,10 +85,7 @@
                 },
                 {
                   "Effect": "Allow",
-                  "Action": [
-                    "ses:SendEmail",
-                    "ses:SendRawEmail"
-                  ],
+                  "Action": ["ses:SendEmail", "ses:SendRawEmail"],
                   "Resource": "*"
                 },
                 {
@@ -165,17 +149,15 @@
         "FunctionName": "odin-app-prod-production-updateOverdueTasks",
         "MemorySize": 1024,
         "Timeout": 30,
-        "Architectures": [
-          "arm64"
-        ],
+        "Architectures": ["arm64"],
         "Environment": {
           "Variables": {
             "DATABASE_URL": "postgres://postgres:Plataformaodin123!@odin-prod-database.ct0kmsme6xj1.sa-east-1.rds.amazonaws.com:5432/odin-prod-database",
-            "AWS_NODE_JS_CONNECTION_REUSE_ENABLED": "1",
-            "AWS_S3_BUCKET_NAME": "odin-platform-user-avatars",
-            "AWS_S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
-            "AWS_COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
-            "AWS_COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
+            "NODE_JS_CONNECTION_REUSE_ENABLED": "1",
+            "S3_BUCKET_NAME": "odin-platform-user-avatars",
+            "S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
+            "COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
+            "COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
             "VERIFIED_EMAIL_FROM": "plataforma@empresajr.org",
             "MONDAY_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjUzODQzNzI1NSwiYWFpIjoxMSwidWlkIjo1NjM4MjA4NCwiaWFkIjoiMjAyNS0wNy0xM1QxNToxMzo1My4xMDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjE1MDg3ODYsInJnbiI6InVzZTEifQ.Mh_FqQQi-AGQJJc88CaTpV3oTSwrTXb2ZsRCAj9k4OE",
             "ALFA_BOARD": "8528014113",
@@ -188,24 +170,14 @@
           }
         },
         "Role": {
-          "Fn::GetAtt": [
-            "IamRoleLambdaExecution",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
         },
         "VpcConfig": {
-          "SecurityGroupIds": [
-            "sg-0228a7934137562b2"
-          ],
-          "SubnetIds": [
-            "subnet-0f5ae3eec18af4eef",
-            "subnet-04592dbcc1ba4f11e"
-          ]
+          "SecurityGroupIds": ["sg-0228a7934137562b2"],
+          "SubnetIds": ["subnet-0f5ae3eec18af4eef", "subnet-04592dbcc1ba4f11e"]
         }
       },
-      "DependsOn": [
-        "UpdateOverdueTasksLogGroup"
-      ]
+      "DependsOn": ["UpdateOverdueTasksLogGroup"]
     },
     "ResetUserMessageLimitsLambdaFunction": {
       "Type": "AWS::Lambda::Function",
@@ -219,17 +191,15 @@
         "FunctionName": "odin-app-prod-production-resetUserMessageLimits",
         "MemorySize": 1024,
         "Timeout": 30,
-        "Architectures": [
-          "arm64"
-        ],
+        "Architectures": ["arm64"],
         "Environment": {
           "Variables": {
             "DATABASE_URL": "postgres://postgres:Plataformaodin123!@odin-prod-database.ct0kmsme6xj1.sa-east-1.rds.amazonaws.com:5432/odin-prod-database",
-            "AWS_NODE_JS_CONNECTION_REUSE_ENABLED": "1",
-            "AWS_S3_BUCKET_NAME": "odin-platform-user-avatars",
-            "AWS_S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
-            "AWS_COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
-            "AWS_COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
+            "NODE_JS_CONNECTION_REUSE_ENABLED": "1",
+            "S3_BUCKET_NAME": "odin-platform-user-avatars",
+            "S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
+            "COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
+            "COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
             "VERIFIED_EMAIL_FROM": "plataforma@empresajr.org",
             "MONDAY_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjUzODQzNzI1NSwiYWFpIjoxMSwidWlkIjo1NjM4MjA4NCwiaWFkIjoiMjAyNS0wNy0xM1QxNToxMzo1My4xMDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjE1MDg3ODYsInJnbiI6InVzZTEifQ.Mh_FqQQi-AGQJJc88CaTpV3oTSwrTXb2ZsRCAj9k4OE",
             "ALFA_BOARD": "8528014113",
@@ -242,24 +212,14 @@
           }
         },
         "Role": {
-          "Fn::GetAtt": [
-            "IamRoleLambdaExecution",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
         },
         "VpcConfig": {
-          "SecurityGroupIds": [
-            "sg-0228a7934137562b2"
-          ],
-          "SubnetIds": [
-            "subnet-0f5ae3eec18af4eef",
-            "subnet-04592dbcc1ba4f11e"
-          ]
+          "SecurityGroupIds": ["sg-0228a7934137562b2"],
+          "SubnetIds": ["subnet-0f5ae3eec18af4eef", "subnet-04592dbcc1ba4f11e"]
         }
       },
-      "DependsOn": [
-        "ResetUserMessageLimitsLogGroup"
-      ]
+      "DependsOn": ["ResetUserMessageLimitsLogGroup"]
     },
     "CleanupConversationsLambdaFunction": {
       "Type": "AWS::Lambda::Function",
@@ -273,17 +233,15 @@
         "FunctionName": "odin-app-prod-production-cleanupConversations",
         "MemorySize": 1024,
         "Timeout": 30,
-        "Architectures": [
-          "arm64"
-        ],
+        "Architectures": ["arm64"],
         "Environment": {
           "Variables": {
             "DATABASE_URL": "postgres://postgres:Plataformaodin123!@odin-prod-database.ct0kmsme6xj1.sa-east-1.rds.amazonaws.com:5432/odin-prod-database",
-            "AWS_NODE_JS_CONNECTION_REUSE_ENABLED": "1",
-            "AWS_S3_BUCKET_NAME": "odin-platform-user-avatars",
-            "AWS_S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
-            "AWS_COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
-            "AWS_COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
+            "NODE_JS_CONNECTION_REUSE_ENABLED": "1",
+            "S3_BUCKET_NAME": "odin-platform-user-avatars",
+            "S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
+            "COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
+            "COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
             "VERIFIED_EMAIL_FROM": "plataforma@empresajr.org",
             "MONDAY_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjUzODQzNzI1NSwiYWFpIjoxMSwidWlkIjo1NjM4MjA4NCwiaWFkIjoiMjAyNS0wNy0xM1QxNToxMzo1My4xMDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjE1MDg3ODYsInJnbiI6InVzZTEifQ.Mh_FqQQi-AGQJJc88CaTpV3oTSwrTXb2ZsRCAj9k4OE",
             "ALFA_BOARD": "8528014113",
@@ -296,24 +254,14 @@
           }
         },
         "Role": {
-          "Fn::GetAtt": [
-            "IamRoleLambdaExecution",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["IamRoleLambdaExecution", "Arn"]
         },
         "VpcConfig": {
-          "SecurityGroupIds": [
-            "sg-0228a7934137562b2"
-          ],
-          "SubnetIds": [
-            "subnet-0f5ae3eec18af4eef",
-            "subnet-04592dbcc1ba4f11e"
-          ]
+          "SecurityGroupIds": ["sg-0228a7934137562b2"],
+          "SubnetIds": ["subnet-0f5ae3eec18af4eef", "subnet-04592dbcc1ba4f11e"]
         }
       },
-      "DependsOn": [
-        "CleanupConversationsLogGroup"
-      ]
+      "DependsOn": ["CleanupConversationsLogGroup"]
     },
     "UpdateOverdueTasksLambdaVersiondsz5gTWxf0uPjWoBYDWk1n6yRaO251YS6Zkoxkqilg": {
       "Type": "AWS::Lambda::Version",
@@ -354,10 +302,7 @@
           {
             "Input": "{}",
             "Arn": {
-              "Fn::GetAtt": [
-                "UpdateOverdueTasksLambdaFunction",
-                "Arn"
-              ]
+              "Fn::GetAtt": ["UpdateOverdueTasksLambdaFunction", "Arn"]
             },
             "Id": "updateOverdueTasksSchedule"
           }
@@ -368,18 +313,12 @@
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Fn::GetAtt": [
-            "UpdateOverdueTasksLambdaFunction",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["UpdateOverdueTasksLambdaFunction", "Arn"]
         },
         "Action": "lambda:InvokeFunction",
         "Principal": "events.amazonaws.com",
         "SourceArn": {
-          "Fn::GetAtt": [
-            "UpdateOverdueTasksEventsRuleSchedule1",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["UpdateOverdueTasksEventsRuleSchedule1", "Arn"]
         }
       }
     },
@@ -392,10 +331,7 @@
           {
             "Input": "{}",
             "Arn": {
-              "Fn::GetAtt": [
-                "ResetUserMessageLimitsLambdaFunction",
-                "Arn"
-              ]
+              "Fn::GetAtt": ["ResetUserMessageLimitsLambdaFunction", "Arn"]
             },
             "Id": "resetUserMessageLimitsSchedule"
           }
@@ -406,18 +342,12 @@
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Fn::GetAtt": [
-            "ResetUserMessageLimitsLambdaFunction",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["ResetUserMessageLimitsLambdaFunction", "Arn"]
         },
         "Action": "lambda:InvokeFunction",
         "Principal": "events.amazonaws.com",
         "SourceArn": {
-          "Fn::GetAtt": [
-            "ResetUserMessageLimitsEventsRuleSchedule1",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["ResetUserMessageLimitsEventsRuleSchedule1", "Arn"]
         }
       }
     },
@@ -430,10 +360,7 @@
           {
             "Input": "{}",
             "Arn": {
-              "Fn::GetAtt": [
-                "CleanupConversationsLambdaFunction",
-                "Arn"
-              ]
+              "Fn::GetAtt": ["CleanupConversationsLambdaFunction", "Arn"]
             },
             "Id": "cleanupConversationsSchedule"
           }
@@ -444,18 +371,12 @@
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Fn::GetAtt": [
-            "CleanupConversationsLambdaFunction",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["CleanupConversationsLambdaFunction", "Arn"]
         },
         "Action": "lambda:InvokeFunction",
         "Principal": "events.amazonaws.com",
         "SourceArn": {
-          "Fn::GetAtt": [
-            "CleanupConversationsEventsRuleSchedule1",
-            "Arn"
-          ]
+          "Fn::GetAtt": ["CleanupConversationsEventsRuleSchedule1", "Arn"]
         }
       }
     }

@@ -25,9 +25,9 @@ import {
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
+  region: process.env.REGION,
 });
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({ region: process.env.REGION });
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -119,7 +119,7 @@ async function handlePatch(
       if (oldKey)
         await s3Client.send(
           new DeleteObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Bucket: process.env.S3_BUCKET_NAME!,
             Key: oldKey,
           })
         );
@@ -215,7 +215,7 @@ async function handlePatch(
     if (attributesToUpdate.length > 0) {
       await cognitoClient.send(
         new AdminUpdateUserAttributesCommand({
-          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
           Username: userToUpdate.email, // Username no Cognito é o email
           UserAttributes: attributesToUpdate,
         })
@@ -255,7 +255,7 @@ async function handleDelete(
     // Transação para apagar do Cognito e do Prisma
     await cognitoClient.send(
       new AdminDeleteUserCommand({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+        UserPoolId: process.env.COGNITO_USER_POOL_ID!,
         Username: user.email,
       })
     );

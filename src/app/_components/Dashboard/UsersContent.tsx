@@ -101,7 +101,7 @@ const UsersContent = ({
         });
         const { url, key } = presignedUrlRes.data;
         await axios.put(url, file, { headers: { "Content-Type": file.type } });
-        imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+        imageUrl = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
       }
 
       const { id } = formData;
@@ -313,7 +313,7 @@ const UsersContent = ({
       instagram: user.instagram || "",
       otherRole: user.otherRole || "",
       isExMember: user.isExMember ? "Sim" : "Não",
-      alumniDreamer: user.alumniDreamer ?? false ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
+      alumniDreamer: (user.alumniDreamer ?? false) ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
       roles: user.roles.map((role) => role.id), // O schema da API espera um array de IDs
       roleId: "currentRole" in user ? user.currentRole?.id : undefined,
     });

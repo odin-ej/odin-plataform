@@ -22,10 +22,9 @@ try {
     {
       Auth: {
         Cognito: {
-          userPoolId: process.env
-            .NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID as string,
+          userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID as string,
           userPoolClientId: process.env
-            .NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID as string,
+            .NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID as string,
         },
       },
     },
@@ -60,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = async (isInitialLoad = false) => {
     // Apenas ativa o estado de carregamento global no carregamento inicial da aplicação.
     if (isInitialLoad) setIsLoading(true);
-    
+
     try {
       const { tokens } = await fetchAuthSession();
       if (tokens) {

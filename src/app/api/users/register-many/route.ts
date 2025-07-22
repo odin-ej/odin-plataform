@@ -15,9 +15,9 @@ import { getAuthenticatedUser } from "@/lib/server-utils";
 
 // Configuração dos clientes da AWS
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: process.env.AWS_REGION,
+  region: process.env.REGION,
 });
-const sesClient = new SESClient({ region: process.env.AWS_REGION });
+const sesClient = new SESClient({ region: process.env.REGION });
 
 // Schema de validação para o corpo do pedido
 const registerManySchema = z.object({
@@ -107,9 +107,9 @@ export async function POST(request: Request) {
 
         const userBirthDate = req.birthDate;
 
-        const cognitoUser =await cognitoClient.send(
+        const cognitoUser = await cognitoClient.send(
           new AdminCreateUserCommand({
-            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
             Username: req.email,
             UserAttributes: [
               { Name: "email", Value: req.email },
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
 
         await cognitoClient.send(
           new AdminSetUserPasswordCommand({
-            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
             Username: req.email,
             Password: req.password,
             Permanent: true,
@@ -153,7 +153,8 @@ export async function POST(request: Request) {
             .map((role) => ({ id: role.id })) || [];
 
         const userData = {
-          id: cognitoUser.User?.Attributes?.find((attr) => attr.Name === "sub")?.Value as string,
+          id: cognitoUser.User?.Attributes?.find((attr) => attr.Name === "sub")
+            ?.Value as string,
           name: req.name,
           email: req.email,
           emailEJ: req.emailEJ,
@@ -225,7 +226,7 @@ export async function POST(request: Request) {
       }
     }
 
-    revalidatePath('/aprovacao-cadastro')
+    revalidatePath("/aprovacao-cadastro");
     return NextResponse.json(results, { status: 200 });
   } catch (error) {
     console.error("Erro no processo de aprovação em massa:", error);

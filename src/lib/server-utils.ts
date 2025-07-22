@@ -2,21 +2,22 @@
 import { cookies } from "next/headers";
 import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth/server";
 import { createServerRunner } from "@aws-amplify/adapter-nextjs";
-import {Role, User} from ".prisma/client";
+import { Role, User } from ".prisma/client";
 import { prisma } from "@/db";
 
 export const { runWithAmplifyServerContext } = createServerRunner({
   config: {
     Auth: {
       Cognito: {
-        userPoolId: process.env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID as string,
-        userPoolClientId: process.env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID as string,
+        userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID as string,
+        userPoolClientId: process.env
+          .NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID as string,
       },
     },
-  }
+  },
 });
 
-export type FullUser = User & { roles: Role[], currentRole: Role };
+export type FullUser = User & { roles: Role[]; currentRole: Role };
 
 /**
  * Obtém o usuário autenticado no contexto do servidor e enriquece
@@ -54,14 +55,15 @@ export async function getAuthenticatedUser(): Promise<FullUser | null> {
     });
 
     // Se o usuário não for encontrado no Prisma, retorna nulo
-     if (!prismaUser || !prismaUser.currentRole) {
-      console.warn(`Usuário autenticado com ID ${amplifyUser.userId} não encontrado no banco de dados ou não possui um cargo atual (currentRole).`);
+    if (!prismaUser || !prismaUser.currentRole) {
+      console.warn(
+        `Usuário autenticado com ID ${amplifyUser.userId} não encontrado no banco de dados ou não possui um cargo atual (currentRole).`
+      );
       return null;
     }
 
     // 3. Retorna o usuário completo do Prisma
     return prismaUser as FullUser;
-
   } catch (error) {
     // Em caso de erro (ex: sessão expirada), o Amplify lança uma exceção.
     // Retornamos nulo para indicar que não há um usuário autenticado.

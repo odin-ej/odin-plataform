@@ -4,9 +4,9 @@ import { prisma } from "./db.js"; // Usando a mesma instância do Prisma
 import { FullUser } from "./schemas.js"; // Tipos compartilhados
 
 const verifier = CognitoJwtVerifier.create({
-  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+  userPoolId: process.env.COGNITO_USER_POOL_ID!,
   tokenUse: "access", // ou "id", dependendo do token que seu frontend envia
-  clientId: process.env.AWS_COGNITO_USER_POOL_CLIENT_ID!,
+  clientId: process.env.COGNITO_USER_POOL_CLIENT_ID!,
 });
 
 /**

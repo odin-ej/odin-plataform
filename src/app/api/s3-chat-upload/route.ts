@@ -4,7 +4,6 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "@/lib/aws";
 
-
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
@@ -20,7 +19,8 @@ export async function POST(request: Request) {
       );
     }
     // Pode definir um limite de tamanho diferente para os ficheiros do chat
-    if (fileSize > 1024 * 1024 * 10) { // Limite de 10MB
+    if (fileSize > 1024 * 1024 * 10) {
+      // Limite de 10MB
       return NextResponse.json(
         { message: "O ficheiro é demasiado grande (máx 10MB)." },
         { status: 400 }
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const command = new PutObjectCommand({
       // CORREÇÃO: Usa a nova variável de ambiente para o bucket do chat.
-      Bucket: process.env.AWS_S3_CHAT_BUCKET_NAME!,
+      Bucket: process.env.S3_CHAT_BUCKET_NAME!,
       Key: key,
       ContentType: fileType,
       ContentLength: fileSize,
@@ -44,7 +44,6 @@ export async function POST(request: Request) {
     }); // URL válido por 10 minutos
 
     return NextResponse.json({ url: presignedUrl, key: key });
-
   } catch (error) {
     console.error("Erro ao gerar URL pré-assinado para o chat:", error);
     return NextResponse.json(
