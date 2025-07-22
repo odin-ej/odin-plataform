@@ -35,11 +35,11 @@ const initializePrisma = async (): Promise<PrismaClient> => {
     }
 
     const secret = JSON.parse(response.SecretString);
-    if (!secret.DATABASE_URL) {
-      throw new Error("❌ DATABASE_URL não encontrada no segredo.");
+    if (!secret.username || !secret.password || !secret.host || !secret.port) {
+      throw new Error("❌ Informações de conexão incompletas no segredo.");
     }
 
-    databaseUrl = secret.DATABASE_URL;
+    databaseUrl = `postgresql://${secret.username}:${secret.password}@${secret.host}:${secret.port}/postgres`;
   } catch (error) {
     console.error("❌ Erro ao buscar DATABASE_URL:", error);
     throw error;
