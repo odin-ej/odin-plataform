@@ -104,13 +104,7 @@ const backend = defineBackend({
     entry: "./functions/chatHandler/handler.ts",
     name: "chatHandler",
     timeoutSeconds: 28, // Tempo limite para a Lambda de chat
-    environment: { // Variáveis específicas para o chatHandler
-      ...commonLambdaEnvironment, // Herda as variáveis comuns
-      // Variáveis específicas para RDS Data API (usadas no chatHandler)
-      DB_CLUSTER_ARN: `arn:aws:rds:SEU_REGION:SEU_ID_DA_CONTA:cluster:SEU_CLUSTER_RDS_ID`, // ARN do seu cluster RDS
-      DB_SECRET_ARN: `arn:aws:secretsmanager:SEU_REGION:SEU_ID_DA_CONTA:secret:minha-app/prod/database-url-xxxxxx`, // ARN do seu segredo
-      DB_NAME: "odin",
-    },
+    environment: commonLambdaEnvironment,
   }),
   // JR Points
   getJrPointsData: defineFunction({
@@ -186,10 +180,7 @@ const backend = defineBackend({
   userByIdHandler: defineFunction({
     name: "userByIdHandler",
     entry: "./functions/userByIdHandler/handler.ts",
-    environment: {
-      ...commonLambdaEnvironment,
-      S3_BUCKET_NAME: process.env.S3_BUCKET_NAME!, // Já existia
-    },
+    environment: commonLambdaEnvironment,
   }),
   registerManyUsers: defineFunction({
     name: "registerManyUsers",
@@ -250,23 +241,14 @@ const backend = defineBackend({
     name: "uploadKnowledge",
     entry: "./functions/uploadKnowledge/handler.ts",
     timeoutSeconds: 60,
-    environment: {
-      ...commonLambdaEnvironment,
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY!, // Já existia
-    },
+    environment: commonLambdaEnvironment,
     // Permissões S3 são dadas abaixo via grantReadWrite
   }),
   // Dados Externos
   getMondayStats: defineFunction({
     name: "getMondayStats",
     entry: "./functions/getMondayStats/handler.ts",
-    environment: {
-      ...commonLambdaEnvironment,
-      MONDAY_API_KEY: process.env.MONDAY_API_KEY!, // Já existia
-      ALFA_BOARD: process.env.ALFA_BOARD!, // Já existia
-      BETA_BOARD: process.env.BETA_BOARD!, // Já existia
-      DELTA_BOARD: process.env.DELTA_BOARD!, // Já existia
-    },
+    environment: commonLambdaEnvironment,
   }),
   // Links Úteis
   usefulLinksHandler: defineFunction({
