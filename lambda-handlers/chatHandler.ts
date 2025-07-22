@@ -42,6 +42,7 @@ const secretsManagerClient = new SecretsManagerClient({
   region: process.env.REGION,
 });
 
+
 // --- Funções Auxiliares para Interagir com o Banco de Dados via RDS Data API ---
 
 /**

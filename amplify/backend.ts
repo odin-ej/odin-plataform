@@ -13,6 +13,14 @@ import {
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Bucket, BucketAccessControl } from "aws-cdk-lib/aws-s3";
 
+const dbSecretsManagerAccessPolicyStatement = new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["secretsmanager:GetSecretValue"],
+  // Ex: arn:aws:secretsmanager:sa-east-1:SEU_ID_DA_CONTA:secret:minha-app/prod/database-url-xxxxxx
+  resources: ["arn:aws:secretsmanager:sa-east-1:014164675859:secret:minha-app/prod/database-url-kRFIzM"],
+});
+
+
 // =================================================================
 // 1. DEFINIÇÃO DO BACKEND E DE TODAS AS FUNÇÕES LAMBDA
 // =================================================================
@@ -198,7 +206,7 @@ const backend = defineBackend({
       DELTA_BOARD: process.env.DELTA_BOARD!,
     },
   }),
-  // Links Úteis
+  // Links Úteisa
   usefulLinksHandler: defineFunction({
     name: "usefulLinksHandler",
     entry: "./functions/usefulLinksHandler/handler.ts",
@@ -612,6 +620,46 @@ profileImagesBucket.grantReadWrite(backend.getPresignedUrl.resources.lambda);
 profileImagesBucket.grantReadWrite(backend.userByIdHandler.resources.lambda);
 chatFilesBucket.grantReadWrite(backend.getChatPresignedUrl.resources.lambda);
 chatFilesBucket.grantReadWrite(backend.uploadKnowledge.resources.lambda);
+
+const functionsNeedingSecretsManager = [
+  backend.getVision,
+  backend.updateValue,
+  backend.cultureHandler,
+  backend.getHouseGoals,
+  backend.updateGoal,
+  backend.updateObjective,
+  backend.conversationsHandler,
+  backend.getLatestConversation,
+  backend.conversationByIdHandler,
+  backend.getJrPointsData,
+  backend.updateRankingStatus,
+  backend.addEnterpriseTags,
+  backend.tasksHandler,
+  backend.taskByIdHandler,
+  backend.getMyTasks,
+  backend.getMyPoints,
+  backend.rolesHandler,
+  backend.roleByIdHandler,
+  backend.tagsHandler,
+  backend.tagByIdHandler,
+  backend.addTagToUsers,
+  backend.usersHandler,
+  backend.userByIdHandler,
+  backend.registerManyUsers,
+  backend.registrationRequestsHandler,
+  backend.registrationRequestByIdHandler,
+  backend.userTagsAndLinksHandler,
+  backend.reportsHandler,
+  backend.reportByIdHandler,
+  backend.reservationsHandler,
+  backend.reservationByIdHandler,
+  backend.usefulLinksHandler,
+  backend.usefulLinkByIdHandler,
+];
+
+functionsNeedingSecretsManager.forEach(func => {
+  func.resources.lambda.addToRolePolicy(dbSecretsManagerAccessPolicyStatement);
+});
 
 // =================================================================
 // 7. SAÍDAS (OUTPUTS)
