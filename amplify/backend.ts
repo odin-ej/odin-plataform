@@ -27,16 +27,16 @@ const dbSecretsManagerAccessPolicyStatement = new PolicyStatement({
 
 const commonLambdaEnvironment = {
   DATABASE_URL: process.env.DATABASE_URL!, // Para Lambdas que usam Prisma (lida por lib/db.ts)
-  AWS_NODE_JS_CONNECTION_REUSE_ENABLED: "1",
+  NODE_JS_CONNECTION_REUSE_ENABLED: "1",
   
   // Variáveis corrigidas para o ambiente da Lambda
-  AWS_REGION: process.env.AWS_REGION!, // Pega do seu ambiente local (terminal)
+  REGION: process.env.REGION!, // Pega do seu ambiente local (terminal)
   NODE_ENV: "production", // FORÇA explicitamente o ambiente como 'production' na Lambda
 
-  AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME!,
-  AWS_S3_CHAT_BUCKET_NAME: process.env.AWS_S3_CHAT_BUCKET_NAME!,
-  AWS_COGNITO_USER_POOL_ID: process.env.AWS_COGNITO_USER_POOL_ID!,
-  AWS_COGNITO_USER_POOL_CLIENT_ID: process.env.AWS_COGNITO_USER_POOL_CLIENT_ID!,
+  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME!,
+  S3_CHAT_BUCKET_NAME: process.env.S3_CHAT_BUCKET_NAME!,
+  COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID!,
+  COGNITO_USER_POOL_CLIENT_ID: process.env.COGNITO_USER_POOL_CLIENT_ID!,
   VERIFIED_EMAIL_FROM: process.env.VERIFIED_EMAIL_FROM!,
   MONDAY_API_KEY: process.env.MONDAY_API_KEY!,
   ALFA_BOARD: process.env.ALFA_BOARD!,
