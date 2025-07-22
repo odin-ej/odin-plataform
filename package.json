@@ -10,10 +10,9 @@
     "prisma:generate": "npx prisma generate",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "build:lambda:overdue": "esbuild lambda-handlers/updateOverdueTasks.ts --bundle --platform=node --target=node18 --outfile=dist/updateOverdueTasks-lambda.js --external:@prisma/client --external:.prisma/client",
-    "build:lambda:reset-messages": "esbuild lambda-handlers/resetUserMessageLimits.ts --bundle --platform=node --target=node18 --outfile=dist/resetUserMessageLimits-lambda.js --external:@prisma/client --external:.prisma/client",
-    "build:lambda:cleanup": "esbuild lambda-handlers/cleanupConversations.ts --bundle --platform=node --target=node18 --outfile=dist/cleanupConversations-lambda.js --external:@prisma/client --external:.prisma/client",
-    "build:lambda:chat": "esbuild lambda-handlers/chatHandler.ts --bundle --platform=node --target=node18 --outfile=dist/chatHandler-lambda.js --external:@aws-sdk/client-rds-data --external:@aws-sdk/client-secrets-manager"
+    "build:lambda:overdue": "esbuild lambda-handlers/updateOverdueTasks.ts --bundle --platform=node --target=node18 --outfile=dist/updateOverdueTasks-lambda.js",
+    "build:lambda:reset-messages": "esbuild lambda-handlers/resetUserMessageLimits.ts --bundle --platform=node --target=node18 --outfile=dist/resetUserMessageLimits-lambda.js",
+    "build:lambda:cleanup": "esbuild lambda-handlers/cleanupConversations.ts --bundle --platform=node --target=node18 --outfile=dist/cleanupConversations-lambda.js"
   },
   "dependencies": {
     "@aws-amplify/adapter-nextjs": "^1.6.6",
