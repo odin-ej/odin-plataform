@@ -1,9 +1,0 @@
-{
-  "name": "upload-knowledge-function",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "lambda-multipart-parser": "^1.0.1"
-  }
-}
-
