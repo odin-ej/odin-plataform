@@ -1,67 +1,142 @@
 "use client";
-import { Handshake } from "lucide-react";
+import { Handshake, Loader2 } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../Global/Custom/CustomCarousel";
 import { User, Role } from ".prisma/client";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import ValueCarousel, { ValueSlide } from "./ValueCarousel";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MemberViewModal from "./MemberViewModal";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import AccountCard from "./AccountCard";
 import { fullStrategy } from "@/app/(dashboard)/atualizar-estrategia/page";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 
-interface CulturalContentProps {
-  estrategy: fullStrategy;
-  allUsers: MemberWithFullRoles[];
-  mondayStats: {
-    totalProjects: number;
-    details: { accountName: string; projectCount: number }[];
-  };
+interface MondayStats {
+  totalProjects: number;
+  details: { accountName: string; projectCount: number }[];
 }
 
-const CulturalContent = ({ estrategy, allUsers, mondayStats }: CulturalContentProps) => {
+interface CulturePageData {
+  estrategy: fullStrategy;
+  allUsers: MemberWithFullRoles[];
+  mondayStats: MondayStats;
+}
+
+interface CulturalContentProps {
+  initialData: CulturePageData;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const fetchCulturalData = async (): Promise<CulturePageData> => {
+  const [estrategyRes, usersRes, mondayRes] = await Promise.all([
+    axios.get(`${API_URL}/culture`),
+    axios.get(`${API_URL}/users`),
+    axios.get(`${API_URL}/monday-stats`),
+  ]);
+  return {
+    estrategy: estrategyRes.data[0], // A API de cultura retorna um array
+    allUsers: usersRes.data.users,
+    mondayStats: mondayRes.data,
+  };
+};
+
+const CulturalContent = ({ initialData }: CulturalContentProps) => {
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<MemberWithFullRoles | null>(
     null
   );
-  const motherValue = estrategy.values.find(
-    (value) => value.isMotherValue === true
-  )?.name;
 
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["culturalPageData"],
+    queryFn: fetchCulturalData,
+    initialData: initialData, // "Hidrata" com os dados do servidor
+    // staleTime: 5 * 60 * 1000, // Opcional: considera os dados "frescos" por 5 minutos
+  });
   const titles = ["Propósito", "Missão", "Visão"];
 
-  const slidesData: SlideData[] = [
-    {
-      subtitle: estrategy.propose,
-      progress: 0,
-      valueText: "",
-      mainText: "",
-      date: "",
-    },
-    {
-      subtitle: estrategy.mission,
-      progress: 0,
-      valueText: "",
-      mainText: "",
-      date: "",
-    },
-    {
-      subtitle: estrategy.vision,
-      progress: 0,
-      valueText: "",
-      mainText: "",
-      date: "",
-    },
-  ];
+  const { motherValue, slidesData, valueSlides, accounts } = useMemo(() => {
+    const motherValue = data.estrategy.values.find(
+      (value: { isMotherValue: boolean }) => value.isMotherValue === true
+    )?.name;
 
-  const valueSlides: ValueSlide[] = estrategy.values
-    .filter((value) => !value.isMotherValue)
-    .map((value) => ({
-      title: value.name,
-      description: value.description,
-    }));
+    const slidesData: SlideData[] = [
+      {
+        subtitle: data.estrategy.propose,
+        progress: 0,
+        valueText: "",
+        mainText: "",
+        date: "",
+      },
+      {
+        subtitle: data.estrategy.mission,
+        progress: 0,
+        valueText: "",
+        mainText: "",
+        date: "",
+      },
+      {
+        subtitle: data.estrategy.vision,
+        progress: 0,
+        valueText: "",
+        mainText: "",
+        date: "",
+      },
+    ];
+
+    const valueSlides: ValueSlide[] = data.estrategy.values
+      .filter((value: { isMotherValue: boolean }) => !value.isMotherValue)
+      .map((value: { name: string; description: string }) => ({
+        title: value.name,
+        description: value.description,
+      }));
+
+    const alfaTotalProjects = data.mondayStats.details.find(
+      (detail: { accountName: string }) => detail.accountName === "ALFA 🧡"
+    )?.projectCount;
+    const betaTotalProjects = data.mondayStats.details.find(
+      (detail: { accountName: string }) => detail.accountName === "BETA 💜"
+    )?.projectCount;
+    const deltaTotalProjects = data.mondayStats.details.find(
+      (detail: { accountName: string }) => detail.accountName === "DELTA🔺"
+    )?.projectCount;
+
+    const accounts = [
+      {
+        name: "ALFA",
+        description:
+          "A Alfa conjura a perfeição. Somos a essência do poder bruxo, e nossa grandeza é inquestionável! Expectrum Patronum!",
+        imageUrl: "/alfa.png",
+        totalProjects: alfaTotalProjects!,
+        color: "text-orange-500",
+      },
+      {
+        name: "BETA",
+        description:
+          "Com ou sem joias, a Beta já possui o poder ilimitado. Nosso reinado é absoluto. Somos inevitáveis!",
+        imageUrl: "/beta.png",
+        totalProjects: betaTotalProjects!,
+        color: "text-purple-500",
+      },
+      {
+        name: "DELTA",
+        description:
+          "O palco é nosso, e a Delta é a estrela. Ninguém nos iguala. Somos a própria obra-prima. Open the Delta!",
+        imageUrl: "/delta.png",
+        totalProjects: deltaTotalProjects!,
+        color: "text-rose-500",
+      },
+    ];
+    return { motherValue, slidesData, valueSlides, accounts };
+  }, [data]);
+
+  const openModal = (user: MemberWithFullRoles) => {
+    setSelectedUser(user!);
+    setIsOpenModal(true);
+  };
 
   const usersColumns: ColumnDef<MemberWithFullRoles>[] = [
     {
@@ -94,44 +169,21 @@ const CulturalContent = ({ estrategy, allUsers, mondayStats }: CulturalContentPr
     },
   ];
 
-  const alfaTotalProjects = mondayStats.details.find(
-    (detail) => detail.accountName === "ALFA 🧡")?.projectCount
-  const betaTotalProjects = mondayStats.details.find(
-    (detail) => detail.accountName === "BETA 💜")?.projectCount
-  const deltaTotalProjects = mondayStats.details.find(
-    (detail) => detail.accountName === "DELTA🔺")?.projectCount
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
+      </div>
+    );
+  }
 
-  const accounts = [
-    {
-      name: "ALFA",
-      description:
-        "A Alfa conjura a perfeição. Somos a essência do poder bruxo, e nossa grandeza é inquestionável! Expectrum Patronum!",
-      imageUrl: "/alfa.png",
-      totalProjects: alfaTotalProjects!,
-      color: "text-orange-500",
-    },
-    {
-      name: "BETA",
-      description:
-        "Com ou sem joias, a Beta já possui o poder ilimitado. Nosso reinado é absoluto. Somos inevitáveis!",
-      imageUrl: "/beta.png",
-      totalProjects: betaTotalProjects!,
-      color: "text-purple-500",
-    },
-    {
-      name: "DELTA",
-      description:
-        "O palco é nosso, e a Delta é a estrela. Ninguém nos iguala. Somos a própria obra-prima. Open the Delta!",
-      imageUrl: "/delta.png",
-      totalProjects: deltaTotalProjects!,
-      color: "text-rose-500",
-    },
-  ];
-
-  const openModal = (user: MemberWithFullRoles) => {
-    setSelectedUser(user!);
-    setIsOpenModal(true);
-  };
+  if (isError || !data) {
+    return (
+      <div className="p-8 text-white">
+        Erro ao carregar os dados da página cultural.
+      </div>
+    );
+  }
 
   return (
     <>
@@ -160,7 +212,7 @@ const CulturalContent = ({ estrategy, allUsers, mondayStats }: CulturalContentPr
       <div className="mt-4">
         <CustomTable<User & { roles: Role[]; currentRole: Role }>
           title="Sócio(as) da Casinha"
-          data={allUsers}
+          data={initialData.allUsers}
           columns={usersColumns}
           itemsPerPage={10}
           filterColumns={[

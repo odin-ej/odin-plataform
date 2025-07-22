@@ -1,16 +1,17 @@
 "use client";
-import { Award, Eye, EyeOff } from "lucide-react";
+import { Award, Eye, EyeOff, Loader2 } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { JrPointIconBlue } from "../Global/JrPointsIcon";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { useState } from "react";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { checkUserPermission } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { JrPointsPageData } from "@/app/(dashboard)/jr-points/page";
+import axios from "axios";
 
 // --- Tipagem para os Dados ---
 // Define a estrutura de um item na tabela de ranking
@@ -23,23 +24,88 @@ export interface RankingItem {
 }
 
 interface JrPointsContentProps {
-  myPoints: number;
-  enterprisePoints: number;
-  rankingData: RankingItem[];
-  initialIsHidden: boolean; // Recebe os dados do ranking como prop
+  initialData: {
+    myPoints: number;
+    enterprisePoints: number;
+    rankingData: RankingItem[];
+    initialIsHidden: boolean;
+  };
 }
 
-const JrPointsContent = ({
-  myPoints,
-  rankingData,
-  enterprisePoints,
-  initialIsHidden,
-}: JrPointsContentProps) => {
-  const router = useRouter();
-  const [isHidden, setIsHidden] = useState(initialIsHidden);
-  const [isLoading, setIsLoading] = useState(false);
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
-  // --- Definição das Colunas da Tabela ---
+
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ["jrPointsData"],
+    queryFn: async () => {
+      const { data: pageData }: { data: JrPointsPageData } = await axios.get(
+        `${API_URL}/jr-points`
+      );
+      // Lógica de processamento que estava no servidor agora pode viver aqui
+      const myPoints =
+        pageData.usersRanking.find((u) => u.id === user?.id)?.totalPoints || 0;
+      const rankingData = pageData.usersRanking
+        .slice(0, 10)
+        .map((u, index) => ({
+          id: u.id,
+          ranking: index + 1,
+          name: u.name,
+          points: u.totalPoints,
+          imageUrl: u.imageUrl,
+        }));
+      return {
+        enterprisePoints: pageData.enterprisePoints,
+        rankingData,
+        myPoints,
+        initialIsHidden: pageData.rankingIsHidden,
+      };
+    },
+    initialData: initialData,
+  });
+
+  const { mutate: toggleVisibility, isPending: isToggling } = useMutation({
+    mutationFn: (newVisibility: boolean) =>
+      axios.patch(`${API_URL}/jr-points/ranking-status`, {
+        isHidden: newVisibility,
+      }),
+
+    // Atualização Otimista para feedback instantâneo
+    onMutate: async (newVisibility: boolean) => {
+      await queryClient.cancelQueries({ queryKey: ["jrPointsData"] });
+      const previousData = queryClient.getQueryData<typeof initialData>([
+        "jrPointsData",
+      ]);
+      queryClient.setQueryData(["jrPointsData"], (oldData) => ({
+        ...(oldData as typeof initialData),
+        initialIsHidden: newVisibility,
+      }));
+      return { previousData };
+    },
+    onError: (err, newVisibility, context) => {
+      // Reverte em caso de erro
+      if (context?.previousData) {
+        queryClient.setQueryData(["jrPointsData"], context.previousData);
+      }
+      toast.error("Falha ao atualizar a visibilidade.");
+    },
+    // Garante a consistência final com o servidor
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["jrPointsData"] });
+    },
+  });
+
+  // --- Dados e Handlers ---
+  const {
+    myPoints,
+    rankingData,
+    enterprisePoints,
+    initialIsHidden: isHidden,
+  } = data || initialData;
+  const handleToggleRankingVisibility = () => toggleVisibility(!isHidden);
+
   const rankingColumns: ColumnDef<RankingItem>[] = [
     {
       accessorKey: "ranking",
@@ -78,36 +144,14 @@ const JrPointsContent = ({
   ];
 
   const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
-  const handleToggleRankingVisibility = async () => {
-    setIsLoading(true);
-    try {
-      const newVisibility = !isHidden;
-      const response = await fetch("/api/jr-points/ranking-status", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isHidden: newVisibility }),
-      });
 
-      if (!response.ok) {
-        throw new Error("Falha ao atualizar a visibilidade do ranking.");
-      }
-
-      // Atualiza o estado local imediatamente para uma melhor experiência do usuário
-      setIsHidden(newVisibility);
-      toast.success(
-        `Ranking agora está ${newVisibility ? "oculto" : "visível"}.`
-      );
-
-      // Opcional: router.refresh() para garantir que outros componentes na página sejam atualizados se necessário.
-      router.refresh();
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (isLoadingData) {
+    return (
+      <div className="flex justify-center items-center mt-20">
+        <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -143,14 +187,14 @@ const JrPointsContent = ({
         <Button
           className="bg-[#0126fb] mb-4 hover:bg-[#0126fb]/70"
           onClick={handleToggleRankingVisibility}
-          disabled={isLoading}
+          disabled={isToggling}
         >
           {isHidden ? (
             <Eye className="h-4 w-4 mr-2" />
           ) : (
             <EyeOff className="h-4 w-4 mr-2" />
           )}
-          {isLoading
+          {isToggling
             ? "Atualizando..."
             : isHidden
             ? "Mostrar Ranking"

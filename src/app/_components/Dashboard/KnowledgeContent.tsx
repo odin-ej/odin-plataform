@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
@@ -6,10 +7,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UploadCloud, Loader2, MessageCircle } from "lucide-react";
 import CustomCard from "@/app/_components/Global/Custom/CustomCard";
+import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const KnowledgeContent = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: uploadFile, isPending: isLoading } = useMutation({
+    mutationFn: async (fileToUpload: File) => {
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
+
+      // Usamos axios para consistência e melhor tratamento de erros
+      const { data } = await axios.post(`${API_URL}/knowledge/upload`, formData);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success("Sucesso!", { description: data.message });
+      setFile(null); // Limpa o input após o sucesso
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Falha no upload do ficheiro.";
+      toast.error("Erro no Upload", { description: errorMessage });
+    },
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -17,35 +39,14 @@ const KnowledgeContent = () => {
     }
   };
 
-  const handleUpload = async () => {
+  // O handler de upload agora é muito mais simples
+  const handleUpload = () => {
     if (!file) {
       toast.error("Nenhum ficheiro selecionado.");
       return;
     }
-    setIsLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/knowledge/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || "Falha no upload do ficheiro.");
-      }
-
-      toast.success("Sucesso!", { description: result.message });
-      setFile(null); // Limpa o input após o sucesso
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error("Erro no Upload", { description: error.message });
-    } finally {
-      setIsLoading(false);
-    }
+    // Apenas chama a função 'mutate' do TanStack Query
+    uploadFile(file);
   };
   return (
     <div className="p-4 sm:p-8 text-white">

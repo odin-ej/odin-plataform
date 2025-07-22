@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 // Esta função chama a sua API para encontrar a conversa mais recente.
 async function getLastConversation(): Promise<Conversation | null> {
   try {
-       const cookiesStore = await cookies();
-       const headers = { Cookie: cookiesStore.toString() };
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const cookiesStore = await cookies();
+    const headers = { Cookie: cookiesStore.toString() };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     // Passa os cookies do pedido atual para a chamada fetch, para que a API saiba quem está logado.
     const response = await fetch(`${baseUrl}/api/conversations/latest`, {
       next: { revalidate: 45 },
@@ -27,7 +27,7 @@ async function getLastConversation(): Promise<Conversation | null> {
 // Esta função chama a sua API para criar uma nova conversa.
 async function createNewConversation(): Promise<Conversation | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const response = await fetch(`${baseUrl}/api/conversations`, {
       method: "POST",
     });

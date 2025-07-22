@@ -20,9 +20,9 @@ interface CulturePageProps {
 
 async function getPageData(): Promise<CulturePageProps> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        const cookiesStore = await cookies();
-        const headers = { Cookie: cookiesStore.toString() };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const cookiesStore = await cookies();
+    const headers = { Cookie: cookiesStore.toString() };
     const [estrategyPlanResponse, allUsersResponse, mondayResponse] =
       await Promise.all([
         fetch(`${baseUrl}/api/culture`, {
@@ -97,14 +97,12 @@ async function getPageData(): Promise<CulturePageProps> {
 }
 
 const Page = async () => {
-  const { estrategy, allUsers, mondayStats } = await getPageData();
+  const { allUsers, estrategy, mondayStats } = await getPageData();
+  if (!allUsers || !estrategy || !mondayStats) return null;
+  const initialData = { estrategy, allUsers, mondayStats };
   return (
     <div className="p-4 sm:p-8">
-      <CulturalContent
-        estrategy={estrategy!}
-        allUsers={allUsers!}
-        mondayStats={mondayStats!}
-      />
+      <CulturalContent initialData={initialData} />
     </div>
   );
 };

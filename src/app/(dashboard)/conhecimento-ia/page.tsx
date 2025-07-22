@@ -4,7 +4,7 @@ import { constructMetadata } from "@/lib/metadata";
 export const metadata = constructMetadata({ title: "Conhecimento IA" });
 
 const Page = () => {
-  return ( <KnowledgeContent /> );
-}
- 
+  return <KnowledgeContent />;
+};
+
 export default Page;

@@ -9,9 +9,7 @@ import { useState } from "react";
 import AdminActionsModal from "./AdminActionsModal";
 
 import {
-  actionTypeSchema,
   ActionTypeWithCount,
-  tagSchema,
   TagWithAction,
   UserRankingInfo,
 } from "@/lib/schemas/pointsSchema";
@@ -19,102 +17,102 @@ import UserTagsModal from "./UserTagsModal";
 import CustomModal from "../Global/Custom/CustomModal";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import ModalConfirm from "../Global/ModalConfirm";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { JrEnterprisePointsPageData } from "@/app/(dashboard)/jr-points/nossa-empresa/page";
+import axios from "axios";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { checkUserPermission } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 
-interface EnterprisePageContentProps {
-  enterprisePoints: number;
-  enterpriseTags: TagWithAction[];
-  usersRanking: UserRankingInfo[];
-  allUsers: User[];
-  allTags: TagWithAction[];
-  allActionTypes: ActionTypeWithCount[];
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const EnterprisePageContent = ({
-  enterprisePoints,
-  enterpriseTags,
-  usersRanking,
-  allUsers,
-  allTags,
-  allActionTypes,
-}: EnterprisePageContentProps) => {
-  const isDirector = true;
+  initialData,
+}: {
+  initialData: JrEnterprisePointsPageData;
+}) => {
+  const queryClient = useQueryClient();
   const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isUserTagsModalOpen, setIsUserTagsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<UserRankingInfo | null>(
     null
   );
-  const [removeItemId, setRemoveItemId] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [typeItem, setTypeItem] = useState<"tag" | "action-type">("tag");
-  const router = useRouter();
+  const [itemToDelete, setItemToDelete] = useState<{
+    type: "tag" | "action-type";
+    id: string;
+  } | null>(null);
 
   const form = useForm(); // Formulário genérico para o modal de edição
+  const { user } = useAuth();
+
+  const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ["enterprisePointsData"],
+    queryFn: async (): Promise<JrEnterprisePointsPageData> => {
+      const { data } = await axios.get(`${API_URL}/jr-points`);
+      return data;
+    },
+    initialData: initialData,
+  });
+
+  const { mutate: editItem, isPending: isEditingItem } = useMutation({
+    mutationFn: async (formData: any) => {
+      const endpoint = `${API_URL}/${editingItem.type}s/${editingItem.id}`;
+      return axios.patch(endpoint, formData);
+    },
+    onSuccess: () => {
+      toast.success("Item atualizado com sucesso!");
+      setIsEditModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao Atualizar", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  const { mutate: deleteItem, isPending: isDeletingItem } = useMutation({
+    mutationFn: (item: { type: "tag" | "action-type"; id: string }) => {
+      return axios.delete(`${API_URL}/${item.type}s/${item.id}`);
+    },
+    onSuccess: () => {
+      toast.success("Item apagado com sucesso!");
+      setItemToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao apagar", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  const handleEditSubmit = (formData: any) => editItem(formData);
+  const handleDeleteConfirm = () => itemToDelete && deleteItem(itemToDelete);
 
   const handleOpenEditModal = (
     item: Tag | ActionType,
     type: "tag" | "action-type"
   ) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const schema =
-      type === "tag" ? tagSchema.partial() : actionTypeSchema.partial();
-    form.reset(item); // Reseta o formulário com os dados do item
-    setIsEditModalOpen(true);
+    form.reset(item);
     setEditingItem({ ...item, type });
+    setIsEditModalOpen(true);
   };
 
-  const handleEditSubmit = async (data: any) => {
-    try {
-      setIsLoading(true);
-      const endpoint = `/api/${editingItem.type}s/${editingItem.id}`;
-      const response = await fetch(endpoint, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao atualizar o item.");
-      }
-      toast.success("Item atualizado com sucesso!");
-      setIsEditModalOpen(false);
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro ao Atualizar", { description: error.message });
-    }
-    setIsLoading(false);
-  };
-
-  const handleDelete = async (type: "tag" | "action-type", id: string) => {
-    if(isLoading) return;
-    try {
-      setIsLoading(true)
-      const response = await fetch(`/api/${type}s/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error(`Falha ao apagar o item.`);
-      toast.success("Item apagado com sucesso!");
-      router.refresh();
-      setIsConfirmModalOpen(false)
-    } catch (error: any) {
-      toast.error("Erro", { description: error.message });
-    }
-    setIsLoading(false)
-  };
-
-  const handleClickDeleteButton = (type: "tag" | "action-type", linkId: string) => {
-    setIsConfirmModalOpen(true);
-    setTypeItem(type);
-    setRemoveItemId(linkId);
-  };
+  const {
+    enterprisePoints,
+    enterpriseTags,
+    usersRanking,
+    allUsers,
+    allTags,
+    allActionTypes,
+  } = data!;
 
   const tagColumns: ColumnDef<TagWithAction>[] = [
     { accessorKey: "description", header: "Descrição" },
@@ -200,6 +198,14 @@ const EnterprisePageContent = ({
     label: actionType.name,
   }));
 
+  if (isLoadingData) {
+    return (
+      <div className="flex justify-center items-center mt-20">
+        <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -253,9 +259,9 @@ const EnterprisePageContent = ({
           filterColumns={["description", "actionType"]}
           itemsPerPage={6}
           onEdit={(item) => handleOpenEditModal(item, "tag")}
-          onDelete={(item) => handleClickDeleteButton("tag", item.id)}
+          onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
           onRowClick={(item) => handleOpenEditModal(item, "tag")}
-          type='noSelection'
+          type="noSelection"
         />
         {isDirector && (
           <>
@@ -266,9 +272,9 @@ const EnterprisePageContent = ({
               filterColumns={["description"]}
               itemsPerPage={6}
               onEdit={(item) => handleOpenEditModal(item, "tag")}
-              onDelete={(item) => handleClickDeleteButton("tag", item.id)}
+              onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
               onRowClick={(item) => handleOpenEditModal(item, "tag")}
-              type='noSelection'
+              type="noSelection"
             />
             <CustomTable<ActionTypeWithCount>
               title="Tipos de Ações"
@@ -277,9 +283,9 @@ const EnterprisePageContent = ({
               filterColumns={["name", "description"]}
               itemsPerPage={6}
               onEdit={(item) => handleOpenEditModal(item, "action-type")}
-              onDelete={(item) => handleClickDeleteButton("action-type", item.id)}
+              onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
               onRowClick={(item) => handleOpenEditModal(item, "action-type")}
-              type='noSelection'
+              type="noSelection"
             />
           </>
         )}
@@ -328,17 +334,17 @@ const EnterprisePageContent = ({
             editingItem.type === "tag" ? "Tag" : "Tipo de Ação"
           }`}
           isEditing={editingItem ? true : false}
-          isLoading={isLoading}
+          isLoading={isEditingItem}
           setIsEditing={() => editingItem && setIsEditModalOpen(false)}
         />
       )}
 
-       {typeof removeItemId === "string" && isConfirmModalOpen && (
+      {itemToDelete && (
         <ModalConfirm
-          open={isConfirmModalOpen}
-          onCancel={() => setIsConfirmModalOpen(false)}
-          onConfirm={() => handleDelete(typeItem, removeItemId)}
-          isLoading={isLoading}
+          open={!!itemToDelete}
+          onCancel={() => setItemToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isDeletingItem}
         />
       )}
     </>

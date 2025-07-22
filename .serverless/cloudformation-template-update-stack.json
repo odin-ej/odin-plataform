@@ -1,0 +1,498 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "UpdateOverdueTasksLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/odin-app-prod-production-updateOverdueTasks"
+      }
+    },
+    "ResetUserMessageLimitsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/odin-app-prod-production-resetUserMessageLimits"
+      }
+    },
+    "CleanupConversationsLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/odin-app-prod-production-cleanupConversations"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "odin-app-prod",
+                  "production",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/odin-app-prod-production*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/odin-app-prod-production*:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:sa-east-1:014164675859:log-group:/aws/lambda/*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:CreateNetworkInterface",
+                    "ec2:DeleteNetworkInterface",
+                    "ec2:DescribeNetworkInterfaces"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ses:SendEmail",
+                    "ses:SendRawEmail"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::odin-platform-user-avatars",
+                    "arn:aws:s3:::odin-platform-user-avatars/*",
+                    "arn:aws:s3:::odin-platform-knowledge-base",
+                    "arn:aws:s3:::odin-platform-knowledge-base/*"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "odin-app-prod",
+              "production",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "UpdateOverdueTasksLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "serverless-framework-deployments-sa-east-1-9ed1a307-28c2",
+          "S3Key": "serverless/odin-app-prod/production/1752975440695-2025-07-20T01:37:20.695Z/odin-app-prod.zip"
+        },
+        "Handler": "lambda-handlers/updateOverdueTasks.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "odin-app-prod-production-updateOverdueTasks",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Architectures": [
+          "arm64"
+        ],
+        "Environment": {
+          "Variables": {
+            "DATABASE_URL": "postgres://postgres:Plataformaodin123!@odin-prod-database.ct0kmsme6xj1.sa-east-1.rds.amazonaws.com:5432/odin-prod-database",
+            "AWS_NODE_JS_CONNECTION_REUSE_ENABLED": "1",
+            "AWS_S3_BUCKET_NAME": "odin-platform-user-avatars",
+            "AWS_S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
+            "AWS_COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
+            "AWS_COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
+            "VERIFIED_EMAIL_FROM": "plataforma@empresajr.org",
+            "MONDAY_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjUzODQzNzI1NSwiYWFpIjoxMSwidWlkIjo1NjM4MjA4NCwiaWFkIjoiMjAyNS0wNy0xM1QxNToxMzo1My4xMDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjE1MDg3ODYsInJnbiI6InVzZTEifQ.Mh_FqQQi-AGQJJc88CaTpV3oTSwrTXb2ZsRCAj9k4OE",
+            "ALFA_BOARD": "8528014113",
+            "BETA_BOARD": "8528137626",
+            "DELTA_BOARD": "8519343981",
+            "GEMINI_API_KEY": "AIzaSyA-Ia3Yyk2vMB3E9nUoVGpGcOhX_JmROtM",
+            "GOOGLE_SEARCH_API_KEY": "AIzaSyA6lVX2QXbKvz_yzJybMbuXEqR4_tJoJ-Y",
+            "GOOGLE_SEARCH_ENGINE_ID": "870ddcca829eb47d3",
+            "NODE_OPTIONS": "--enable-source-maps"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            "sg-0228a7934137562b2"
+          ],
+          "SubnetIds": [
+            "subnet-0f5ae3eec18af4eef",
+            "subnet-04592dbcc1ba4f11e"
+          ]
+        }
+      },
+      "DependsOn": [
+        "UpdateOverdueTasksLogGroup"
+      ]
+    },
+    "ResetUserMessageLimitsLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "serverless-framework-deployments-sa-east-1-9ed1a307-28c2",
+          "S3Key": "serverless/odin-app-prod/production/1752975440695-2025-07-20T01:37:20.695Z/odin-app-prod.zip"
+        },
+        "Handler": "lambda-handlers/resetUserMessageLimits.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "odin-app-prod-production-resetUserMessageLimits",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Architectures": [
+          "arm64"
+        ],
+        "Environment": {
+          "Variables": {
+            "DATABASE_URL": "postgres://postgres:Plataformaodin123!@odin-prod-database.ct0kmsme6xj1.sa-east-1.rds.amazonaws.com:5432/odin-prod-database",
+            "AWS_NODE_JS_CONNECTION_REUSE_ENABLED": "1",
+            "AWS_S3_BUCKET_NAME": "odin-platform-user-avatars",
+            "AWS_S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
+            "AWS_COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
+            "AWS_COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
+            "VERIFIED_EMAIL_FROM": "plataforma@empresajr.org",
+            "MONDAY_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjUzODQzNzI1NSwiYWFpIjoxMSwidWlkIjo1NjM4MjA4NCwiaWFkIjoiMjAyNS0wNy0xM1QxNToxMzo1My4xMDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjE1MDg3ODYsInJnbiI6InVzZTEifQ.Mh_FqQQi-AGQJJc88CaTpV3oTSwrTXb2ZsRCAj9k4OE",
+            "ALFA_BOARD": "8528014113",
+            "BETA_BOARD": "8528137626",
+            "DELTA_BOARD": "8519343981",
+            "GEMINI_API_KEY": "AIzaSyA-Ia3Yyk2vMB3E9nUoVGpGcOhX_JmROtM",
+            "GOOGLE_SEARCH_API_KEY": "AIzaSyA6lVX2QXbKvz_yzJybMbuXEqR4_tJoJ-Y",
+            "GOOGLE_SEARCH_ENGINE_ID": "870ddcca829eb47d3",
+            "NODE_OPTIONS": "--enable-source-maps"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            "sg-0228a7934137562b2"
+          ],
+          "SubnetIds": [
+            "subnet-0f5ae3eec18af4eef",
+            "subnet-04592dbcc1ba4f11e"
+          ]
+        }
+      },
+      "DependsOn": [
+        "ResetUserMessageLimitsLogGroup"
+      ]
+    },
+    "CleanupConversationsLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "serverless-framework-deployments-sa-east-1-9ed1a307-28c2",
+          "S3Key": "serverless/odin-app-prod/production/1752975440695-2025-07-20T01:37:20.695Z/odin-app-prod.zip"
+        },
+        "Handler": "lambda-handlers/cleanupConversations.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "odin-app-prod-production-cleanupConversations",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Architectures": [
+          "arm64"
+        ],
+        "Environment": {
+          "Variables": {
+            "DATABASE_URL": "postgres://postgres:Plataformaodin123!@odin-prod-database.ct0kmsme6xj1.sa-east-1.rds.amazonaws.com:5432/odin-prod-database",
+            "AWS_NODE_JS_CONNECTION_REUSE_ENABLED": "1",
+            "AWS_S3_BUCKET_NAME": "odin-platform-user-avatars",
+            "AWS_S3_CHAT_BUCKET_NAME": "odin-platform-knowledge-base",
+            "AWS_COGNITO_USER_POOL_ID": "sa-east-1_7Gh3XVoL7",
+            "AWS_COGNITO_USER_POOL_CLIENT_ID": "2ng6qgfmfio83f1a4s07td2vkp",
+            "VERIFIED_EMAIL_FROM": "plataforma@empresajr.org",
+            "MONDAY_API_KEY": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjUzODQzNzI1NSwiYWFpIjoxMSwidWlkIjo1NjM4MjA4NCwiaWFkIjoiMjAyNS0wNy0xM1QxNToxMzo1My4xMDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjE1MDg3ODYsInJnbiI6InVzZTEifQ.Mh_FqQQi-AGQJJc88CaTpV3oTSwrTXb2ZsRCAj9k4OE",
+            "ALFA_BOARD": "8528014113",
+            "BETA_BOARD": "8528137626",
+            "DELTA_BOARD": "8519343981",
+            "GEMINI_API_KEY": "AIzaSyA-Ia3Yyk2vMB3E9nUoVGpGcOhX_JmROtM",
+            "GOOGLE_SEARCH_API_KEY": "AIzaSyA6lVX2QXbKvz_yzJybMbuXEqR4_tJoJ-Y",
+            "GOOGLE_SEARCH_ENGINE_ID": "870ddcca829eb47d3",
+            "NODE_OPTIONS": "--enable-source-maps"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            "sg-0228a7934137562b2"
+          ],
+          "SubnetIds": [
+            "subnet-0f5ae3eec18af4eef",
+            "subnet-04592dbcc1ba4f11e"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CleanupConversationsLogGroup"
+      ]
+    },
+    "UpdateOverdueTasksLambdaVersiondsz5gTWxf0uPjWoBYDWk1n6yRaO251YS6Zkoxkqilg": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "UpdateOverdueTasksLambdaFunction"
+        },
+        "CodeSha256": "71W6ZIrpBnubM8okrSYTWcepgqw0oIGz9B9yC9HLoiA="
+      }
+    },
+    "ResetUserMessageLimitsLambdaVersionPVnQuaGHzOd6URM5kcTrNbvbEe5HZ088CkCkBndNgfg": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ResetUserMessageLimitsLambdaFunction"
+        },
+        "CodeSha256": "71W6ZIrpBnubM8okrSYTWcepgqw0oIGz9B9yC9HLoiA="
+      }
+    },
+    "CleanupConversationsLambdaVersionZrP2pdahDl0dc8Q3IUtReSYagU1xj8kNMLuK1Dlc8": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CleanupConversationsLambdaFunction"
+        },
+        "CodeSha256": "71W6ZIrpBnubM8okrSYTWcepgqw0oIGz9B9yC9HLoiA="
+      }
+    },
+    "UpdateOverdueTasksEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "cron(0 4 * * ? *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Input": "{}",
+            "Arn": {
+              "Fn::GetAtt": [
+                "UpdateOverdueTasksLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "updateOverdueTasksSchedule"
+          }
+        ]
+      }
+    },
+    "UpdateOverdueTasksLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "UpdateOverdueTasksLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "UpdateOverdueTasksEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "ResetUserMessageLimitsEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "cron(0 0 * * ? *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Input": "{}",
+            "Arn": {
+              "Fn::GetAtt": [
+                "ResetUserMessageLimitsLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "resetUserMessageLimitsSchedule"
+          }
+        ]
+      }
+    },
+    "ResetUserMessageLimitsLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ResetUserMessageLimitsLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "ResetUserMessageLimitsEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "CleanupConversationsEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "cron(0 2 * * ? *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Input": "{}",
+            "Arn": {
+              "Fn::GetAtt": [
+                "CleanupConversationsLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "cleanupConversationsSchedule"
+          }
+        ]
+      }
+    },
+    "CleanupConversationsLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CleanupConversationsLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CleanupConversationsEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": "serverless-framework-deployments-sa-east-1-9ed1a307-28c2",
+      "Export": {
+        "Name": "sls-odin-app-prod-production-ServerlessDeploymentBucketName"
+      }
+    },
+    "UpdateOverdueTasksLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "UpdateOverdueTasksLambdaVersiondsz5gTWxf0uPjWoBYDWk1n6yRaO251YS6Zkoxkqilg"
+      },
+      "Export": {
+        "Name": "sls-odin-app-prod-production-UpdateOverdueTasksLambdaFunctionQualifiedArn"
+      }
+    },
+    "ResetUserMessageLimitsLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "ResetUserMessageLimitsLambdaVersionPVnQuaGHzOd6URM5kcTrNbvbEe5HZ088CkCkBndNgfg"
+      },
+      "Export": {
+        "Name": "sls-odin-app-prod-production-ResetUserMessageLimitsLambdaFunctionQualifiedArn"
+      }
+    },
+    "CleanupConversationsLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CleanupConversationsLambdaVersionZrP2pdahDl0dc8Q3IUtReSYagU1xj8kNMLuK1Dlc8"
+      },
+      "Export": {
+        "Name": "sls-odin-app-prod-production-CleanupConversationsLambdaFunctionQualifiedArn"
+      }
+    }
+  }
+}

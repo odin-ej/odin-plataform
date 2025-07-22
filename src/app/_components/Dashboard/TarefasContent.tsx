@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -24,11 +23,11 @@ import {
 import { sortTasks } from "@/lib/tasks-utils";
 import { formatDateForInput } from "@/lib/utils";
 import ModalConfirm from "../Global/ModalConfirm";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { TasksPageData } from "@/app/(dashboard)/tarefas/page";
 
-interface TarefasContentProps {
-  tasks: FullTask[];
-  users: { value: string; label: string }[];
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Mapeamento para tradução e estilo dos status
 const statusConfig = {
@@ -50,15 +49,14 @@ const statusConfig = {
   },
 };
 
-const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
-  const router = useRouter();
+const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
+  const queryClient = useQueryClient();
+  // --- ESTADO LOCAL (Apenas para UI) ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FullTask | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [removeTaskId, setRemoveTaskId] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<FullTask | null>(null);
 
   // Formulário para editar uma tarefa existente (usa o schema de update com campos opcionais)
   const editTaskForm = useForm<TaskFormValues>({
@@ -77,6 +75,66 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
     },
   });
 
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ["tasksData"],
+    queryFn: async (): Promise<TasksPageData> => {
+      // A função de fetch aqui precisa replicar a lógica do servidor
+      const [tasksRes, usersRes] = await Promise.all([
+        axios.get(`${API_URL}/tasks`),
+        axios.get(`${API_URL}/users`),
+      ]);
+      return { tasks: tasksRes.data, formatedUsers: usersRes.data };
+    },
+    initialData: initialData,
+  });
+
+  const { mutate: createTask, isPending: isCreating } = useMutation({
+    mutationFn: (taskData: TaskCreateFormValues) =>
+      axios.post(`${API_URL}/tasks`, taskData),
+    onSuccess: () => {
+      toast.success("Tarefa criada com sucesso!");
+      closeCreateModal();
+      queryClient.invalidateQueries({ queryKey: ["tasksData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao criar tarefa", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  const { mutate: updateTask, isPending: isUpdating } = useMutation({
+    mutationFn: (taskData: TaskFormValues) =>
+      axios.patch(`${API_URL}/tasks/${selectedItem!.id}`, taskData),
+    onSuccess: () => {
+      toast.success("Tarefa atualizada com sucesso!");
+      closeEditModal();
+      queryClient.invalidateQueries({ queryKey: ["tasksData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao salvar", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  const { mutate: deleteTask, isPending: isDeleting } = useMutation({
+    mutationFn: (taskId: string) => axios.delete(`${API_URL}/tasks/${taskId}`),
+    onSuccess: () => {
+      toast.success("Tarefa deletada com sucesso!");
+      setItemToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["tasksData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao deletar", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  // --- HANDLERS simplificados ---
+  const handleCreateSubmit = (formData: TaskCreateFormValues) =>
+    createTask(formData);
+  const handleUpdateSubmit = (formData: TaskFormValues) => updateTask(formData);
+  const handleDeleteConfirm = () => itemToDelete && deleteTask(itemToDelete.id);
+
   useEffect(() => {
     if (selectedItem) {
       editTaskForm.reset({
@@ -84,7 +142,7 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
         deadline: formatDateForInput(selectedItem.deadline),
         responsibles: selectedItem.responsibles.map((r) => r.id),
       });
-// Data vem do banco de dados certa! O problema é aqui no front-end talvez no formatDateForInput - Se for melhor crie um componente de calendario para cuidar de campos como esse de datas
+      // Data vem do banco de dados certa! O problema é aqui no front-end talvez no formatDateForInput - Se for melhor crie um componente de calendario para cuidar de campos como esse de datas
     }
   }, [selectedItem, editTaskForm]);
 
@@ -115,70 +173,12 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
     setIsCreateModalOpen(false);
   };
 
-  const handleUpdateTask = async (data: TaskFormValues) => {
-    if (!selectedItem) return toast.error("Nenhum item selecionado.");
-    try {
-      setIsLoading(true);
-      const res = await fetch(`/api/tasks/${selectedItem.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok)
-        throw new Error(
-          (await res.json()).message || "Falha ao atualizar tarefa."
-        );
-      toast.success("Tarefa atualizada com sucesso!");
-      closeEditModal();
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro ao salvar", { description: error.message });
-    }
-    setIsLoading(false);
-  };
+  const formatedUsers = data?.formatedUsers || [];
 
-  const handleCreateTask = async (data: TaskCreateFormValues) => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(`/api/tasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok)
-        throw new Error((await res.json()).message || "Falha ao criar tarefa.");
-      toast.success("Tarefa criada com sucesso!");
-      closeCreateModal();
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro ao criar tarefa", { description: error.message });
-    }
-    setIsLoading(false);
-  };
-
-  const handleDeleteTask = async (id: string) => {
-    if (isLoading) return;
-    try {
-      setIsLoading(true);
-      const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
-      if (!res.ok)
-        throw new Error(
-          (await res.json()).message || "Falha ao deletar tarefa."
-        );
-      toast.success("Tarefa deletada com sucesso!");
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro ao deletar", { description: error.message });
-    }
-    setIsLoading(false);
-  };
-
-  const handleClickDeleteButton = (linkId: string) => {
-    setIsConfirmModalOpen(true);
-    setRemoveTaskId(linkId);
-  };
-
-  const sortedTasks = useMemo(() => sortTasks(tasks), [tasks]);
+  const sortedTasks = useMemo(() => {
+    const tasks = data?.tasks || [];
+    return sortTasks(tasks);
+  }, [data.tasks]);
 
   const taskColumns = useMemo<ColumnDef<FullTask>[]>(
     () => [
@@ -268,7 +268,7 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
       accessorKey: "responsibles",
       header: "Responsáveis",
       type: "checkbox",
-      options: users,
+      options: formatedUsers,
     },
   ];
 
@@ -295,9 +295,17 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
       accessorKey: "responsibles",
       header: "Responsáveis",
       type: "checkbox",
-      options: users,
+      options: formatedUsers,
     },
   ];
+
+  if (isLoadingData) {
+    return (
+      <div className="flex justify-center items-center mt-20">
+        <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -306,7 +314,7 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
         icon={ClipboardList}
         title="Tarefas e Projetos"
         description="Acompanhe as tarefas e projetos da casinha dos sonhos"
-        value={tasks.length}
+        value={data.tasks.length}
       />
 
       <div className="mt-6 space-y-8">
@@ -317,7 +325,7 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
           handleActionClick={openCreateModal}
           filterColumns={["title", "status"]}
           onEdit={(row) => openEditModal(row, true)}
-          onDelete={(row) => handleClickDeleteButton(row.id)}
+          onDelete={(row) => setItemToDelete(row)}
           onRowClick={(row) => openEditModal(row, false)}
           itemsPerPage={10}
           disabled={false}
@@ -332,11 +340,11 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
           onClose={closeEditModal}
           title={isEditing ? "Editar Tarefa" : "Detalhes da Tarefa"}
           form={editTaskForm}
-          onSubmit={handleUpdateTask}
+          onSubmit={handleUpdateSubmit}
           fields={editTaskFields}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
-          isLoading={isLoading}
+          isLoading={isUpdating}
         />
       )}
 
@@ -346,19 +354,19 @@ const TarefasContent = ({ tasks, users }: TarefasContentProps) => {
         onClose={closeCreateModal}
         title="Criar Nova Tarefa"
         form={createTaskForm}
-        onSubmit={handleCreateTask}
+        onSubmit={handleCreateSubmit}
         fields={createTaskFields}
         isEditing={true}
         setIsEditing={() => closeCreateModal()}
         onlyView={false}
-        isLoading={isLoading}
+        isLoading={isCreating}
       />
-      {typeof removeTaskId === "string" && isConfirmModalOpen && (
+      {itemToDelete && (
         <ModalConfirm
-          open={isConfirmModalOpen}
-          onCancel={() => setIsConfirmModalOpen(false)}
-          onConfirm={() => handleDeleteTask(removeTaskId)}
-          isLoading={isLoading}
+          open={!!itemToDelete}
+          onCancel={() => setItemToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isDeleting}
         />
       )}
     </>

@@ -6,31 +6,31 @@ import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
 
 export const metadata = constructMetadata({ title: "Reservas de Salinhas" });
-
 export const dynamic = "force-dynamic";
 
-interface PageProps {
+// Define the shape of our page data
+export interface RoomsPageData {
   reservations: ExtendedReservation[];
   rooms: Room[];
 }
 
-async function getPageData(): Promise<PageProps> {
+async function getPageData(): Promise<RoomsPageData> {
   try {
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const cookiesStore = await cookies();
-      const headers = { Cookie: cookiesStore.toString() };
+    const headers = { Cookie: cookiesStore.toString() };
     const response = await fetch(`${baseUrl}/api/reserve`, {
-      next: { revalidate: 45 },
+      cache: "no-store",
       headers,
     });
 
+    if (!response.ok) throw new Error("Falha ao buscar dados.");
+
     const responseJson = await response.json();
-
-    const reservations: ExtendedReservation[] = responseJson.reservations;
-    const rooms: Room[] = responseJson.rooms;
-
-    return { rooms, reservations };
+    return {
+      rooms: responseJson.rooms,
+      reservations: responseJson.reservations,
+    };
   } catch (error) {
     console.error("Falha ao buscar os dados da página.", error);
     return { rooms: [], reservations: [] };
@@ -38,23 +38,20 @@ async function getPageData(): Promise<PageProps> {
 }
 
 const Page = async () => {
-  const { rooms, reservations } = await getPageData();
-
+  const initialData = await getPageData();
   const authUser = await getAuthenticatedUser();
-  const myReservations = reservations.filter(
-    (reservation) => reservation.user.id === authUser!.id
-  );
-  const isDirector =
-    authUser!.currentRole.area.map((area) => area === "DIRETORIA").length > 0;
 
+  if (!authUser) {
+    return <div>Usuário não autenticado.</div>;
+  }
+
+  // Passamos todos os dados para o cliente, que fará a filtragem
   return (
     <div className="p-4 sm:p-8">
       <RoomsContent
-        allReservations={reservations}
-        myReservations={myReservations}
-        availableRooms={rooms}
-        currentUserId={authUser!.id}
-        isDirector={isDirector}
+        initialData={initialData}
+        currentUserId={authUser.id}
+        isDirector={authUser.currentRole.area.includes("DIRETORIA")}
       />
     </div>
   );

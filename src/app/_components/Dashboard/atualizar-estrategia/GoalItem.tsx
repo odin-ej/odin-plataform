@@ -1,11 +1,11 @@
 "use client";
-import { EstrategyObjectiveWithGoals } from "@/app/(dashboard)/atualizar-estrategia/page";
 import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import CustomInput from "../../Global/Custom/CustomInput";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
 import { z } from "zod";
+import { EstrategyObjectiveWithGoals } from "@/app/(dashboard)/atualizar-estrategia/page";
 
 const goalFormSchema = z.object({
   title: z.string().min(3, "O título é obrigatório."),
@@ -18,21 +18,26 @@ const goalFormSchema = z.object({
     .min(0, "O valor deve ser um número positivo."),
 });
 
-// Este é o tipo de dados que o formulário irá gerenciar.
 type GoalFormValues = z.infer<typeof goalFormSchema>;
-// ==================================================================
 
-interface GoalItemProps {
-  initialGoal: EstrategyObjectiveWithGoals["goals"][number];
-  onUpdate: (
-    endpoint: "objectives" | "goals",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: { id: string; [key: string]: any }
-  ) => Promise<void>;
+// --- TIPO CORRETO PARA OS DADOS DA MUTAÇÃO ---
+interface UpdateData {
+  endpoint: "objectives" | "goals";
+  id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
-export function GoalItem({ initialGoal, onUpdate }: GoalItemProps) {
-  // O useForm agora usa o schema e o tipo corretos para o formulário.
+// --- PROPS CORRIGIDAS ---
+interface GoalItemProps {
+  initialGoal: EstrategyObjectiveWithGoals["goals"][number];
+  // onUpdate agora recebe um único objeto e é síncrona
+  onUpdate: (data: UpdateData) => void;
+  // Nova prop para o estado de carregamento
+  isUpdating: boolean;
+}
+
+export function GoalItem({ initialGoal, onUpdate, isUpdating }: GoalItemProps) {
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalFormSchema),
     defaultValues: {
@@ -44,31 +49,28 @@ export function GoalItem({ initialGoal, onUpdate }: GoalItemProps) {
     mode: "onBlur",
   });
 
+  // --- FUNÇÃO DEIXA DE SER ASYNC ---
   const handleGoalUpdate = async (fieldName: keyof GoalFormValues) => {
-    // A validação com z.coerce.number() já acontece aqui quando o trigger é chamado.
     const isValid = await form.trigger(fieldName);
     if (!isValid) return;
+
     const rawValue = form.getValues(fieldName);
-    // getValues() agora retorna um número graças ao z.coerce
     let finalValue: string | number = rawValue;
 
-    // Se o campo for numérico, garante a conversão para número antes de enviar.
     if (fieldName === "goal" || fieldName === "value") {
       finalValue = Number(rawValue);
-
-      // Compara o valor convertido com o valor inicial para evitar requisições desnecessárias.
-      if (finalValue === Number(initialGoal[fieldName])) {
-        return;
-      }
+      if (finalValue === Number(initialGoal[fieldName])) return;
     } else {
-      // Se for string, compara diretamente.
-      if (finalValue === initialGoal[fieldName]) {
-        return;
-      }
+      if (finalValue === initialGoal[fieldName]) return;
     }
 
-    // Envia o dado já no formato correto (número) para a API.
-    await onUpdate("goals", { id: initialGoal.id, [fieldName]: finalValue });
+    // --- CHAMADA CORRIGIDA ---
+    // Passa um único objeto para a função onUpdate
+    onUpdate({
+      endpoint: "goals",
+      id: initialGoal.id,
+      [fieldName]: finalValue,
+    });
   };
 
   return (
@@ -80,6 +82,7 @@ export function GoalItem({ initialGoal, onUpdate }: GoalItemProps) {
           label="Título da Meta"
           className="bg-transparent text-white font-semibold"
           onBlur={() => handleGoalUpdate("title")}
+          disabled={isUpdating} // Usa o estado de carregamento
         />
         <CustomTextArea
           form={form}
@@ -87,6 +90,7 @@ export function GoalItem({ initialGoal, onUpdate }: GoalItemProps) {
           label="Descrição da Meta"
           className="bg-[#010d26] text-white/90 text-sm"
           onBlur={() => handleGoalUpdate("description")}
+          disabled={isUpdating} // Usa o estado de carregamento
         />
         <div className="flex flex-col sm:flex-row gap-4 pt-2">
           <CustomInput
@@ -96,6 +100,7 @@ export function GoalItem({ initialGoal, onUpdate }: GoalItemProps) {
             type="number"
             className="w-full bg-[#010d26]"
             onBlur={() => handleGoalUpdate("goal")}
+            disabled={isUpdating} // Usa o estado de carregamento
           />
           <CustomInput
             form={form}
@@ -104,6 +109,7 @@ export function GoalItem({ initialGoal, onUpdate }: GoalItemProps) {
             type="number"
             className="w-full bg-[#010d26]"
             onBlur={() => handleGoalUpdate("value")}
+            disabled={isUpdating} // Usa o estado de carregamento
           />
         </div>
       </form>

@@ -1,20 +1,53 @@
 "use client";
-import { UserPoints } from ".prisma/client";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 import CustomCard from "../Global/Custom/CustomCard";
-import { Award } from "lucide-react";
+import { Award, Loader2 } from "lucide-react";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import { TagWithAction } from "@/lib/schemas/pointsSchema";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
+import { MyPointsData } from "@/app/(dashboard)/meus-pontos/page"; // Importa a tipagem
 
-interface MyPointsContentProps {
-  myPoints: UserPoints & { tags: TagWithAction[] };
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const MyPointsContent = ({ myPoints }: MyPointsContentProps) => {
+// Função que o TanStack Query usará para re-buscar os dados no cliente
+const fetchMyPoints = async (userId: string): Promise<MyPointsData> => {
+    const { data } = await axios.get(`${API_URL}/my-points/${userId}`);
+    return data;
+};
+
+const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const { user } = useAuth();
-  if (!user) return null;
+  const userId = user?.id;
+
+  // --- QUERY PRINCIPAL (Gerencia os dados da página) ---
+  const { data, isLoading, isError } = useQuery({
+    // A chave da query inclui o ID do usuário para ser única
+    queryKey: ['myPoints', userId],
+    queryFn: () => fetchMyPoints(userId!),
+    initialData: initialData,
+    // A query só será executada no cliente se o userId estiver disponível
+    enabled: !!userId,
+  });
+
+  // --- ESTADOS DE CARREGAMENTO E ERRO ---
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center mt-20">
+        <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
+      </div>
+    );
+  }
+
+  if (isError || !data?.myPoints) {
+    return <div className="p-8 text-white text-center">Erro ao carregar seus pontos.</div>;
+  }
+  
+  // Usamos os dados do 'data' do useQuery como fonte da verdade
+  const { myPoints } = data;
+
   const tagColumns: ColumnDef<TagWithAction>[] = [
     { accessorKey: "description", header: "Descrição" },
     {
@@ -36,7 +69,7 @@ const MyPointsContent = ({ myPoints }: MyPointsContentProps) => {
       <div className="flex flex-col md:flex-row gap-8 items-center justify-between relative mt-4 p-6 rounded-lg">
         <div className="flex-1 text-white">
           <h2 className="text-3xl font-bold mb-4 text-[#0126fb]">
-            Olá, {user.name.split(" ")[0]}!
+            Olá, {user?.name.split(" ")[0]}!
           </h2>
           <p className="text-lg mb-3 leading-relaxed">
             Esta seção pode parecer simples, mas permite que você tenha plena

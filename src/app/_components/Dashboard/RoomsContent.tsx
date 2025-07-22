@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // RoomsContent.tsx
 
@@ -46,6 +47,9 @@ import { cn } from "@/lib/utils";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ModalConfirm from "../Global/ModalConfirm";
+import { RoomsPageData } from "@/app/(dashboard)/reserva-salinhas/page";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
 // --- Tipos e Enums ---
 enum CalendarView {
@@ -66,33 +70,124 @@ type FlattenedReservation = {
 // 2. COMPONENTE PRINCIPAL (RoomsContent)
 // ===================================================================
 interface RoomsContentProps {
-  myReservations: ExtendedReservation[];
-  allReservations: ExtendedReservation[];
-  availableRooms: Room[];
+  initialData: RoomsPageData;
   currentUserId: string;
   isDirector: boolean;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const RoomsContent = ({
-  myReservations,
-  allReservations,
-  availableRooms,
+  initialData,
   currentUserId,
   isDirector,
 }: RoomsContentProps) => {
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReservation, setEditingReservation] =
     useState<ExtendedReservation | null>(null);
   const [view, setView] = useState<CalendarView>(CalendarView.MONTH);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(false);
-  const [removeRoomId, setRemoveRoomId] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const router = useRouter();
+  const [itemToDelete, setItemToDelete] = useState<ExtendedReservation | null>(
+    null
+  );
 
   const form = useForm<ReservationFormValues>({
     resolver: zodResolver(reservationSchema),
   });
+
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ["reservationsData"],
+    queryFn: async (): Promise<RoomsPageData> => {
+      const { data } = await axios.get(`${API_URL}/reserve`);
+      return data;
+    },
+    initialData: initialData,
+  });
+
+  // Data from query is the source of truth
+  const availableRooms = data?.rooms || [];
+
+  // --- MUTATIONS for Create, Update, Delete ---
+  const { mutate: createOrUpdateReservation, isPending: isSaving } =
+    useMutation({
+      mutationFn: async (formData: ReservationFormValues) => {
+        // ... your date parsing and validation logic from handleFormSubmit ...
+        const hourEnter = new Date(`${formData.date}T${formData.hourEnter}:00`);
+        const hourLeave = new Date(`${formData.date}T${formData.hourLeave}:00`);
+        // The conflict check can now also be part of the mutation
+        const freshData = await queryClient.fetchQuery<RoomsPageData>({ queryKey: ['reservationsData'] });
+        const freshReservations = freshData.reservations;
+        const hasConflict = freshReservations.some((res) => {
+          if (editingReservation && res.id === editingReservation.id)
+            return false;
+          if (res.roomId !== formData.roomId) return false;
+          return areIntervalsOverlapping(
+            { start: hourEnter, end: hourLeave },
+            { start: new Date(res.hourEnter), end: new Date(res.hourLeave) }
+          );
+        });
+        if (hasConflict)
+          throw new Error(
+            "Esta sala já está reservada para o horário selecionado."
+          );
+
+        const payload = {
+          date: new Date(formData.date).toISOString(),
+          hourEnter: hourEnter.toISOString(),
+          hourLeave: hourLeave.toISOString(),
+          roomId: formData.roomId,
+          userId: currentUserId,
+          status: "BUSY",
+        };
+
+        const endpoint = editingReservation
+          ? `${API_URL}/reserve/${editingReservation.id}`
+          : `${API_URL}/reserve`;
+        const method = editingReservation ? "patch" : "post";
+        const { data } = await axios[method](endpoint, payload);
+        return data;
+      },
+      onSuccess: (_, formData) => {
+        toast.success(
+          `Reserva ${editingReservation ? "atualizada" : "criada"} com sucesso!`
+        );
+        setIsModalOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
+      },
+      onError: (error: any) =>
+        toast.error("Erro na reserva", {
+          description: error.message || error.response?.data?.message,
+        }),
+    });
+
+  const { mutate: deleteReservation, isPending: isDeleting } = useMutation({
+    mutationFn: (reservationId: string) =>
+      axios.delete(`${API_URL}/reserve/${reservationId}`),
+    onSuccess: () => {
+      toast.success("Reserva cancelada com sucesso!");
+      setItemToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao cancelar", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  // --- Simplified Handlers ---
+  const handleFormSubmit = (formData: ReservationFormValues) =>
+    createOrUpdateReservation(formData);
+  const handleDeleteConfirm = () =>
+    itemToDelete && deleteReservation(itemToDelete.id);
+
+  // --- Derived Data (useMemo) ---
+  const myReservations = useMemo(() => {
+    // 1. Pega a lista de dentro do useMemo. Se não existir, usa um array vazio local.
+    const reservations = data?.reservations || [];
+    // 2. Faz o filtro
+    return reservations.filter((res) => res.userId === currentUserId);
+  }, [data?.reservations, currentUserId]);
 
   const processDataForTable = (
     data: ExtendedReservation[]
@@ -113,21 +208,25 @@ const RoomsContent = ({
     () => processDataForTable(myReservations),
     [myReservations]
   );
-  const processedAllReservations = useMemo(
-    () => processDataForTable(allReservations),
-    [allReservations]
-  );
+  const processedAllReservations = useMemo(() => {
+    // 1. Pega a lista de dentro do useMemo. Se não existir, usa um array vazio local.
+    const reservations = data?.reservations || [];
+
+    // 2. Chama a função de processamento com a lista estável.
+    return processDataForTable(reservations);
+  }, [data?.reservations]);
 
   // CORREÇÃO: useMemo movido para o nível superior do componente.
   const reservationsByDay = useMemo(() => {
     const map = new Map<string, ExtendedReservation[]>();
-    allReservations.forEach((res) => {
+    const reservations = data?.reservations || [];
+    reservations.forEach((res) => {
       const dayKey = format(new Date(res.date), "yyyy-MM-dd");
       if (!map.has(dayKey)) map.set(dayKey, []);
       map.get(dayKey)?.push(res);
     });
     return map;
-  }, [allReservations]);
+  }, [data.reservations]);
 
   const openModal = (reservation?: ExtendedReservation, date?: Date) => {
     if (reservation) {
@@ -148,111 +247,6 @@ const RoomsContent = ({
       });
     }
     setIsModalOpen(true);
-  };
-
-  const handleFormSubmit = async (data: ReservationFormValues) => {
-    try {
-      setIsLoading(true);
-      const reservationDate = parse(data.date, "yyyy-MM-dd", new Date());
-      const hourEnter = new Date(`${data.date}T${data.hourEnter}:00`);
-      const hourLeave = new Date(`${data.date}T${data.hourLeave}:00`);
-
-      if (hourLeave <= hourEnter) {
-        toast.error("Erro de Validação", {
-          description:
-            "O horário de saída deve ser posterior ao horário de entrada.",
-        });
-        return;
-      }
-
-      // **Lógica de Verificação de Conflito**
-      const hasConflict = allReservations.some((res) => {
-        // Ignora a própria reserva durante a edição
-        if (editingReservation && res.id === editingReservation.id) {
-          return false;
-        }
-        // Verifica se é na mesma sala
-        if (res.roomId !== data.roomId) {
-          return false;
-        }
-        // Compara os intervalos de tempo
-        setIsLoading(false);
-        return areIntervalsOverlapping(
-          { start: hourEnter, end: hourLeave },
-          { start: new Date(res.hourEnter), end: new Date(res.hourLeave) },
-          { inclusive: false } // Não permite sobreposição nem mesmo de 1 segundo
-        );
-      });
-
-      if (hasConflict) {
-        toast.error("Conflito de Reserva", {
-          description:
-            "Esta sala já está reservada para o horário selecionado. Por favor, escolha outro horário.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      const payload = {
-        date: reservationDate.toISOString(),
-        hourEnter: hourEnter.toISOString(),
-        hourLeave: hourLeave.toISOString(),
-        roomId: data.roomId,
-        userId: currentUserId,
-        status: "BUSY", // Supondo que uma reserva criada está sempre ocupada
-      };
-
-      const endpoint = editingReservation
-        ? `/api/reserve/${editingReservation.id}`
-        : "/api/reserve";
-      const method = editingReservation ? "PATCH" : "POST";
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Falha ao ${editingReservation ? "atualizar" : "criar"} a reserva.`
-        );
-      }
-
-      toast.success(
-        `Reserva ${editingReservation ? "atualizada" : "criada"} com sucesso!`
-      );
-      setIsModalOpen(false);
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro", { description: error.message });
-    }
-    setIsLoading(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if(isLoading) return;
-    try {
-      setIsLoading(true)
-      const response = await fetch(`/api/reserve/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Falha ao cancelar a reserva.");
-      toast.success("Reserva cancelada com sucesso!");
-      router.refresh();
-          setIsConfirmModalOpen(false)
-    } catch (error: any) {
-      toast.error("Erro", { description: error.message });
-    }
-    setIsLoading(false)
-    setIsConfirmModalOpen(false)
-  };
-
-  const handleClickDeleteButton = (linkId: string) => {
-    setIsConfirmModalOpen(true);
-    setRemoveRoomId(linkId);
   };
 
   const createColumns = (
@@ -305,7 +299,7 @@ const RoomsContent = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleClickDeleteButton(row.original.id)}
+                onClick={() => setItemToDelete(row.original)}
               >
                 <Trash2 className="h-4 w-4 text-red-500" />
               </Button>
@@ -496,7 +490,7 @@ const RoomsContent = ({
         form={form}
         setIsEditing={setIsModalOpen}
         onSubmit={handleFormSubmit}
-        isLoading={isLoading}
+        isLoading={isSaving}
         isEditing={true}
         fields={[
           {
@@ -527,12 +521,12 @@ const RoomsContent = ({
         ]}
       />
 
-      {typeof removeRoomId === "string" && isConfirmModalOpen && (
+      {itemToDelete && (
         <ModalConfirm
-          open={isConfirmModalOpen}
-          onCancel={() => setIsConfirmModalOpen(false)}
-          onConfirm={() => handleDelete(removeRoomId)}
-          isLoading={isLoading}
+          open={!!itemToDelete}
+          onCancel={() => setItemToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isDeleting}
         />
       )}
     </>

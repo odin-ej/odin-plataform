@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { Megaphone, Plus } from "lucide-react";
+import { Loader2, Megaphone, Plus } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
-import { User, Role, ReportStatus } from ".prisma/client";
+import { ReportStatus } from ".prisma/client";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -14,110 +15,109 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import ReportFormModal from "./ReportFormModal";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { ReportsPageData } from "@/app/(dashboard)/reports/page";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-interface ReportsContentProps {
-  myReports: ExtendedReport[];
-  reportsForMe: ExtendedReport[];
-  // Props adicionais para popular os selects do modal
-  allUsers: User[];
-  allRoles: Role[];
-}
+const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
+  const queryClient = useQueryClient();
 
-const ReportsContent = ({
-  myReports,
-  reportsForMe,
-  allUsers,
-}: ReportsContentProps) => {
+  // --- UI State (remains) ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [idReport, setIdReport] = useState("");
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<ExtendedReport | null>(
+    null
+  );
   const [isMyReports, setIsMyReports] = useState(false);
-  const router = useRouter();
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
   });
 
   // Função para abrir o modal de criação
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ["reportsData"],
+    queryFn: async (): Promise<ReportsPageData> => {
+      const [reportsRes, usersRes, rolesRes] = await Promise.all([
+        axios.get(`${API_URL}/reports`),
+        axios.get(`${API_URL}/users`),
+        axios.get(`${API_URL}/roles`),
+      ]);
+      return {
+        myReports: reportsRes.data.myReports,
+        reportsForMe: reportsRes.data.reportsForMe,
+        allUsers: usersRes.data.users,
+        allRoles: rolesRes.data,
+      };
+    },
+    initialData: initialData,
+  });
+
+  // --- MUTATIONS ---
+
+  // 1. Create a new report
+  const { mutate: createReport, isPending: isCreating } = useMutation({
+    mutationFn: (reportData: ReportFormValues) =>
+      axios.post(`${API_URL}/reports`, reportData),
+    onSuccess: () => {
+      toast.success("Report enviado com sucesso!");
+      setIsCreateModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["reportsData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao criar report", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  // 2. Update an existing report
+  const { mutate: updateReport, isPending: isUpdating } = useMutation({
+    mutationFn: (reportData: ReportFormValues) => {
+      const payload = {
+        status: reportData.status,
+        recipientNotes: reportData.recipientNotes,
+      };
+      return axios.patch(`${API_URL}/reports/${selectedReport!.id}`, payload);
+    },
+    onSuccess: () => {
+      toast.success("Report atualizado com sucesso!");
+      setIsViewModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["reportsData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao atualizar report", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  // --- Event Handlers (simplified) ---
+  const handleCreateSubmit = (formData: ReportFormValues) =>
+    createReport(formData);
+  const handleUpdateSubmit = (formData: ReportFormValues) =>
+    updateReport(formData);
+
   const handleActionClick = () => {
-    form.reset({
-      title: "",
-      content: "",
-      recipientRoleId: undefined,
-      recipientUserId: undefined,
-    });
+    form.reset();
     setIsCreateModalOpen(true);
   };
 
   const handleRowClick = (report: ExtendedReport, table: string) => {
-
     form.reset({
-      title: report.title ?? "",
-      content: report.content ?? "",
+      title: report.title,
+      content: report.content,
       recipientNotes: report.recipientNotes ?? "",
-      status: report.status ?? undefined,
+      status: report.status,
       recipientRoleId: report.recipientRoleId ?? undefined,
       recipientUserId: report.recipientUserId ?? undefined,
     });
-    setIsMyReports(table === "myReports" ? true : false);
-    if (table === "myReports") setIsEditing(false);
-    setIdReport(report.id);
+    setSelectedReport(report);
+    setIsMyReports(table === "myReports");
+    setIsEditing(table !== "myReports"); // Only allow editing if it's a report for you
     setIsViewModalOpen(true);
-  };
-
-  // Função para submeter o novo report
-  const handleCreateSubmit = async (data: ReportFormValues) => {
-    try {
-      setIsLoading(true);
-      // Lógica para chamar a API POST /api/reports
-      const response = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao criar o report.");
-      }
-      toast.success("Report enviado com sucesso!");
-      setIsCreateModalOpen(false);
-      router.refresh();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error("Erro", { description: error.message });
-    }
-    setIsLoading(false);
-  };
-
-  const handleUpdateSubmit = async (data: ReportFormValues) => {
-    try {
-      setIsLoading(true);
-      // Lógica para chamar a API POST /api/reports
-      const response = await fetch(`/api/reports/${idReport}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: data.status,
-          recipientNotes: data.recipientNotes,
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao criar o report.");
-      }
-      toast.success("Report atualizado com sucesso!");
-      setIsCreateModalOpen(false);
-      router.refresh();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error("Erro", { description: error.message });
-    }
-    setIsLoading(false);
   };
 
   const reportsColumns: ColumnDef<ExtendedReport>[] = [
@@ -188,7 +188,7 @@ const ReportsContent = ({
       header: "Destinatário (Usuário)",
       accessorKey: "recipientUserId",
       type: "select",
-      options: allUsers.map((user) => ({
+      options: data.allUsers.map((user) => ({
         value: user.id,
         label: user.name,
       })),
@@ -219,6 +219,12 @@ const ReportsContent = ({
     },
   ];
 
+  if (isLoadingData)
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="animate-spin text-[#f5b719] h-12 w-12" />
+      </div>
+    );
   return (
     <>
       <CustomCard
@@ -321,7 +327,7 @@ const ReportsContent = ({
           type="onlyView"
           title="Meus Reports Enviados"
           columns={reportsColumns}
-          data={myReports}
+          data={data.myReports}
           onRowClick={(row) => handleRowClick(row, "myReports")}
           filterColumns={["title", "recipientUser", "status"]}
         />
@@ -331,16 +337,16 @@ const ReportsContent = ({
           columns={reportsColumns}
           onRowClick={(row) => handleRowClick(row, "reportsForMe")}
           filterColumns={["title", "recipientUser", "status"]}
-          data={reportsForMe}
+          data={data.reportsForMe}
         />
       </div>
       <ReportFormModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         form={form}
-        isLoading={isLoading}
+        isLoading={isCreating}
         onSubmit={handleCreateSubmit}
-        users={allUsers.map((u) => ({ value: u.id, label: u.name }))}
+        users={data.allUsers.map((u) => ({ value: u.id, label: u.name }))}
       />
       <CustomModal
         isOpen={isViewModalOpen}
@@ -351,7 +357,7 @@ const ReportsContent = ({
         fields={isEditing ? editReportFields : reportFields}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
-        isLoading={isLoading}
+        isLoading={isUpdating}
         onlyView={isMyReports}
       />
     </>

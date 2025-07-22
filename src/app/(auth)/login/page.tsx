@@ -16,12 +16,12 @@ async function getPageData(): Promise<Props> {
   try {
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const estrategyPlanResponse = await fetch(
       `${baseUrl}/api/culture/safe-route`,
       {
         next: { revalidate: 30 },
-        headers
+        headers,
       }
     );
 
@@ -85,8 +85,11 @@ const Page = async () => {
                       Cadastre-se!
                     </Link>
                   </p>
-                  <p className='text-white mt-4'>
-                    <Link href='/esqueci-minha-senha' className='text-[#f5b719] underline font-semibold hover:text-[#0126fb] transition-colors duration-200'>
+                  <p className="text-white mt-4">
+                    <Link
+                      href="/esqueci-minha-senha"
+                      className="text-[#f5b719] underline font-semibold hover:text-[#0126fb] transition-colors duration-200"
+                    >
                       Esqueci minha senha
                     </Link>
                   </p>

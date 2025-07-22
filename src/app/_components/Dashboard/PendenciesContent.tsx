@@ -1,8 +1,8 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Clock } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -24,10 +24,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDateForInput } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import ModalConfirm from "../Global/ModalConfirm";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MyPendenciesPageData } from "@/app/(dashboard)/minhas-pendencias/page";
+import axios from "axios";
 
-interface PendenciesContentProps {
-  myTasks: FullTask[];
-}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Mapeamento para tradução e estilo dos status
 const statusConfig = {
@@ -49,20 +51,18 @@ const statusConfig = {
   },
 };
 
-const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
-  const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<FullTask | null>(null);
-  const [removeTaskId, setRemoveTaskId] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+const PendenciesContent = ({ initialData }: { initialData: MyPendenciesPageData }) => {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // --- ESTADO LOCAL (Apenas para UI) ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<FullTask | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<FullTask | null>(null);
   const taskForm = useForm<TaskFormValues>({
     resolver: zodResolver(taskUpdateSchema),
   });
-
   useEffect(() => {
     if (selectedItem) {
       taskForm.reset({
@@ -85,72 +85,58 @@ const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
     setSelectedItem(null);
   };
 
-  const handleUpdateTask = async (data: TaskFormValues) => {
-    if (!selectedItem) return toast.error("Nenhum item selecionado.");
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/tasks/${selectedItem.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok)
-        throw new Error(
-          (await res.json()).message || "Falha ao atualizar tarefa."
-        );
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ["myTasksData"],
+    queryFn: async (): Promise<MyPendenciesPageData> => {
+      const [tasksRes, usersRes] = await Promise.all([
+        axios.get(`${API_URL}/tasks`),
+        axios.get(`${API_URL}/users`),
+      ]);
+      return { myTasks: tasksRes.data, allUsers: usersRes.data.users };
+    },
+    initialData: initialData,
+  });
+
+  const { mutate: updateTask, isPending: isUpdatingTask } = useMutation({
+    mutationFn: (taskData: TaskFormValues) =>
+      axios.patch(`${API_URL}/tasks/${selectedItem!.id}`, taskData),
+    onSuccess: () => {
       toast.success("Tarefa atualizada com sucesso!");
       closeModal();
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro ao salvar", { description: error.message });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["myTasksData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao salvar", {
+        description: error.response?.data?.message,
+      }),
+  });
 
-  const handleDeleteTask = async (id: string) => {
-    if(isLoading) return;
-    try {
-      setIsLoading(true)
-      const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
-      if (!res.ok)
-        throw new Error(
-          (await res.json()).message || "Falha ao deletar tarefa."
-        );
+  const { mutate: deleteTask, isPending: isDeletingTask } = useMutation({
+    mutationFn: (taskId: string) => axios.delete(`${API_URL}/tasks/${taskId}`),
+    onSuccess: () => {
       toast.success("Tarefa deletada com sucesso!");
-      router.refresh();
-    } catch (error: any) {
-      toast.error("Erro ao deletar", { description: error.message });
-    }
-    setIsLoading(false)
-  };
+      setItemToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["myTasksData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Erro ao deletar", {
+        description: error.response?.data?.message,
+      }),
+  });
 
-  const handleClickDeleteButton = (linkId: string) => {
-    setIsConfirmModalOpen(true);
-    setRemoveTaskId(linkId);
-  };
-
-  // Filtra e ordena as tarefas pendentes
-  const pendingTasks = useMemo(() => {
-    return myTasks
-      .filter(
-        (t) =>
-          t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.CANCELED
-      )
+  const { pendingTasks, otherTasks } = useMemo(() => {
+    const tasks = data?.myTasks || [];
+    const pending = tasks
+      .filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELED")
       .sort(
         (a, b) =>
           new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
       );
-  }, [myTasks]);
-
-  const otherTasks = useMemo(
-    () =>
-      sortTasks(myTasks).filter(
-        (t) =>
-          t.status === TaskStatus.CANCELED || t.status === TaskStatus.COMPLETED
-      ),
-    [myTasks]
-  );
+    const other = tasks.filter(
+      (t) => t.status === "COMPLETED" || t.status === "CANCELED"
+    );
+    return { pendingTasks: pending, otherTasks: sortTasks(other) };
+  }, [data?.myTasks]);
 
   const taskColumns = useMemo<ColumnDef<FullTask>[]>(
     () => [
@@ -220,23 +206,12 @@ const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
   );
 
   const responsibleOptions = useMemo(() => {
-    // 1. Junta todos os arrays de responsáveis em um só
-    const allResponsibles = myTasks.flatMap((task) => task.responsibles);
-
-    // 2. Usa um Map para remover usuários duplicados, mantendo apenas um por ID
-    const uniqueUsers = Array.from(
-      new Map(allResponsibles.map((user) => [user.id, user])).values()
-    );
-
-    // 3. Mapeia a lista de usuários únicos para o formato { value, label }
-    return uniqueUsers.map((user) => ({
+    const allUsers = data?.allUsers || [];
+    return allUsers.map((user) => ({
       value: user.id,
-      label:
-        user.name.split(" ")[0] +
-        " " +
-        user.name.split(" ")[user.name.split(" ").length - 1],
+      label: `${user.name.split(" ")[0]} ${user.name.split(" ").pop()}`,
     }));
-  }, [myTasks]);
+  }, [data?.allUsers]);
 
   const taskFields: FieldConfig<TaskFormValues>[] = [
     { accessorKey: "title", header: "Título" },
@@ -259,6 +234,16 @@ const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
     },
   ];
 
+  const handleUpdateSubmit = (formData: TaskFormValues) => {
+    updateTask(formData);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (itemToDelete) {
+      deleteTask(itemToDelete.id);
+    }
+  };
+
   const canDelete = (task: FullTask) => {
     return (
       task.authorId === user?.id ||
@@ -266,6 +251,13 @@ const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
         .length > 0
     );
   };
+
+  if (isLoadingData) return (
+    <div className="flex min-h-screen items-center justify-center bg-[#010d26]">
+      <Loader2 className="animate-spin text-[#f5b719] h-12 w-12" />
+      <p>Carregando...</p>
+    </div>
+  );
 
   return (
     <>
@@ -284,7 +276,7 @@ const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
           title="Tarefas Pendentes"
           onRowClick={(row) => openModal(row, false)}
           onEdit={(row) => openModal(row, true)}
-          onDelete={(row) => handleClickDeleteButton(row.id)}
+          onDelete={(row) => setItemToDelete(row)}
           type="noSelection"
           isRowDeletable={canDelete}
           itemsPerPage={10}
@@ -305,20 +297,20 @@ const PendenciesContent = ({ myTasks }: PendenciesContentProps) => {
           onClose={closeModal}
           title={isEditing ? "Editar Tarefa" : "Detalhes da Tarefa"}
           form={taskForm}
-          onSubmit={handleUpdateTask}
+          onSubmit={handleUpdateSubmit}
           fields={taskFields}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
-          isLoading={isLoading}
+          isLoading={isUpdatingTask}
         />
       )}
 
-      {typeof removeTaskId === "string" && isConfirmModalOpen && (
+      {itemToDelete && (
         <ModalConfirm
-          open={isConfirmModalOpen}
-          onCancel={() => setIsConfirmModalOpen(false)}
-          onConfirm={() => handleDeleteTask(removeTaskId)}
-          isLoading={isLoading}
+          open={!!itemToDelete}
+          onCancel={() => setItemToDelete(null)}
+          onConfirm={() => handleDeleteConfirm}
+          isLoading={isDeletingTask}
         />
       )}
     </>

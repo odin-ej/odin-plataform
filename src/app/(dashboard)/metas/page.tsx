@@ -4,43 +4,46 @@ import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
 
 export const metadata = constructMetadata({ title: "Metas da Casinha" });
-
 export const dynamic = "force-dynamic";
 
-type EstrategyObjectiveWithGoals = EstrategyObjective & {
+export type EstrategyObjectiveWithGoals = EstrategyObjective & {
   goals: Goal[];
 };
 
-interface MetasPageProps {
-  estrategyObjectives: EstrategyObjectiveWithGoals[] | null;
+export interface MetasPageProps {
+  estrategyObjectives: EstrategyObjectiveWithGoals[];
 }
 
 async function getPageData(): Promise<MetasPageProps> {
   try {
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const response = await fetch(`${baseUrl}/api/house-goals`, {
-      next: { revalidate: 45 },
+      cache: "no-store", // Usamos no-store para garantir dados frescos no servidor
       headers,
     });
 
+    if (!response.ok) {
+      throw new Error("Falha ao buscar os dados da página.");
+    }
+
     const estrategyObjectives: EstrategyObjectiveWithGoals[] =
       await response.json();
-
     return { estrategyObjectives };
   } catch (error) {
     console.error("Falha ao buscar os dados da página.", error);
-    return { estrategyObjectives: null };
+    return { estrategyObjectives: [] }; // Retorna array vazio em caso de erro
   }
 }
 
 const Page = async () => {
-  const { estrategyObjectives } = await getPageData();
+  const initialData = await getPageData();
 
   return (
     <div className="p-4 sm:p-8">
-      <MetasContent estrategyObjectives={estrategyObjectives!} />
+      {/* Passamos os dados dentro de um objeto 'initialData' */}
+      <MetasContent initialData={initialData} />
     </div>
   );
 };

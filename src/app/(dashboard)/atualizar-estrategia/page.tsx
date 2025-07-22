@@ -23,7 +23,7 @@ interface MetasPageProps {
 
 async function getPageData(): Promise<MetasPageProps> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
     const [estrategyObjectivesResponse, fullStrategyResponse] =

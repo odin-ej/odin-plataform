@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Tag as UserTag } from ".prisma/client";
 import { UserRankingInfo } from "@/lib/schemas/pointsSchema";
 import {
@@ -13,8 +14,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+
 import { Loader2, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
 interface UserTagsModalProps {
   isOpen: boolean;
@@ -22,44 +25,43 @@ interface UserTagsModalProps {
   user: UserRankingInfo | null;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
-  const [userTags, setUserTags] = useState<UserTag[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (isOpen && user) {
-      setIsLoading(true);
-      fetch(`/api/users/${user.id}/tags`)
-        .then((res) => res.json())
-        .then((data) => setUserTags(data))
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .catch((err) => toast.error("Erro ao buscar tags do utilizador."))
-        .finally(() => setIsLoading(false));
-    }
-  }, [isOpen, user]);
+  const { data: userTags = [], isLoading } = useQuery({
+    queryKey: ["userTags", user?.id],
+    queryFn: async (): Promise<UserTag[]> => {
+      const { data } = await axios.get(`${API_URL}/users/${user!.id}/tags`);
+      return data;
+    },
+    // Esta é a mágica: a query só é executada se o modal estiver aberto e um usuário selecionado
+    enabled: isOpen && !!user?.id,
+  });
 
-  const handleDeleteTag = async (tagId: string) => {
+  const { mutate: unlinkTag, isPending: isUnlinking } = useMutation({
+    mutationFn: (tagId: string) =>
+      axios.patch(`${API_URL}/tags/${tagId}`, { userPointsId: null }),
+    onSuccess: () => {
+      toast.success("Tag desvinculada com sucesso!");
+      // Invalida tanto a query deste modal quanto a query principal da página de pontos
+      queryClient.invalidateQueries({ queryKey: ["userTags", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
+    },
+    onError: (error: any) =>
+      toast.error("Falha ao desvincular a tag.", {
+        description: error.response?.data?.message,
+      }),
+  });
+
+  const handleDeleteTag = (tagId: string) => {
     if (
       confirm(
         "Tem a certeza que quer desvincular esta tag do histórico do utilizador?"
       )
     ) {
-      const response = await fetch(`/api/tags/${tagId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userPointsId: null }), // Envia o corpo para desvincular
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao desvincular a tag.");
-      }
-      toast.success("Tag desvinculada com sucesso!");
-      // Refrescar os dados
-      const updatedTags = userTags.filter((t) => t.id !== tagId);
-      setUserTags(updatedTags);
-      router.refresh(); // Atualiza a tabela principal também
+      unlinkTag(tagId);
     }
   };
 
@@ -76,7 +78,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
-        <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-hidden"  />
+        <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-hidden" />
         <DialogContent className="max-w-[95vw] sm:max-w-lg bg-[#010d26] border-2 border-[#0126fb] text-white max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-[#010d26] overflow-x-hidden">
           <DialogHeader>
             <div className="flex items-center gap-4">
@@ -101,7 +103,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
             </DialogClose>
           </DialogHeader>
           <div className="mt-4 overflow-x-auto">
-            {isLoading ? (
+            {isLoading || isUnlinking ? (
               <div className="w-full h-auto rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-4 sm:p-6 text-white shadow-lg flex flex-col items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
                 <p className="mt-4 text-lg text-gray-400">

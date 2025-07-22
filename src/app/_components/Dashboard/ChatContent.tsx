@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Conversation, Message } from ".prisma/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -16,58 +16,51 @@ import ChatHistorySheet from "./ChatHistorySheet";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import CustomCard from "../Global/Custom/CustomCard";
 import { AreaRoles } from ".prisma/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
 type MessageWithImageUrl = Message & { imageUrl?: string };
 
 export type ConversationType = Conversation & {
   messages: MessageWithImageUrl[];
 };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const ChatContent = ({
   initialConversation,
 }: {
   initialConversation: ConversationType;
 }) => {
-  const [messages, setMessages] = useState<MessageWithImageUrl[] | []>(
-    initialConversation.messages || []
-  );
-  const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<{ prompt: string }>({ defaultValues: { prompt: "" } });
 
   const promptValue = form.watch("prompt");
+  const queryClient = useQueryClient();
+  const conversationId = initialConversation.id;
 
-  useEffect(() => {
-    scrollAreaRef.current?.scrollTo(0, scrollAreaRef.current.scrollHeight);
-  }, [messages]);
+  // --- QUERY PARA GERENCIAR A CONVERSA ---
+  const { data: conversation } = useQuery({
+    queryKey: ["conversation", conversationId],
+    queryFn: async (): Promise<ConversationType> => {
+      const { data } = await axios.get(
+        `${API_URL}/conversations/${conversationId}`
+      );
+      return data;
+    },
+    initialData: initialConversation,
+  });
 
-  const handleSendMessage: SubmitHandler<{ prompt: string }> = async (data) => {
-    const file = fileInputRef.current?.files?.[0]; // ✅ PEGA o file aqui
-    const prompt = data.prompt;
-    if ((!prompt.trim() && !file) || isLoading) return;
-
-    setIsLoading(true);
-    form.reset({ prompt: "" });
-
-    const localImageUrl =
-      file && file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : undefined;
-    const userMessageContent =
-      prompt + (file ? `\n(Arquivo anexado: ${file.name})` : "");
-    const userMessage: MessageWithImageUrl = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: userMessageContent,
-      conversationId: initialConversation.id,
-      imageUrl: localImageUrl,
-      createdAt: new Date(),
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    try {
+  // --- MUTAÇÃO PARA ENVIAR MENSAGEM (COM UPLOAD E OTIMISMO) ---
+  const { mutate: sendMessage, isPending: isLoading } = useMutation({
+    // A 'mutationFn' contém toda a lógica assíncrona
+    mutationFn: async (variables: { prompt: string; file?: File }) => {
+      const { prompt, file } = variables;
       let finalPrompt = prompt;
       let fileData: { mimeType: string; base64: string } | undefined;
+
       if (file) {
         // Se for uma imagem, converte para base64 para análise imediata
         if (file.type.startsWith("image/")) {
@@ -113,39 +106,125 @@ const ChatContent = ({
         }
       }
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          fileData,
-          conversationId: initialConversation.id,
-        }),
+      // A chamada final para a API do chat
+      const response = await axios.post(`${API_URL}/chat/${conversationId}`, {
+        prompt: finalPrompt,
+        fileData,
       });
-      const { response: aiResponse } = await response.json();
 
+      return response.data; // Retorna a resposta da IA
+    },
+
+    // ATUALIZAÇÃO OTIMISTA DA MENSAGEM DO USUÁRIO
+    onMutate: async (variables: { prompt: string; file?: File }) => {
+      await queryClient.cancelQueries({
+        queryKey: ["conversation", conversationId],
+      });
+      const previousConversation = queryClient.getQueryData<ConversationType>([
+        "conversation",
+        conversationId,
+      ]);
+
+      const userMessage: MessageWithImageUrl = {
+        id: `optimistic-${Date.now()}`,
+        role: "user",
+        content:
+          variables.prompt +
+          (variables.file ? `\n(Arquivo anexado: ${variables.file.name})` : ""),
+        conversationId: conversationId,
+        imageUrl:
+          variables.file && variables.file.type.startsWith("image/")
+            ? URL.createObjectURL(variables.file)
+            : undefined,
+        createdAt: new Date(),
+      };
+
+      queryClient.setQueryData<ConversationType>(
+        ["conversation", conversationId],
+        (oldData) => ({
+          ...(oldData || initialConversation),
+          messages: [...(oldData?.messages || []), userMessage],
+        })
+      );
+
+      return { previousConversation };
+    },
+
+    // ADICIONA A RESPOSTA DA IA EM CASO DE SUCESSO
+    onSuccess: (data) => {
       const aiMessage: Message = {
         id: crypto.randomUUID(),
         role: "model",
-        content: aiResponse,
-        conversationId: initialConversation.id,
+        content: data.response, // Supondo que a API retorne { response: '...' }
+        conversationId: conversationId,
         createdAt: new Date(),
       };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
+
+      queryClient.setQueryData<ConversationType>(
+        ["conversation", conversationId],
+        (oldData) => ({
+          ...oldData!,
+          messages: [...oldData!.messages, aiMessage],
+        })
+      );
+    },
+
+    // REVERTE E MOSTRA O ERRO EM CASO DE FALHA
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any, variables, context) => {
+      // Reverte para o estado anterior em caso de erro
+      if (context?.previousConversation) {
+        queryClient.setQueryData(
+          ["conversation", conversationId],
+          context.previousConversation
+        );
+      }
+
+      const errorMessageContent =
+        error.response?.data?.message ||
+        error.message ||
+        "Desculpe, ocorreu um erro.";
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: "model",
-        content: `Desculpe, ocorreu um erro ao processar a sua mensagem. ${error}`,
-        conversationId: initialConversation.id,
+        content: `Erro: ${errorMessageContent}`,
+        conversationId: conversationId,
         createdAt: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Limpa o input de ficheiro
-    }
+
+      queryClient.setQueryData<ConversationType>(
+        ["conversation", conversationId],
+        (oldData) => ({
+          ...oldData!,
+          messages: [...oldData!.messages, errorMessage],
+        })
+      );
+    },
+
+    // LIMPEZA APÓS A CONCLUSÃO
+    onSettled: () => {
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Limpa o input de arquivo
+      // Podemos revalidar para garantir 100% de consistência com o DB, se necessário
+      queryClient.invalidateQueries({
+        queryKey: ["conversation", conversationId],
+      });
+    },
+  });
+
+  // O NOVO HANDLER, MUITO MAIS SIMPLES
+  const handleSendMessage: SubmitHandler<{ prompt: string }> = (data) => {
+    const file = fileInputRef.current?.files?.[0];
+    if ((!data.prompt.trim() && !file) || isLoading) return;
+
+    sendMessage({ prompt: data.prompt, file });
+    form.reset({ prompt: "" });
   };
+
+  useEffect(() => {
+    // O scroll agora depende dos dados da query
+    scrollAreaRef.current?.scrollTo(0, scrollAreaRef.current.scrollHeight);
+  }, [conversation?.messages]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       form.handleSubmit(handleSendMessage)();
@@ -195,7 +274,7 @@ const ChatContent = ({
           ref={scrollAreaRef}
           className="flex-1 min-h-[60vh] overflow-y-auto space-y-6 px-4 py-6"
         >
-          {messages.map((msg, index) => (
+          {conversation?.messages.map((msg, index) => (
             <div
               key={index}
               className={cn(
@@ -291,7 +370,11 @@ const ChatContent = ({
                 label=""
                 field="prompt"
                 disabled={user!.dailyMessageCount === limitCount}
-                placeholder={user!.dailyMessageCount === limitCount ? 'Opa... seu limite diário acabou!' :"Digite a sua mensagem..."}
+                placeholder={
+                  user!.dailyMessageCount === limitCount
+                    ? "Opa... seu limite diário acabou!"
+                    : "Digite a sua mensagem..."
+                }
                 className="flex-1 bg-[#010d26] border-gray-700 focus-visible:ring-1 focus-visible:ring-[#0126fb] resize-none"
                 onKeyDown={(e: React.KeyboardEvent) => {
                   if (e.key === "Enter" && !e.shiftKey) {

@@ -1,3 +1,4 @@
+"use client";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import CustomInput from "../../Global/Custom/CustomInput";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
@@ -10,27 +11,32 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+// --- PROPS ATUALIZADAS ---
 interface ValueItemProps {
   initialValue: Value;
-  onUpdate: (updatedData: Partial<Value> & { id: string }) => Promise<void>;
+  // onUpdate agora é síncrona e recebe os dados da mutação
+  onUpdate: (updatedData: Partial<Value> & { id: string }) => void;
+  // Adicionamos o estado de carregamento
+  isUpdating: boolean;
 }
 
-const ValueItem = ({ initialValue, onUpdate }: ValueItemProps) => {
+const ValueItem = ({ initialValue, onUpdate, isUpdating }: ValueItemProps) => {
   const form = useForm<ValueUpdateType>({
     resolver: zodResolver(valueUpdateSchema),
     defaultValues: initialValue,
-    mode: "onBlur", // A validação ocorrerá no evento onBlur
+    mode: "onBlur",
   });
 
-  // Função para lidar com a atualização quando o campo perde o foco
+  // --- FUNÇÃO DEIXA DE SER ASYNC ---
   const handleBlurUpdate = async (fieldName: keyof ValueUpdateType) => {
     const isValid = await form.trigger(fieldName);
     if (!isValid) return;
 
     const fieldValue = form.getValues(fieldName);
-    if (fieldValue === initialValue[fieldName]) return; // Evita requisições desnecessárias
+    if (fieldValue === initialValue[fieldName]) return;
 
-    await onUpdate({ id: initialValue.id, [fieldName]: fieldValue });
+    // A chamada agora é síncrona e dispara a mutação no componente pai
+    onUpdate({ id: initialValue.id, [fieldName]: fieldValue });
   };
 
   return (
@@ -43,6 +49,7 @@ const ValueItem = ({ initialValue, onUpdate }: ValueItemProps) => {
           placeholder="Ex: Protagonismo"
           onBlur={() => handleBlurUpdate("name")}
           className="bg-[#0a1535] text-white"
+          disabled={isUpdating} // Usa o estado de carregamento
         />
         <CustomTextArea
           form={form}
@@ -51,6 +58,7 @@ const ValueItem = ({ initialValue, onUpdate }: ValueItemProps) => {
           placeholder="Descrição detalhada do que este valor representa."
           onBlur={() => handleBlurUpdate("description")}
           className="bg-[#0a1535] text-white"
+          disabled={isUpdating} // Usa o estado de carregamento
         />
         <FormField
           control={form.control}
@@ -62,8 +70,10 @@ const ValueItem = ({ initialValue, onUpdate }: ValueItemProps) => {
                   checked={field.value}
                   onCheckedChange={(checked) => {
                     field.onChange(checked);
+                    // A chamada aqui também é síncrona
                     onUpdate({ id: initialValue.id, isMotherValue: !!checked });
                   }}
+                  disabled={isUpdating} // Usa o estado de carregamento
                 />
               </FormControl>
               <span className="text-sm font-medium text-white">

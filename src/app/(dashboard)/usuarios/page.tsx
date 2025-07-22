@@ -16,7 +16,7 @@ export const metadata = constructMetadata({ title: "Usuários" });
 async function getUserPageData(): Promise<UsersPageData> {
   try {
     // A URL base da sua aplicação. Em produção, use uma variável de ambiente.
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
     // A função `cookies()` do Next.js nos dá acesso aos cookies do pedido.
     const cookiesStore = await cookies();
@@ -26,7 +26,7 @@ async function getUserPageData(): Promise<UsersPageData> {
       fetch(`${baseUrl}/api/users/`, {
         // Uma nova rota segura para buscar o utilizador logado
         next: { revalidate: 45 },
-        headers
+        headers,
       }),
       fetch(`${baseUrl}/api/roles`, {
         // A rota de cargos pode continuar pública ou ser protegida

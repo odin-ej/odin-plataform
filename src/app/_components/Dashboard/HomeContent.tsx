@@ -1,26 +1,54 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { Award, Clock } from "lucide-react";
+import { Award, Clock, Loader2 } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../Global/Custom/CustomCarousel";
 import CustomCalendarOAuth from "../Global/Calendar/CalendarOAuth";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Goal, UsefulLink } from ".prisma/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Image from "next/image";
 import { formatReaisResumo } from "./GoalCard";
 import UsefulLinksSection from "./UsefulLinksSection";
+import axios from "axios";
+import { HomeContentData } from "@/app/(dashboard)/page";
+import { useQuery } from "@tanstack/react-query";
 
-interface HomeContentProps {
-  myPoints: number;
-  numberOfTasks: number;
-  goals: Goal[];
-  usefulLinks: UsefulLink[];
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const HomeContent = ({ goals, myPoints, numberOfTasks, usefulLinks }: HomeContentProps) => {
+const fetchHomeData = async (): Promise<HomeContentData> => {
+  // No cliente, a autenticação é gerenciada pelo axios/fetch, não precisamos do ID
+  const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes] =
+    await Promise.all([
+      axios.get(`${API_URL}/house-goals`),
+      axios.get(`${API_URL}/my-points`), // Supondo que a API sabe o usuário logado
+      axios.get(`${API_URL}/my-tasks`),
+      axios.get(`${API_URL}/useful-links`),
+    ]);
+
+  const goals = strategyRes.data?.flatMap((obj: any) => obj.goals) || [];
+  const myPoints = myPointsRes.data?.myPoints?.totalPoints ?? 0;
+  const numberOfTasks = myTasksRes.data?.length || 0;
+  const usefulLinks = usefulLinksRes.data?.links || [];
+
+  return { goals, myPoints, numberOfTasks, usefulLinks };
+};
+
+const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
   const [view, setView] = useState<"personal" | "odin">("odin");
+  const { user } = useAuth();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["homeDashboardData"],
+    queryFn: fetchHomeData,
+    initialData: initialData,
+    // Desabilita a query para ex-membros, pois não há dados para buscar
+    enabled: !user?.isExMember,
+  });
+
+  const { goals, myPoints, numberOfTasks, usefulLinks } = data || initialData;
+
   const slidesData: SlideData[] = goals.map((goal) => ({
     progress: Math.floor(Number(Number(goal.value) / Number(goal.goal)) * 100),
     valueText: `${goal.value} de ${goal.goal}`,
@@ -39,7 +67,13 @@ const HomeContent = ({ goals, myPoints, numberOfTasks, usefulLinks }: HomeConten
     date: new Date().toLocaleDateString("pt-BR"),
   }));
 
-  const { user } = useAuth();
+  if (isLoading)
+    return (
+      <div className="flex justify-center items-center mt-20">
+        <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
+      </div>
+    );
+
   return (
     <>
       {!user?.isExMember ? (
@@ -61,7 +95,7 @@ const HomeContent = ({ goals, myPoints, numberOfTasks, usefulLinks }: HomeConten
             />
           </div>
 
-        <UsefulLinksSection links={usefulLinks} />
+          <UsefulLinksSection links={usefulLinks} />
 
           <div className="grid grid-cols-1 w-full mt-8">
             <CustomCarousel title="Metas da Casinha" slides={slidesData} />

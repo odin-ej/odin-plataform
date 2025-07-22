@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 
 async function getRolesData(): Promise<RegisterPageProps> {
   try {
-        const cookiesStore = await cookies();
-        const headers = { Cookie: cookiesStore.toString() };
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const cookiesStore = await cookies();
+    const headers = { Cookie: cookiesStore.toString() };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const response = await fetch(`${baseUrl}/api/roles`, {
       next: { revalidate: 45 },
       headers,

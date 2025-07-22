@@ -11,10 +11,9 @@ async function getConversation(
   conversationId: string
 ): Promise<(Conversation & { messages: Message[] }) | null> {
   try {
-
-        const cookiesStore = await cookies();
-        const headers = { Cookie: cookiesStore.toString() };
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const cookiesStore = await cookies();
+    const headers = { Cookie: cookiesStore.toString() };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const response = await fetch(
       `${baseUrl}/api/conversations/${conversationId}`,
       {

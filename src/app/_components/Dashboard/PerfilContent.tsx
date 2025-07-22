@@ -1,148 +1,101 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { toast } from "sonner";
+import { AreaRoles } from ".prisma/client";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { checkUserPermission, formatDateForInput } from "@/lib/utils";
+import { MemberUpdateType, ExMemberUpdateType, exMemberUpdateSchema, memberUpdateSchema } from "@/lib/schemas/profileUpdateSchema";
+
+// Seus imports de componentes
 import CustomCard from "@/app/_components/Global/Custom/CustomCard";
 import { CircleUser, Loader2 } from "lucide-react";
 import MemberForm from "../Global/Form/MemberForm";
 import ExMemberForm from "../Global/Form/ExMemberForm";
-import { toast } from "sonner";
-import { useMemo, useState } from "react";
-import { Role, User, AreaRoles } from ".prisma/client";
-import { useAuth } from "@/lib/auth/AuthProvider";
-import { checkUserPermission, formatDateForInput } from "@/lib/utils";
-import {
-  exMemberUpdateSchema,
-  ExMemberUpdateType,
-  memberUpdateSchema,
-  MemberUpdateType,
-} from "@/lib/schemas/profileUpdateSchema";
-import { useRouter } from "next/navigation";
+import { PerfilPageData } from "@/app/(dashboard)/perfil/page";
 
-interface PerfilContentProps {
-  user: User & { roles: Role[] };
-  roles: Role[];
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const PerfilContent = ({ user, roles }: PerfilContentProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { checkAuth } = useAuth();
+const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
+  const { user: authUser, checkAuth } = useAuth();
+  const queryClient = useQueryClient();
+  const userId = authUser?.id;
 
-  const canChangeRole = checkUserPermission(user, {allowedAreas: [AreaRoles.DIRETORIA]})
+  // --- QUERY PARA GERENCIAR OS DADOS DO PERFIL ---
+  const { data, isLoading: isLoadingData } = useQuery({
+    queryKey: ['userProfile', userId],
+    queryFn: async (): Promise<PerfilPageData> => {
+      const [userRes, rolesRes] = await Promise.all([
+        axios.get(`${API_URL}/users/${userId}`),
+        axios.get(`${API_URL}/roles`),
+      ]);
+      return { user: userRes.data, roles: rolesRes.data };
+    },
+    initialData: initialData,
+    enabled: !!userId, // A query só roda se o ID do usuário estiver disponível
+  });
+  
+  // --- MUTAÇÃO PARA ATUALIZAR O PERFIL ---
+  const { mutate: updateProfile, isPending: isLoading } = useMutation({
+    mutationFn: async (formData: MemberUpdateType | ExMemberUpdateType) => {
+        let imageUrl = data?.user?.imageUrl; // Começa com a URL existente
+        
+        // Lógica de upload do S3 agora vive aqui
+        const dataWithImage = formData as { image?: File | string };
+        if (dataWithImage.image && dataWithImage.image instanceof File) {
+            const file = dataWithImage.image;
+            const presignedUrlRes = await axios.post('/api/s3-upload', { fileType: file.type, fileSize: file.size });
+            const { url, key } = presignedUrlRes.data;
+            await axios.put(url, file, { headers: { "Content-Type": file.type } });
+            imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+        }
+        
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { image, ...restOfData } = dataWithImage;
+        const finalData = { ...restOfData, imageUrl };
+        
+        // Chamada final para a API de atualização
+        return axios.patch(`${API_URL}/users/${userId}`, finalData);
+    },
+    onSuccess: async () => {
+        toast.success("Perfil atualizado com sucesso!");
+        // Invalida a query para buscar os dados atualizados
+        await queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
+        // Atualiza o contexto de autenticação do lado do cliente
+        await checkAuth();
+    },
+    onError: (error: any) => {
+        toast.error("Erro ao Atualizar", { description: error.response?.data?.message });
+    }
+  });
 
-  // Função para lidar com a submissão dos formulários
-  // CORREÇÃO: O useMemo agora é mais robusto, garantindo que todos os campos
-  // tenham um valor padrão para evitar erros de tipagem e de "uncontrolled input".
+  // Handler de submit simplificado
+  const handleSubmit = (formData: MemberUpdateType | ExMemberUpdateType) => {
+    updateProfile(formData);
+  };
+  
+  // --- DADOS E LÓGICA DERIVADA ---
+  const { user, roles } = data || {};
+  const canChangeRole = useMemo(() => user ? checkUserPermission(user, { allowedAreas: [AreaRoles.DIRETORIA] }) : false, [user]);
+
   const formInitialValues = useMemo(() => {
     if (!user) return null;
-
     return {
-      // Campos comuns a ambos os formulários
-      name: user.name,
-      email: user.email,
-      emailEJ: user.emailEJ,
-      phone: user.phone,
-      birthDate: formatDateForInput(user.birthDate),
-      semesterEntryEj: user.semesterEntryEj,
-      course: user.course ?? "",
-      about: user.about ?? "",
-      image: user.imageUrl,
-      password: "", // Inicializa vazio para que o utilizador possa (ou não) mudar
-      confPassword: "",
-      linkedin: user.linkedin ?? "",
-      instagram: user.instagram ?? "",
-      roleId: user.currentRoleId ?? "",
-      roles: user.roles.map((role) => role.id),
-      // Campos específicos para ExMemberForm
-      semesterLeaveEj: user.semesterLeaveEj ?? "",
-      aboutEj: user.aboutEj ?? "",
-      // Garante que o tipo seja "Sim" | "Não", como o Zod espera.
-      alumniDreamer: user.alumniDreamer
-        ? "Sim"
-        : ("Não" as "Sim" | "Não" | undefined),
-      // Garante que o array `roles` seja `undefined` se estiver vazio,
-      // para não entrar em conflito com a validação `.nonempty()` do Zod.
-      otherRole: user.otherRole ?? "",
-      isExMember: (user.isExMember ? "Sim" : "Não") as "Sim" | "Não",
+        name: user.name, email: user.email, emailEJ: user.emailEJ, phone: user.phone,
+        birthDate: formatDateForInput(user.birthDate), semesterEntryEj: user.semesterEntryEj,
+        course: user.course ?? "", about: user.about ?? "", image: user.imageUrl,
+        password: "", confPassword: "", linkedin: user.linkedin ?? "", instagram: user.instagram ?? "",
+        roleId: user.currentRoleId ?? "", roles: user.roles.map(role => role.id),
+        semesterLeaveEj: user.semesterLeaveEj ?? "", aboutEj: user.aboutEj ?? "",
+        alumniDreamer: (user.alumniDreamer ? "Sim" : "Não") as "Sim" | "Não" | undefined,
+        otherRole: user.otherRole ?? "", isExMember: (user.isExMember ? "Sim" : "Não") as "Sim" | "Não",
     };
   }, [user]);
-  const handleSubmit = async (data: MemberUpdateType | ExMemberUpdateType) => {
-    if (!user?.id) {
-      toast.error("Erro", {
-        description:
-          "Utilizador não encontrado. Por favor, faça login novamente.",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      let imageUrl = user.imageUrl; // Começa com a URL da imagem existente.
-
-      // O tipo de `data` pode conter uma propriedade `image` que é File ou string.
-      const dataWithImage = data as (MemberUpdateType | ExMemberUpdateType) & {
-        image?: File | string;
-      };
-      // CORREÇÃO: A lógica de upload agora só é executada se `data.image` for uma instância de `File`.
-      if (dataWithImage.image && dataWithImage.image instanceof File) {
-        const file = dataWithImage.image;
-
-        const presignedUrlResponse = await fetch("/api/s3-upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
-        });
-
-        if (!presignedUrlResponse.ok) {
-          throw new Error("Não foi possível preparar o upload da imagem.");
-        }
-
-        const { url, key } = await presignedUrlResponse.json();
-        const uploadResponse = await fetch(url, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-        if (!uploadResponse.ok) {
-          throw new Error("Falha ao enviar a imagem para o S3.");
-        }
-
-        // Atualiza a `imageUrl` apenas se o upload for bem-sucedido.
-        imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
-      }
-
-      // Prepara os dados finais para a API, removendo o campo `image` e usando `imageUrl`.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { image, ...restOfData } = dataWithImage;
-      const finalData = { ...restOfData, imageUrl };
-
-      // Envia os dados para a API para atualizar o utilizador no Prisma.
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao atualizar os dados.");
-      }
-
-      toast.success("Perfil atualizado com sucesso!");
-      router.refresh();
-      await checkAuth();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error("Erro ao Atualizar", { description: error.message });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Mostra um loader enquanto o estado de autenticação está a ser verificado
-  if (!formInitialValues) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-[#00205e]">
-        <Loader2 className="animate-spin text-[#f5b719] h-12 w-12" />
-      </div>
-    );
+  
+  if (isLoadingData || !formInitialValues || !user || !roles) {
+    return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="animate-spin text-[#f5b719] h-12 w-12" /></div>;
   }
 
   return (
@@ -165,7 +118,6 @@ const PerfilContent = ({ user, roles }: PerfilContentProps) => {
             isPerfilPage={true}
             roles={roles}
             title="Salvar alterações"
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             values={formInitialValues as any}
           />
         ) : (

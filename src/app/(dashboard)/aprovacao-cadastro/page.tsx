@@ -1,83 +1,66 @@
 import UsersContent from "@/app/_components/Dashboard/UsersContent";
 import { constructMetadata } from "@/lib/metadata";
-import { RegistrationRequest, Role } from ".prisma/client";
-import { RegistrationRequestWithRoles } from "@/lib/schemas/memberFormSchema";
+import { Role } from ".prisma/client";
 import { cookies } from "next/headers";
+import { RegistrationRequestWithRoles } from "@/lib/schemas/memberFormSchema";
 
 export const metadata = constructMetadata({ title: "Aprovação de Cadastro" });
 
-interface RequestsPageData {
-  requests: RegistrationRequestWithRoles[];
-  roles: Role[];
-}
-
 export const dynamic = "force-dynamic";
 
-async function getRequestsData(): Promise<Omit<RequestsPageData, "roles">> {
+// Combinamos as duas buscas em uma única função para organização
+async function getPageData() {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const cookiesStore = await cookies();
+  const headers = { Cookie: cookiesStore.toString() };
+
   try {
-    // Em produção, use uma variável de ambiente para o URL base da sua aplicação.
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const cookiesStore = await cookies();
-    const headers = { Cookie: cookiesStore.toString() };
-    // Faz uma única chamada à sua API agregadora.
-    const response = await fetch(`${baseUrl}/api/registration-requests`, {
-      next: { revalidate: 45 }, 
-      headers// Garante que os dados estão sempre atualizados a cada visita.
-    });
+    const [requestsRes, rolesRes] = await Promise.all([
+      fetch(`${baseUrl}/api/registration-requests`, {
+        headers,
+        cache: "no-store",
+      }),
+      fetch(`${baseUrl}/api/roles`, { cache: "no-store" }),
+    ]);
 
-    if (!response.ok) {
-      throw new Error(
-        `Falha ao buscar os dados da página. Status: ${response.status}`
-      );
+    if (!requestsRes.ok || !rolesRes.ok) {
+      console.error("Falha ao buscar dados no servidor");
+      return { requests: [], roles: [] };
     }
-    const requestsJson = await response.json();
 
-    return { requests: requestsJson.requests };
-  } catch (error) {
-    console.error("Erro em getPageData:", error);
-    // Retorna dados vazios em caso de erro para não quebrar a página.
+    const requestsData = await requestsRes.json();
+    const rolesData = await rolesRes.json();
+
     return {
-      requests: [],
+      requests: requestsData.requests as RegistrationRequestWithRoles[],
+      roles: rolesData as Role[],
     };
-  }
-}
-
-async function getRolesData(): Promise<Pick<RequestsPageData, "roles">> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/roles`, {
-      next: { revalidate: 45 },
-    });
-
-    if (!response.ok) {
-      throw new Error("Falha ao buscar os cargos no servidor.");
-    }
-
-    const rolesJson = await response.json();
-    return { roles: rolesJson };
   } catch (error) {
     console.error("Erro em getPageData:", error);
-    return { roles: [] };
+    return { requests: [], roles: [] };
   }
 }
 
 const Page = async () => {
-  const { roles } = await getRolesData();
-  const { requests } = await getRequestsData();
-  const members = requests.filter(
-    (user: RegistrationRequest) => user.isExMember === false
+  // Busca os dados iniciais
+  const initialData = await getPageData();
+
+  // A lógica de filtro agora vai para o componente cliente.
+  // A página do servidor apenas entrega os dados brutos.
+  const members = initialData.requests.filter(
+    (request) => request.isExMember === false
   );
 
-  const exMembers = requests.filter(
-    (user: RegistrationRequest) => user.isExMember === true
+  const exMembers = initialData.requests.filter(
+    (request) => request.isExMember === true
   );
   return (
     <div className="md:p-8 p-4 w-full">
       <UsersContent
         type="approve"
-        availableRoles={roles}
-        exMembers={exMembers}
+        availableRoles={initialData.roles}
         members={members}
+        exMembers={exMembers}
       />
     </div>
   );
