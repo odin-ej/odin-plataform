@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { constructMetadata } from "@/lib/metadata";
 import HomeContent from "../_components/Dashboard/HomeContent";
 import { Goal, UsefulLink } from ".prisma/client";
@@ -50,7 +51,6 @@ async function getPageData(): Promise<HomeContentData> {
     ]);
 
     // Processa cada resposta individualmente para maior resiliência
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const goals = strategyResponse.ok
       ? (await strategyResponse.json()).flatMap((obj: any) => obj.goals)
       : [];
