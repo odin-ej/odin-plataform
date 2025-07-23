@@ -1,0 +1,18 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+        - npx prisma generate
+    build:
+      commands:
+        - npm run build
+        - cp -r node_modules/.prisma dist/ # <-- ESSE É O PULO DO GATO
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
