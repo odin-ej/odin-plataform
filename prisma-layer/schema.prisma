@@ -1,0 +1,424 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// --- ENUMS ---
+
+enum AccountType {
+  ALFA
+  BETA
+  DELTA
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
+enum RoomStatus {
+  FREE
+  BUSY
+  RESTRICTED
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELED
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  APPROVED
+}
+
+enum AreaRoles {
+  CONSULTORIA
+  TATICO
+  PRESIDENCIA
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+  DIRETORIA
+  CONSELHO
+  OUTRO
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// --- MODELS ---
+
+model RegistrationRequest {
+  id              String        @id @default(uuid())
+  status          RequestStatus @default(PENDING)
+  name            String
+  email           String        @unique
+  emailEJ         String        @unique
+  password        String
+  imageUrl        String
+  birthDate       DateTime      @map("birth_date")
+  phone           String        @unique
+  semesterEntryEj String        @map("semester_entry_ej")
+  semesterLeaveEj String?       @map("semester_leave_ej")
+  course          String?
+  instagram       String?
+  linkedin        String?
+  about           String?       @db.Text
+  aboutEj         String?       @db.Text
+  roles           Role[]        @relation("RegistrationRequestRoles")
+  otherRole       String?
+  isExMember      Boolean       @default(false) @map("ex_member")
+  alumniDreamer   Boolean       @default(false) @map("alumni_dreamer")
+  adminNotes      String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model User {
+  id                String    @id
+  name              String
+  email             String    @unique
+  emailEJ           String    @unique
+  imageUrl          String
+  password          String
+  birthDate         DateTime  @map("birth_date")
+  phone             String    @unique
+  semesterEntryEj   String    @map("semester_entry_ej")
+  semesterLeaveEj   String?   @map("semester_leave_ej")
+  linkedin          String?
+  instagram         String?
+  course            String?
+  about             String?   @db.Text
+  aboutEj           String?   @map("about_ej") @db.Text
+  isExMember        Boolean   @default(false) @map("ex_member")
+  alumniDreamer     Boolean   @default(false) @map("alumni_dreamer")
+  otherRole         String?
+  currentRoleId     String? // <- NOVO campo
+  currentRole       Role?     @relation("UserCurrentRole", fields: [currentRoleId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  dailyMessageCount Int       @default(0)
+  lastMessageDate   DateTime?
+
+  conversations          Conversation[]
+  roles                  Role[]            @relation("UserRoles")
+  points                 UserPoints?
+  tasksResponsibleFor    Task[]            @relation("TaskResponsibles")
+  projectsResponsibleFor Project[]         @relation("ProjectResponsibles")
+  reportsSent            Report[]          @relation("ReportReferent")
+  reportsReceived        Report[]          @relation("ReportRecipientUser")
+  squadsLed              Squad[]           @relation("SquadLeader")
+  squadsAsMember         Squad[]           @relation("SquadMembers")
+  roomReservation        RoomReservation[]
+  tasksAuthor            Task[]
+  usefulLinks            UsefulLink[]
+}
+
+model UsefulLink {
+  id        String   @id @default(uuid())
+  title     String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relação: Cada link pertence a um usuário
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Role {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String
+  area        AreaRoles[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                User[]                @relation("UserRoles")
+  reportsReceived      Report[]              @relation("ReportRecipientRole")
+  registrationRequests RegistrationRequest[] @relation("RegistrationRequestRoles")
+  currentRoleUsers     User[]                @relation("UserCurrentRole")
+}
+
+model UserPoints {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  totalPoints Int      @default(0)
+  tags        Tag[]
+}
+
+model JRPointsRanking {
+  id       Int     @id @default(1)
+  isHidden Boolean @default(false)
+}
+
+model EnterprisePoints {
+  id          Int    @id @default(1)
+  value       Int
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags Tag[]
+}
+
+model Tag {
+  id            String   @id @default(uuid())
+  value         Int
+  description   String
+  datePerformed DateTime @map("date_performed")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  actionTypeId String
+  // CORREÇÃO: Adicionado onDelete: Cascade. Se um ActionType for excluído, todas as tags associadas serão excluídas.
+  actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+
+  userPointsId String?
+  // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos de um usuário forem excluídos, suas tags também serão.
+  userPoints   UserPoints? @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
+
+  enterprisePointsId Int?
+  // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos da empresa forem excluídos, suas tags também serão.
+  enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)
+}
+
+model ActionType {
+  id          String @id @default(uuid())
+  name        String @unique
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags Tag[]
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  status      TaskStatus
+  description String     @db.Text
+  deadline    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author       User     @relation(fields: [userId], references: [id])
+  authorId     String
+  responsibles User[]   @relation("TaskResponsibles")
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id])
+  userId       String
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  account     AccountType
+  status      ProjectStatus
+  description String        @db.Text
+  deadline    DateTime
+  title       String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  responsibles User[] @relation("ProjectResponsibles")
+  tasks        Task[]
+}
+
+model Report {
+  id              String       @id @default(uuid())
+  title           String
+  status          ReportStatus
+  content         String       @db.Text
+  recipientNotes  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  referentId      String
+  referent        User         @relation("ReportReferent", fields: [referentId], references: [id])
+  recipientUserId String?
+  recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id])
+  recipientRoleId String?
+  recipientRole   Role?        @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id])
+}
+
+model EstrategyPlan {
+  id                  Int                  @id @default(1)
+  propose             String               @db.Text
+  mission             String               @db.Text
+  vision              String               @db.Text
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  values              Value[]
+  estrategyObjectives EstrategyObjective[]
+}
+
+model EstrategyObjective {
+  id          String @id @default(uuid())
+  objective   String
+  description String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  estrategyPlanId Int?
+  estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
+  goals           Goal[]
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  goal        Decimal
+  value       Decimal
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  estrategyObjectiveId String?
+  estrategyObjective   EstrategyObjective? @relation(fields: [estrategyObjectiveId], references: [id])
+}
+
+model Value {
+  id            String  @id @default(uuid())
+  name          String
+  description   String
+  isMotherValue Boolean @default(false) @map("is_mother_value")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  estrategyPlanId Int?
+  estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
+}
+
+model Squad {
+  id          String @id @default(uuid())
+  name        String
+  description String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leaderId String
+  leader   User   @relation("SquadLeader", fields: [leaderId], references: [id])
+  members  User[] @relation("SquadMembers")
+}
+
+model Room {
+  id           String            @id @default(uuid())
+  name         String            @unique
+  reservations RoomReservation[]
+}
+
+model RoomReservation {
+  id        String     @id @default(uuid())
+  date      DateTime // A data e hora da reserva
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  hourEnter DateTime
+  hourLeave DateTime
+  status    RoomStatus
+  // Relação com a sala reservada
+  roomId    String
+  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  // Relação com o usuário que fez a reserva
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  role      String // "user" ou "model"
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeChunk {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  // O tamanho do vetor (768) deve corresponder ao modelo de embedding que você usar
+  // (ex: text-embedding-004 da Google)
+  embedding Unsupported("vector(768)")? 
+  
+  createdAt DateTime @default(now())
+}
+
+// model Post {
+//   id String @id @default(uuid())
+//   title String
+//   //Pensar em relação a upload de arquivos, pdf's imagens etc.
+//   content String
+//   author User
+//   likes Int
+//   commments PostComment[]
+//   isFixed Boolean
+//   createdAt DateTime
+//   updatedAt DateTime
+// }
+
+// model PostComment{
+//   id String @id @default(uuid())
+//   user User
+//   comment Comment
+//    createdAt DateTime
+//   updatedAt DateTime
+// }
+
+// model Comment {
+//   id String @id @default(uuid())
+//   content String
+//   likes Int
+//   createdAt DateTime
+//   updatedAt DateTime
+// }
+
+// model PostsLayout{
+//   id String @id @default(uuid())
+//   title String
+//   imageUrl String
+//   // Carrousel de Posts - Diretores conseguiriam fixar apenas
+//   posts Post[]
+// }

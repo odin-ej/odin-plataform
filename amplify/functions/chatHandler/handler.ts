@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import '../shared/prisma-fix.js';
+
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Part, Tool } from "@google/generative-ai";
 import { isSameDay } from "date-fns";

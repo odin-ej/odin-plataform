@@ -1,4 +1,3 @@
-import '../shared/prisma-fix.js';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getPrismaClient } from "../shared/db";
 import { createResponse } from "../shared/utils";

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import '../shared/prisma-fix.js';
+
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getPrismaClient } from "../shared/db";
 import { getAuthenticatedUserFromEvent } from "../shared/auth";
@@ -66,7 +66,7 @@ async function handlePost(
         ...taskData,
         deadline: parsedDeadline as Date,
         authorId: authUser.id,
-        author: {connect: {id: authUser.id}},
+        author: { connect: { id: authUser.id } },
         responsibles: { connect: responsibles.map((id) => ({ id })) },
       },
     });
