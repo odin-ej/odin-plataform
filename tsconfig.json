@@ -25,6 +25,13 @@
       "@prisma/client": ["../server/node_modules/@prisma/client"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/(dashboard)/chat/[conversationId]/page.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/app/(dashboard)/chat/[conversationId]/page.tsx",
+    "amplify/functions/shared/prisma-fix.js"
+  ],
   "exclude": ["node_modules"]
 }
