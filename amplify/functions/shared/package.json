@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Dependências compartilhadas para as funções Lambda do projeto Odin.",
   "private": true,
+  "prisma": {
+    "schema": "../../../prisma/schema.prisma"
+  },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.840.0",
     "@aws-sdk/client-s3": "^3.840.0",
@@ -14,6 +17,7 @@
     "bcrypt": "^6.0.0",
     "date-fns": "^4.1.0",
     "zod": "^3.25.67",
+    "@prisma/client": "^6.12.0",
     "google-auth-library": "^10.2.0"
   },
   "devDependencies": {
@@ -21,6 +25,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.19.1",
     "@types/pdf-parse": "^1.1.5",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "prisma": "^6.11.0"
   }
 }
