@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
-import { prisma } from "./db.js"; // Usando a mesma instância do Prisma
-import { FullUser } from "./schemas.js"; // Tipos compartilhados
+import { prisma } from "./db"; // Usando a mesma instância do Prisma
+import { FullUser } from "./schemas"; // Tipos compartilhados
 
 const verifier = CognitoJwtVerifier.create({
   userPoolId: process.env.COGNITO_USER_POOL_ID!,

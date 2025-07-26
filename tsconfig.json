@@ -22,7 +22,6 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/server/*": ["../server/*"],
-      "@prisma/client": ["../server/node_modules/@prisma/client"]
     }
   },
   "include": [
@@ -31,7 +30,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/(dashboard)/chat/[conversationId]/page.tsx",
-    "amplify/functions/shared/prisma-fix.js"
   ],
   "exclude": ["node_modules"]
 }

@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
+const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin')
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output: 'standalone',
+  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -23,6 +24,13 @@ const nextConfig: NextConfig = {
   },
 
   serverExternalPackages: ["pdf-parse"],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.plugins = [...config.plugins, new PrismaPlugin()];
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;

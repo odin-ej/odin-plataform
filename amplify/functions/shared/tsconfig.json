@@ -16,5 +16,5 @@
       ]
     }
   },
-  "extends": "../tsconfig.json",
+  "extends": "../../../tsconfig.json",
 }

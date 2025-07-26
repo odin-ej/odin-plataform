@@ -462,7 +462,7 @@ export const linkSchema = z.object({
   title: z.string().min(1, "O título é obrigatório."),
   url: z.string().url("Por favor, insira uma URL válida."),
 });
-type LinkFormData = z.infer<typeof linkSchema>;
+export type LinkFormData = z.infer<typeof linkSchema>;
 
 export type ValueUpdateType = z.infer<typeof valueUpdateSchema>;
 
