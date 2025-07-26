@@ -37,16 +37,14 @@ async function handlePatch(
         room: { select: { name: true } },
         hourEnter: true,
         hourLeave: true,
-        //@ts-expect-error `googleCalendarEventId` is in the schema
         googleCalendarEventId: true,
       },
     });
     
-    // <-- 3. Inserir a lógica de integração com o Google Calendar
-      //@ts-expect-error `googleCalendarEventId` is in the schema
+    // <-- 3. Inserir a lógica de integração com o Google Calenda
     if (updatedReservation.googleCalendarEventId) {
         const googleApiResponse = await fetch(
-            //@ts-expect-error `googleCalendarEventId` is in the schema
+  
             `https://www.googleapis.com/calendar/v3/calendars/${process.env.GOOGLE_CALENDAR_ID}/events/${updatedReservation.googleCalendarEventId}`,
             {
                 method: "PATCH",
@@ -55,7 +53,6 @@ async function handlePatch(
                     Authorization: `Bearer ${await getGoogleAuthToken()}`,
                 },
                 body: JSON.stringify({
-                    //@ts-expect-error `room` is in the schema
                     summary: `Reserva da sala ${updatedReservation.room.name}`,
                     start: { dateTime: updatedReservation.hourEnter, timeZone: "America/Sao_Paulo" },
                     end: { dateTime: updatedReservation.hourLeave, timeZone: "America/Sao_Paulo" },
@@ -92,11 +89,10 @@ async function handleDelete(
     }
 
     // <-- 4. Inserir a lógica de deleção do Google Calendar ANTES de deletar do DB
-    // É mais seguro deletar o recurso externo primeiro.
-      //@ts-expect-error `googleCalendarEventId` is in the schema
+    // É mais seguro deletar o recurso externo primeiro
     if (reservation && reservation.googleCalendarEventId) {
         const googleApiResponse = await fetch(
-            //@ts-expect-error `googleCalendarEventId` is in the schema
+  
             `https://www.googleapis.com/calendar/v3/calendars/${process.env.GOOGLE_CALENDAR_ID}/events/${reservation.googleCalendarEventId}`,
             {
                 method: "DELETE",
