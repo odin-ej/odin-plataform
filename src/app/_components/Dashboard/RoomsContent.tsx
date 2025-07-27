@@ -165,7 +165,7 @@ const RoomsContent = ({
 
   const { mutate: deleteReservation, isPending: isDeleting } = useMutation({
     mutationFn: (reservationId: string) =>
-      axios.delete(`${API_URL}/reserve/${reservationId}`),
+      axios.delete(`${API_URL}/api/reserve/${reservationId}`),
     onSuccess: () => {
       toast.success("Reserva cancelada com sucesso!");
       setItemToDelete(null);

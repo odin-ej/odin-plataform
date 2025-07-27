@@ -114,7 +114,7 @@ const PendenciesContent = ({
   });
 
   const { mutate: deleteTask, isPending: isDeletingTask } = useMutation({
-    mutationFn: (taskId: string) => axios.delete(`${API_URL}/tasks/${taskId}`),
+    mutationFn: (taskId: string) => axios.delete(`${API_URL}/api/tasks/${taskId}`),
     onSuccess: () => {
       toast.success("Tarefa deletada com sucesso!");
       setItemToDelete(null);

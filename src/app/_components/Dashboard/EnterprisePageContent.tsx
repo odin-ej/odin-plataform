@@ -64,7 +64,7 @@ const EnterprisePageContent = ({
 
   const { mutate: editItem, isPending: isEditingItem } = useMutation({
     mutationFn: async (formData: any) => {
-      const endpoint = `${API_URL}/${editingItem.type}s/${editingItem.id}`;
+      const endpoint = `${API_URL}/api/${editingItem.type}s/${editingItem.id}`;
       return axios.patch(endpoint, formData);
     },
     onSuccess: () => {
@@ -80,7 +80,7 @@ const EnterprisePageContent = ({
 
   const { mutate: deleteItem, isPending: isDeletingItem } = useMutation({
     mutationFn: (item: { type: "tag" | "action-type"; id: string }) => {
-      return axios.delete(`${API_URL}/${item.type}s/${item.id}`);
+      return axios.delete(`${API_URL}/api/${item.type}s/${item.id}`);
     },
     onSuccess: () => {
       toast.success("Item apagado com sucesso!");

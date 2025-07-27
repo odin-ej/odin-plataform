@@ -117,7 +117,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
   });
 
   const { mutate: deleteTask, isPending: isDeleting } = useMutation({
-    mutationFn: (taskId: string) => axios.delete(`${API_URL}/tasks/${taskId}`),
+    mutationFn: (taskId: string) => axios.delete(`${API_URL}/api/tasks/${taskId}`),
     onSuccess: () => {
       toast.success("Tarefa deletada com sucesso!");
       setItemToDelete(null);
