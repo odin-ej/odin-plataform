@@ -1,3 +1,4 @@
+'use client'
 import { CardHeader, Card, CardTitle, CardContent } from "@/components/ui/card";
 import { ShieldBan } from "lucide-react";
 
