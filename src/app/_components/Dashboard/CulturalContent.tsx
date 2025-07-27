@@ -2,7 +2,7 @@
 import { Handshake, Loader2 } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../Global/Custom/CustomCarousel";
-import { User, Role } from ".prisma/client";
+import { User, Role } from "@prisma/client";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import ValueCarousel, { ValueSlide } from "./ValueCarousel";
 import { useMemo, useState } from "react";

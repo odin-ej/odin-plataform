@@ -8,9 +8,12 @@ export async function POST(request: Request) {
   try {
     // 1. Segurança: Protege a rota com um "segredo".
     // Isso impede que qualquer pessoa execute esta função, exceto o seu serviço de Cron.
-    const authHeader = request.headers.get('authorization');
+    const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ message: 'Acesso não autorizado.' }, { status: 401 });
+      return NextResponse.json(
+        { message: "Acesso não autorizado." },
+        { status: 401 }
+      );
     }
 
     const now = new Date();
@@ -30,10 +33,12 @@ export async function POST(request: Request) {
 
     // Se não houver tarefas atrasadas, termina a execução.
     if (overdueTasks.length === 0) {
-      return NextResponse.json({ message: 'Nenhuma tarefa atrasada encontrada.' });
+      return NextResponse.json({
+        message: "Nenhuma tarefa atrasada encontrada.",
+      });
     }
 
-    const overdueTaskIds = overdueTasks.map(task => task.id);
+    const overdueTaskIds = overdueTasks.map((task) => task.id);
 
     // 3. Atualiza todas as tarefas encontradas para "PENDENTE" em uma única operação.
     const updateResult = await prisma.task.updateMany({
@@ -47,17 +52,23 @@ export async function POST(request: Request) {
       },
     });
 
-    revalidatePath('/tarefas')
-    revalidatePath('/')
-    revalidatePath('/minhas-pendencias')
-    console.log(`Cron Job: ${updateResult.count} tarefas foram atualizadas para PENDENTE.`);
+    revalidatePath("/tarefas");
+    revalidatePath("/");
+    revalidatePath("/minhas-pendencias");
+    console.log(
+      `Cron Job: ${updateResult.count} tarefas foram atualizadas para PENDENTE.`
+    );
     return NextResponse.json({
       message: `Sucesso! ${updateResult.count} tarefas foram atualizadas.`,
       updatedIds: overdueTaskIds,
     });
-
   } catch (error) {
     console.error("Erro no Cron Job de atualização de tarefas:", error);
-    return NextResponse.json({ message: "Erro interno do servidor." }, { status: 500 });
+    return NextResponse.json(
+      { message: "Erro interno do servidor." },
+      { status: 500 }
+    );
+  } finally {
+    await prisma.$disconnect(); // Adicione esta linha
   }
 }

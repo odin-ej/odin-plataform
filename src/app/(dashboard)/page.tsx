@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { constructMetadata } from "@/lib/metadata";
 import HomeContent from "../_components/Dashboard/HomeContent";
-import { Goal, UsefulLink } from ".prisma/client";
+import { Goal, UsefulLink } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 

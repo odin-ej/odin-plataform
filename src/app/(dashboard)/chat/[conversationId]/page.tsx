@@ -1,4 +1,4 @@
-import { Conversation, Message } from ".prisma/client";
+import { Conversation, Message } from "@prisma/client";
 import ChatContent from "@/app/_components/Dashboard/ChatContent";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";

@@ -1,5 +1,5 @@
 import RoomsContent from "@/app/_components/Dashboard/RoomsContent";
-import { Room } from ".prisma/client";
+import { Room } from "@prisma/client";
 import { ExtendedReservation } from "@/lib/schemas/roomSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { constructMetadata } from "@/lib/metadata";

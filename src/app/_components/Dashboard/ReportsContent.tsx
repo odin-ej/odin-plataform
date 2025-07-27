@@ -3,7 +3,7 @@
 import { Loader2, Megaphone, Plus } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
-import { ReportStatus } from ".prisma/client";
+import { ReportStatus } from "@prisma/client";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -153,10 +153,10 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
           {row.status === ReportStatus.DRAFT
             ? "Rascunho"
             : row.status === "SUBMITTED"
-            ? "Em análise"
-            : row.status === "APPROVED"
-            ? "Aprovado"
-            : "Recusado"}
+              ? "Em análise"
+              : row.status === "APPROVED"
+                ? "Aprovado"
+                : "Recusado"}
         </span>
       ),
     },

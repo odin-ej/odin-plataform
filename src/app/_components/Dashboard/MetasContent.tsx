@@ -1,7 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { EstrategyObjective, Goal } from ".prisma/client";
+import { EstrategyObjective, Goal } from "@prisma/client";
 import CustomCard from "../Global/Custom/CustomCard";
 import { Goal as GoalIcon, Loader2 } from "lucide-react";
 import EstrategyObjectiveCard from "./EstrategyObjectiveCard";
@@ -18,15 +18,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Função que o TanStack Query usará para re-buscar os dados no cliente
 const fetchMetasData = async (): Promise<MetasPageProps> => {
-    const { data } = await axios.get(`${API_URL}/house-goals`);
-    return { estrategyObjectives: data };
+  const { data } = await axios.get(`${API_URL}/house-goals`);
+  return { estrategyObjectives: data };
 };
 
 const MetasContent = ({ initialData }: { initialData: MetasPageProps }) => {
-
   // --- QUERY PRINCIPAL (Gerencia todos os dados da página) ---
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['metasData'], // Chave de cache para esta página
+    queryKey: ["metasData"], // Chave de cache para esta página
     queryFn: fetchMetasData,
     initialData: initialData, // "Hidrata" com os dados do servidor
   });
@@ -41,9 +40,13 @@ const MetasContent = ({ initialData }: { initialData: MetasPageProps }) => {
   }
 
   if (isError || !data) {
-    return <div className="p-8 text-white text-center">Erro ao carregar as metas.</div>;
+    return (
+      <div className="p-8 text-white text-center">
+        Erro ao carregar as metas.
+      </div>
+    );
   }
-  
+
   // Usamos os dados do 'data' do useQuery como fonte da verdade
   const { estrategyObjectives } = data;
 

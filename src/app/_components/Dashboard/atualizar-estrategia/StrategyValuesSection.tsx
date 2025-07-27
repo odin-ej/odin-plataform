@@ -1,5 +1,5 @@
 "use client";
-import { Value } from ".prisma/client";
+import { Value } from "@prisma/client";
 import ValueItem from "./ValueItem";
 
 // As props agora recebem a função de atualização e o estado de loading
@@ -9,14 +9,18 @@ interface Props {
   isUpdatingValue: boolean;
 }
 
-export function StrategyValuesSection({ values, onUpdateValue, isUpdatingValue }: Props) {
+export function StrategyValuesSection({
+  values,
+  onUpdateValue,
+  isUpdatingValue,
+}: Props) {
   // A função 'handleUpdateDatabase' foi REMOVIDA daqui.
   // O 'useRouter' também não é mais necessário.
 
   return (
     <div className="space-y-4">
       <h3 className="text-2xl text-[#f5b719] font-bold">Valores da Casinha</h3>
-      
+
       {values.map((value) => (
         <ValueItem
           key={value.id}

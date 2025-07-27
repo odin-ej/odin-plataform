@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Tag as UserTag } from ".prisma/client";
+import { Tag as UserTag } from "@prisma/client";
 import { UserRankingInfo } from "@/lib/schemas/pointsSchema";
 import {
   Dialog,

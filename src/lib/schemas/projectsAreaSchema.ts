@@ -6,8 +6,7 @@ import {
   Task,
   Project,
   User,
-} from ".prisma/client";
-
+} from "@prisma/client";
 
 export const taskCreateSchema = z.object({
   title: z.string().min(3, "O título é obrigatório."),

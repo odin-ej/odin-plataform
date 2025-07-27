@@ -1,6 +1,6 @@
 import UsersContent from "@/app/_components/Dashboard/UsersContent";
 import { constructMetadata } from "@/lib/metadata";
-import { Role } from ".prisma/client";
+import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
 import { RegistrationRequestWithRoles } from "@/lib/schemas/memberFormSchema";
 

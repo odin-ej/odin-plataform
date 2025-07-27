@@ -1,7 +1,7 @@
 import ReportsContent from "@/app/_components/Dashboard/ReportsContent";
 import { constructMetadata } from "@/lib/metadata";
 import { ExtendedReport } from "@/lib/schemas/reportSchema";
-import { User, Role } from ".prisma/client";
+import { User, Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";

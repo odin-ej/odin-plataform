@@ -3,7 +3,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import CustomInput from "../../Global/Custom/CustomInput";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Value } from ".prisma/client";
+import { Value } from "@prisma/client";
 import {
   valueUpdateSchema,
   ValueUpdateType,

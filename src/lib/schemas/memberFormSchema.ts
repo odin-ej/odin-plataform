@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { User, Role, RegistrationRequest } from ".prisma/client";
+import { User, Role, RegistrationRequest } from "@prisma/client";
 
 const baseMemberSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),

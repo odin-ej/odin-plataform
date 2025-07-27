@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { UsefulLink } from ".prisma/client";
+import { UsefulLink } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { LinkIcon, Pencil, Plus, Trash2 } from "lucide-react";
 import CustomModal from "../Global/Custom/CustomModal";
@@ -23,7 +23,7 @@ const UsefulLinksSection = ({ links }: { links: UsefulLink[] }) => {
   const [editingLink, setEditingLink] = useState<UsefulLink | null>(null);
   const [removeLinkId, setRemoveLinkId] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const form = useForm<LinkFormData>({
@@ -65,9 +65,9 @@ const UsefulLinksSection = ({ links }: { links: UsefulLink[] }) => {
   };
 
   const handleDelete = async (linkId: string) => {
-    if(isLoading) return;
+    if (isLoading) return;
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       const response = await fetch(`/api/useful-links/${linkId}`, {
         method: "DELETE",
       });
@@ -81,7 +81,7 @@ const UsefulLinksSection = ({ links }: { links: UsefulLink[] }) => {
       console.error("Erro ao remover o link:", error);
       toast.error("Erro ao remover o link.");
     }
-    setIsLoading(false)
+    setIsLoading(false);
   };
 
   const handleClickDeleteButton = (linkId: string) => {

@@ -5,7 +5,7 @@ import {
   TagWithAction,
   UserRankingInfo,
 } from "@/lib/schemas/pointsSchema";
-import { User } from ".prisma/client";
+import { User } from "@prisma/client";
 import { cookies } from "next/headers";
 
 export const metadata = constructMetadata({ title: "Empresa - JR Points" });

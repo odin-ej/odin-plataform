@@ -1,4 +1,4 @@
-import { TaskStatus } from ".prisma/client";
+import { TaskStatus } from "@prisma/client";
 import { FullTask } from "./schemas/projectsAreaSchema";
 export const sortTasks = (tasks: FullTask[]) => {
   const pending = tasks.filter(

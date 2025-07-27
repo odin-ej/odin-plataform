@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { Conversation, Message } from ".prisma/client";
+import { Conversation, Message } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, MessageSquare, Paperclip, Clock } from "lucide-react";
@@ -15,7 +15,7 @@ import Image from "next/image";
 import ChatHistorySheet from "./ChatHistorySheet";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import CustomCard from "../Global/Custom/CustomCard";
-import { AreaRoles } from ".prisma/client";
+import { AreaRoles } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 

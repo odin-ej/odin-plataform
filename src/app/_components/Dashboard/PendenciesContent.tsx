@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useMemo, useEffect } from "react";
@@ -13,7 +12,7 @@ import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
 import { Badge } from "@/components/ui/badge";
 
-import { AreaRoles, TaskStatus, User } from ".prisma/client";
+import { AreaRoles, TaskStatus, User } from "@prisma/client";
 import {
   FullTask,
   TaskFormValues,
@@ -27,7 +26,6 @@ import ModalConfirm from "../Global/ModalConfirm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MyPendenciesPageData } from "@/app/(dashboard)/minhas-pendencias/page";
 import axios from "axios";
-
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -51,7 +49,11 @@ const statusConfig = {
   },
 };
 
-const PendenciesContent = ({ initialData }: { initialData: MyPendenciesPageData }) => {
+const PendenciesContent = ({
+  initialData,
+}: {
+  initialData: MyPendenciesPageData;
+}) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -252,12 +254,13 @@ const PendenciesContent = ({ initialData }: { initialData: MyPendenciesPageData 
     );
   };
 
-  if (isLoadingData) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#010d26]">
-      <Loader2 className="animate-spin text-[#f5b719] h-12 w-12" />
-      <p>Carregando...</p>
-    </div>
-  );
+  if (isLoadingData)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#010d26]">
+        <Loader2 className="animate-spin text-[#f5b719] h-12 w-12" />
+        <p>Carregando...</p>
+      </div>
+    );
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Conversation } from ".prisma/client";
+import { Conversation } from "@prisma/client";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";

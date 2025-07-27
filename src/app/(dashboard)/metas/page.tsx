@@ -1,5 +1,5 @@
 import MetasContent from "@/app/_components/Dashboard/MetasContent";
-import { EstrategyObjective, Goal } from ".prisma/client";
+import { EstrategyObjective, Goal } from "@prisma/client";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
 

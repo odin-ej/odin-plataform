@@ -1,6 +1,6 @@
 import { DARKBLUE } from "@/lib/colors";
 import RegisterArea from "./_components/RegisterArea";
-import { Role } from ".prisma/client";
+import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
 interface RegisterPageProps {

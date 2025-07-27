@@ -1,6 +1,6 @@
 import { MemberWithRoles } from "./schemas/memberFormSchema";
 import { PermissionCheck } from "./utils";
-import {AreaRoles, Prisma, Role, User} from '.prisma/client'
+import { AreaRoles, Prisma, Role, User } from "@prisma/client";
 
 export const DIRECTORS_ONLY: PermissionCheck = {
   allowedAreas: [AreaRoles.DIRETORIA],
@@ -20,7 +20,7 @@ export const MEMBERS_ONLY: PermissionCheck = {
  * É um alias para MEMBERS_ONLY, mas com um nome mais explícito para certos contextos.
  */
 export const ANY_ACTIVE_MEMBER: PermissionCheck = {
-    allowExMembers: false,
+  allowExMembers: false,
 };
 
 /**
@@ -32,9 +32,9 @@ export const ANYONE_LOGGED_IN: PermissionCheck = {
 };
 
 export const TACTICAL_AND_COMMITTEE_LEADERS: PermissionCheck = {
-    allowedAreas: [AreaRoles.TATICO],
-    allowedRoles: ["Liderança de Comitê"], // Certifique-se de que o nome do cargo corresponde exatamente ao do seu banco de dados
-    allowExMembers: false,
+  allowedAreas: [AreaRoles.TATICO],
+  allowedRoles: ["Liderança de Comitê"], // Certifique-se de que o nome do cargo corresponde exatamente ao do seu banco de dados
+  allowExMembers: false,
 };
 
 export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
@@ -60,14 +60,14 @@ const HIERARCHY_LEVELS: Partial<Record<AreaRoles, number>> = {
 
 // Função auxiliar para obter o nível hierárquico máximo de um usuário
 const getUserHierarchyLevel = (user: User & { roles: Role[] }): number => {
- // Se não tiver cargo, é nível base
+  // Se não tiver cargo, é nível base
 
   // Retorna o maior nível hierárquico entre todos os cargos do usuário
   if (user.isExMember) return -1;
   if (!user.roles.length) return 0;
-  
-  const levels = user.roles.flatMap(role => 
-    (role.area || []).map(area => HIERARCHY_LEVELS[area] ?? 0)
+
+  const levels = user.roles.flatMap((role) =>
+    (role.area || []).map((area) => HIERARCHY_LEVELS[area] ?? 0)
   );
 
   return levels.length > 0 ? Math.max(...levels) : 0;
@@ -81,13 +81,13 @@ const getUserHierarchyLevel = (user: User & { roles: Role[] }): number => {
  */
 export const getAssignableUsers = (
   currentUser: MemberWithRoles | null,
-  allUsers: (MemberWithRoles)[]
-): (MemberWithRoles)[] => {
+  allUsers: MemberWithRoles[]
+): MemberWithRoles[] => {
   if (!currentUser) return [];
 
   const currentUserLevel = getUserHierarchyLevel(currentUser);
   // Outros níveis só podem atribuir para níveis estritamente inferiores
-  return allUsers.filter(user => {
+  return allUsers.filter((user) => {
     const userLevel = getUserHierarchyLevel(user);
     // Permite atribuir para si mesmo OU para níveis inferiores
     return user.id === currentUser.id || userLevel < currentUserLevel;
@@ -100,11 +100,11 @@ export const getAssignableUsers = (
  * @returns Um objeto Prisma.TaskWhereInput para ser usado em `prisma.task.findMany`.
  */
 export const getTasksWhereClauseForUser = (
-  currentUser: User & { roles: Role[] } | null
+  currentUser: (User & { roles: Role[] }) | null
 ): Prisma.TaskWhereInput => {
   if (!currentUser) {
     // Se não houver usuário, não retorna nenhuma tarefa
-    return { id: { equals: 'no-tasks' } };
+    return { id: { equals: "no-tasks" } };
   }
 
   const currentUserLevel = getUserHierarchyLevel(currentUser);

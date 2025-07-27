@@ -37,7 +37,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Room } from ".prisma/client";
+import { Room } from "@prisma/client";
 import {
   ExtendedReservation,
   ReservationFormValues,
@@ -116,7 +116,9 @@ const RoomsContent = ({
         const hourEnter = new Date(`${formData.date}T${formData.hourEnter}:00`);
         const hourLeave = new Date(`${formData.date}T${formData.hourLeave}:00`);
         // The conflict check can now also be part of the mutation
-        const freshData = await queryClient.fetchQuery<RoomsPageData>({ queryKey: ['reservationsData'] });
+        const freshData = await queryClient.fetchQuery<RoomsPageData>({
+          queryKey: ["reservationsData"],
+        });
         const freshReservations = freshData.reservations;
         const hasConflict = freshReservations.some((res) => {
           if (editingReservation && res.id === editingReservation.id)

@@ -1,6 +1,6 @@
 import PendenciesContent from "@/app/_components/Dashboard/PendenciesContent";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
-import { User } from ".prisma/client";
+import { User } from "@prisma/client";
 import { cookies } from "next/headers";
 
 // Tipagem para os dados da página

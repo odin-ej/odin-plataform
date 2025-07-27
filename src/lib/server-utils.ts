@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth/server";
 import { createServerRunner } from "@aws-amplify/adapter-nextjs";
-import { Role, User } from ".prisma/client";
+import { Role, User } from "@prisma/client";
 import { prisma } from "@/db";
 
 export const { runWithAmplifyServerContext } = createServerRunner({

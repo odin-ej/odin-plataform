@@ -3,7 +3,7 @@
 
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
-import { Tag, User, ActionType } from ".prisma/client";
+import { Tag, User, ActionType } from "@prisma/client";
 import { JrPointIconBlue } from "../Global/JrPointsIcon";
 import { useState } from "react";
 import AdminActionsModal from "./AdminActionsModal";

@@ -1,30 +1,27 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Role, AreaRoles, User } from ".prisma/client";
-import {
-
-  UserProfileValues,
-} from "./schemas/memberFormSchema";
+import { Role, AreaRoles, User } from "@prisma/client";
+import { UserProfileValues } from "./schemas/memberFormSchema";
 import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
-
-
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDateForInput(date: Date | string | null | undefined): string {
+export function formatDateForInput(
+  date: Date | string | null | undefined
+): string {
   if (!date) return "";
 
   const dateObj = new Date(date);
-  
- if (isNaN(dateObj.getTime())) return "";
+
+  if (isNaN(dateObj.getTime())) return "";
 
   // getUTCDate garante que não haverá problemas com fuso horário
-  const day = String(dateObj.getUTCDate()).padStart(2, '0');
-  const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0'); // Mês é 0-indexado
+  const day = String(dateObj.getUTCDate()).padStart(2, "0");
+  const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0"); // Mês é 0-indexado
   const year = dateObj.getUTCFullYear();
 
   return `${day}/${month}/${year}`;
@@ -78,8 +75,12 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
     { accessorKey: "name" as Path<T>, header: "Nome Completo" },
     { accessorKey: "email" as Path<T>, header: "E-mail Pessoal" },
     { accessorKey: "emailEJ" as Path<T>, header: "E-mail EJ" },
-    { accessorKey: "phone" as Path<T>, header: "Telefone", mask:'phone' },
-    { accessorKey: "birthDate" as Path<T>, header: "Data de Nascimento", mask: 'date' },
+    { accessorKey: "phone" as Path<T>, header: "Telefone", mask: "phone" },
+    {
+      accessorKey: "birthDate" as Path<T>,
+      header: "Data de Nascimento",
+      mask: "date",
+    },
     {
       accessorKey: "semesterEntryEj" as Path<T>,
       header: "Semestre de Entrada",
@@ -88,44 +89,43 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
     { accessorKey: "about" as Path<T>, header: "Sobre" },
     { accessorKey: "linkedin" as Path<T>, header: "Linkedin" },
     { accessorKey: "instagram" as Path<T>, header: "Instagram" },
-    { accessorKey: 'password' as Path<T>, header: 'Senha'},
-    { accessorKey: 'confPassword' as Path<T>, header: 'Confirmar Senha'},
+    { accessorKey: "password" as Path<T>, header: "Senha" },
+    { accessorKey: "confPassword" as Path<T>, header: "Confirmar Senha" },
     {
       accessorKey: "roleId" as Path<T>,
       header: "Cargo",
       type: "select",
       options: formatedRoles,
     },
-        {
+    {
       accessorKey: "roles" as Path<T>,
       header: "Cargos",
       type: "checkbox",
       options: formatedRoles,
     },
-     {
-      accessorKey: 'isExMember' as Path<T>,
-      header: 'Ex-Membro',
-      type: 'select',
+    {
+      accessorKey: "isExMember" as Path<T>,
+      header: "Ex-Membro",
+      type: "select",
       options: [
-        { value: 'Sim', label: 'Sim' },
-        { value: 'Não', label: 'Nao' },
-      ]
+        { value: "Sim", label: "Sim" },
+        { value: "Não", label: "Nao" },
+      ],
     },
     {
-      accessorKey: 'alumniDreamer' as Path<T>,
-      header: 'Alumni Dreamer',
-      type: 'select',
+      accessorKey: "alumniDreamer" as Path<T>,
+      header: "Alumni Dreamer",
+      type: "select",
       options: [
-        { value: 'Sim', label: 'Sim' },
-        { value: 'Não', label: 'Não' },
-      ]
+        { value: "Sim", label: "Sim" },
+        { value: "Não", label: "Não" },
+      ],
     },
     {
       accessorKey: "image" as Path<T>,
       header: "Imagem de Perfil",
       type: "dropzone",
     },
-  
   ];
 
   const exFields: FieldConfig<T>[] = [
@@ -144,7 +144,6 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
     : [...filteredCommonFields, ...imageField];
 };
 
-
 export const handleFileAccepted = (
   setUploadProgress: React.Dispatch<React.SetStateAction<number>>
 ) => {
@@ -161,13 +160,12 @@ export const handleFileAccepted = (
   }, 200);
 };
 
-
 export function parseBrazilianDate(dateString: string): Date | null {
-  if (!dateString || typeof dateString !== 'string') {
+  if (!dateString || typeof dateString !== "string") {
     return null;
   }
 
-  const parts = dateString.split('/');
+  const parts = dateString.split("/");
   if (parts.length !== 3) {
     return null;
   }
@@ -196,7 +194,6 @@ export function parseBrazilianDate(dateString: string): Date | null {
   return date;
 }
 
-
 // Define a estrutura para as regras de permissão que a função irá receber.
 export interface PermissionCheck {
   allowedAreas?: AreaRoles[];
@@ -213,7 +210,7 @@ export interface PermissionCheck {
  * @returns `true` se o utilizador tiver permissão, `false` caso contrário.
  */
 export const checkUserPermission = (
-  user: User & { roles: Role[] } | null,
+  user: (User & { roles: Role[] }) | null,
   permissions: PermissionCheck
 ): boolean => {
   // Se não houver utilizador, não há permissão.
@@ -228,8 +225,8 @@ export const checkUserPermission = (
 
   // Verifica se alguma das áreas de atuação do utilizador está na lista de áreas permitidas.
   if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
-    const hasAllowedArea = user.roles.some(role =>
-      role.area.some(area => permissions.allowedAreas!.includes(area))
+    const hasAllowedArea = user.roles.some((role) =>
+      role.area.some((area) => permissions.allowedAreas!.includes(area))
     );
     if (hasAllowedArea) {
       return true;
@@ -238,7 +235,7 @@ export const checkUserPermission = (
 
   // Verifica se algum dos nomes dos cargos do utilizador está na lista de cargos permitidos.
   if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
-    const hasAllowedRole = user.roles.some(role =>
+    const hasAllowedRole = user.roles.some((role) =>
       permissions.allowedRoles!.includes(role.name)
     );
     if (hasAllowedRole) {
@@ -251,27 +248,29 @@ export const checkUserPermission = (
 };
 
 export const getInitials = (name: string | undefined) => {
-    if (!name) return "";
-    const names = name.split(' ');
-    if (names.length > 1) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
+  if (!name) return "";
+  const names = name.split(" ");
+  if (names.length > 1) {
+    return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
 
 export const getPhrasePercentageByGoal = (value: number, goal: number) => {
   const phrases = [
-    'Tamo começando!',
-    'Vamo arder',
-    'Tá quase lá!',
-    'Meta ALCANÇADA'
-  ]
-    const percentage = value / goal;
+    "Tamo começando!",
+    "Vamo arder",
+    "Tá quase lá!",
+    "Meta ALCANÇADA",
+  ];
+  const percentage = value / goal;
 
   const phraseIndex = Math.floor(percentage / (100 / phrases.length));
   return phrases[phraseIndex];
-}
-export const fileToBase64 = (file: File): Promise<{ mimeType: string; base64: string }> => {
+};
+export const fileToBase64 = (
+  file: File
+): Promise<{ mimeType: string; base64: string }> => {
   // Usamos uma Promise porque a leitura de um ficheiro é uma operação assíncrona.
   return new Promise((resolve, reject) => {
     // 1. Cria uma instância do FileReader, a API do navegador para ler ficheiros.
@@ -284,17 +283,16 @@ export const fileToBase64 = (file: File): Promise<{ mimeType: string; base64: st
     reader.onload = () => {
       // O resultado é uma string completa, ex: "data:image/png;base64,iVBORw0KGgo..."
       const result = reader.result as string;
-      
+
       // 4. Nós só queremos a parte do base64, então dividimos a string na vírgula
       //    e pegamos a segunda parte.
-      const base64 = result.split(',')[1];
+      const base64 = result.split(",")[1];
 
       // 5. A Promise é resolvida com os dados que a API do Gemini precisa.
       resolve({ mimeType: file.type, base64 });
     };
 
     // 6. Define o que acontece se houver um erro durante a leitura.
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 };
-

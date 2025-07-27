@@ -1,4 +1,4 @@
-import { EstrategyObjective, EstrategyPlan, Goal, Value } from ".prisma/client";
+import { EstrategyObjective, EstrategyPlan, Goal, Value } from "@prisma/client";
 import { constructMetadata } from "@/lib/metadata";
 import UpdateStrategyContent from "@/app/_components/Dashboard/atualizar-estrategia/UpdateStrategyContent";
 import { cookies } from "next/headers";

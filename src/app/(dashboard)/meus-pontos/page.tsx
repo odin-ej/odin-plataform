@@ -1,6 +1,6 @@
 import MyPointsContent from "@/app/_components/Dashboard/MyPointsContent";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { UserPoints } from ".prisma/client";
+import { UserPoints } from "@prisma/client";
 import { TagWithAction } from "@/lib/schemas/pointsSchema";
 import { cookies } from "next/headers";
 

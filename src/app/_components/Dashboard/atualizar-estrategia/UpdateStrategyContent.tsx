@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
-import { Value } from ".prisma/client";
+import { Value } from "@prisma/client";
 
 interface UpdateStrategyContentProps {
   estrategyObjectives: EstrategyObjectiveWithGoals[];

@@ -1,4 +1,4 @@
-import { Role, AreaRoles } from ".prisma/client";
+import { Role, AreaRoles } from "@prisma/client";
 import {
   Award,
   CalendarClock,
@@ -115,7 +115,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/aprovacao-cadastro",
     icon: TicketCheck,
     roles: [
-     { name: "Diretor(a) Presidente" },
+      { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
       { name: "Diretor(a) de Operações" },

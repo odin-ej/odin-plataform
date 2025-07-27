@@ -1,4 +1,4 @@
-import { Goal } from ".prisma/client";
+import { Goal } from "@prisma/client";
 import {
   Card,
   CardContent,

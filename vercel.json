@@ -1,0 +1,17 @@
+
+{
+  "crons": [
+    {
+      "path": "/api/conversations/cleanup", 
+      "schedule": "0 3 * * *" 
+    },
+    {
+      "path": "/api/tasks/update-overdue", 
+      "schedule": "0 3 * * *" 
+    },
+    {
+      "path": "/api/users/reset-message-limit", 
+      "schedule": "0 3 * * *" 
+    }
+  ]
+}

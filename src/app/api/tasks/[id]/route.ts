@@ -2,7 +2,7 @@ import { taskUpdateSchema } from "@/lib/schemas/projectsAreaSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { parseBrazilianDate } from "@/lib/utils";
 import { NextResponse } from "next/server";
-import { Prisma } from ".prisma/client";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 export async function PATCH(

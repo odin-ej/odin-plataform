@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Search, PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Conversation } from ".prisma/client"; // Importa o tipo do Prisma
+import { Conversation } from "@prisma/client"; // Importa o tipo do Prisma
 import ModalConfirm from "../Global/ModalConfirm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";

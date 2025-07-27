@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import CustomInput from "@/app/_components/Global/Custom/CustomInput";
 import CustomTextArea from "@/app/_components/Global/Custom/CustomTextArea";
 import DynamicDropzone from "@/app/_components/Global/Custom/DynamicDropzone";
-import { Role } from ".prisma/client";
+import { Role } from "@prisma/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import CustomSelect from "../Custom/CustomSelect";

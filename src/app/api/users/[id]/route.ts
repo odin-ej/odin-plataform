@@ -8,7 +8,7 @@ import {
   AdminUpdateUserAttributesCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { prisma } from "@/db";
-import { Prisma } from ".prisma/client";
+import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import {
   exMemberUpdateSchema,

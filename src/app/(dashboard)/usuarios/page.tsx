@@ -1,7 +1,7 @@
 import UsersContent from "@/app/_components/Dashboard/UsersContent";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
-import { Role } from ".prisma/client";
+import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
 interface UsersPageData {

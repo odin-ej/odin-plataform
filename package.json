@@ -9,10 +9,7 @@
     "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "npx prisma generate",
     "lint": "next lint",
-    "postinstall": "prisma generate",
-    "build:lambda:overdue": "esbuild lambda-handlers/updateOverdueTasks.ts --bundle --platform=node --target=node18 --outfile=dist/updateOverdueTasks-lambda.js && cp -r node_modules/.prisma dist/",
-    "build:lambda:reset-messages": "esbuild lambda-handlers/resetUserMessageLimits.ts --bundle --platform=node --target=node18 --outfile=dist/resetUserMessageLimits-lambda.js && cp -r node_modules/.prisma dist/",
-    "build:lambda:cleanup": "esbuild lambda-handlers/cleanupConversations.ts --bundle --platform=node --target=node18 --outfile=dist/cleanupConversations-lambda.js && cp -r node_modules/.prisma dist/"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@aws-amplify/adapter-nextjs": "^1.6.6",

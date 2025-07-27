@@ -1,6 +1,6 @@
 import { constructMetadata } from "@/lib/metadata";
 import PerfilContent from "../../_components/Dashboard/PerfilContent";
-import { Role, User } from ".prisma/client";
+import { Role, User } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 
