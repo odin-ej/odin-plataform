@@ -65,7 +65,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
       const finalData = { ...restOfData, imageUrl };
 
       // Chamada final para a API de atualização
-      return axios.patch(`${API_URL}/users/${userId}`, finalData);
+      return axios.patch(`${API_URL}/api/users/${userId}`, finalData);
     },
     onSuccess: async () => {
       toast.success("Perfil atualizado com sucesso!");

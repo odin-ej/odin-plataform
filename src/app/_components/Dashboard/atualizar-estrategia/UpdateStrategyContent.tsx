@@ -59,7 +59,7 @@ const UpdateStrategyContent = ({
   // --- HOOK PARA ATUALIZAR A ESTRATÉGIA ---
   const { mutate: updateStrategy, isPending: isUpdating } = useMutation({
     mutationFn: (newData: { field: string; value: string }) =>
-      axios.patch(`${API_URL}/culture`, { [newData.field]: newData.value }),
+      axios.patch(`${API_URL}/api/culture`, { [newData.field]: newData.value }),
     onSuccess: () => {
       // Invalida o cache, forçando o useQuery a buscar os dados atualizados
       toast.success("Valor atualizado com sucesso!");
@@ -77,7 +77,10 @@ const UpdateStrategyContent = ({
     mutationFn: async (valueData: Partial<Value> & { id: string }) => {
       // A lógica de chamada da API agora vive aqui
       const { id, ...payload } = valueData;
-      const { data } = await axios.patch(`${API_URL}/values/${id}`, payload);
+      const { data } = await axios.patch(
+        `${API_URL}/api/values/${id}`,
+        payload
+      );
       return data;
     },
     onSuccess: () => {

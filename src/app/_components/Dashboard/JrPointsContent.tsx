@@ -42,7 +42,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     queryKey: ["jrPointsData"],
     queryFn: async () => {
       const { data: pageData }: { data: JrPointsPageData } = await axios.get(
-        `${API_URL}/jr-points`
+        `${API_URL}/api/jr-points`
       );
       // Lógica de processamento que estava no servidor agora pode viver aqui
       const myPoints =
@@ -68,7 +68,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
 
   const { mutate: toggleVisibility, isPending: isToggling } = useMutation({
     mutationFn: (newVisibility: boolean) =>
-      axios.patch(`${API_URL}/jr-points/ranking-status`, {
+      axios.patch(`${API_URL}/api/jr-points/ranking-status`, {
         isHidden: newVisibility,
       }),
 
@@ -78,7 +78,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
       const previousData = queryClient.getQueryData<typeof initialData>([
         "jrPointsData",
       ]);
-      queryClient.setQueryData(["jrPointsData"], (oldData) => ({
+      queryClient.setQueryData(["jrPointsData"], (oldData: { myPoints: number; enterprisePoints: number; rankingData: RankingItem[]; initialIsHidden: boolean; }) => ({
         ...(oldData as typeof initialData),
         initialIsHidden: newVisibility,
       }));

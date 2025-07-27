@@ -107,8 +107,8 @@ const UsersContent = ({
       const { id } = formData;
       const apiUrl =
         type === "users"
-          ? `${API_URL}/users/${id}`
-          : `${API_URL}/registration-requests/${id}`;
+          ? `${API_URL}/api/users/${id}`
+          : `${API_URL}/api/registration-requests/${id}`;
       return axios.patch(apiUrl, { ...formData, imageUrl });
     },
     onSuccess: (_, variables) => {
@@ -126,8 +126,8 @@ const UsersContent = ({
     mutationFn: (user: UniversalMember) => {
       const url =
         type === "users"
-          ? `${API_URL}/users/${user.id}`
-          : `${API_URL}/registration-requests/${user.id}`;
+          ? `${API_URL}/api/users/${user.id}`
+          : `${API_URL}/api/registration-requests/${user.id}`;
       return axios.delete(url);
     },
     onSuccess: (_, user) => {

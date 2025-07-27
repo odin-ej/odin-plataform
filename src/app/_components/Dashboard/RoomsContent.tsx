@@ -144,8 +144,8 @@ const RoomsContent = ({
         };
 
         const endpoint = editingReservation
-          ? `${API_URL}/reserve/${editingReservation.id}`
-          : `${API_URL}/reserve`;
+          ? `${API_URL}/api/reserve/${editingReservation.id}`
+          : `${API_URL}/api/reserve`;
         const method = editingReservation ? "patch" : "post";
         const { data } = await axios[method](endpoint, payload);
         return data;

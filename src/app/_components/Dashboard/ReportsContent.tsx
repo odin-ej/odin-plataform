@@ -81,7 +81,10 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
         status: reportData.status,
         recipientNotes: reportData.recipientNotes,
       };
-      return axios.patch(`${API_URL}/reports/${selectedReport!.id}`, payload);
+      return axios.patch(
+        `${API_URL}/api/reports/${selectedReport!.id}`,
+        payload
+      );
     },
     onSuccess: () => {
       toast.success("Report atualizado com sucesso!");

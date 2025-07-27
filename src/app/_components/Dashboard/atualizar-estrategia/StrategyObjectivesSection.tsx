@@ -29,24 +29,32 @@ export function StrategyObjectivesSection({ initialObjectives }: Props) {
     mutationFn: async (data: UpdateData) => {
       // A lógica de fetch agora vive aqui dentro
       const { endpoint, id, ...payload } = data;
-      const res = await axios.patch(`${API_URL}/house-goals/${endpoint}/${id}`, payload);
+      const res = await axios.patch(
+        `${API_URL}/api/house-goals/${endpoint}/${id}`,
+        payload
+      );
       return res.data;
     },
     onSuccess: (data, variables) => {
       // Invalida a query principal para forçar a atualização da UI
-      queryClient.invalidateQueries({ queryKey: ['strategyData'] });
+      queryClient.invalidateQueries({ queryKey: ["strategyData"] });
       // O feedback ao usuário também fica centralizado aqui
-      toast.success(`${variables.endpoint === "objectives" ? "Objetivo" : "Meta"} atualizado!`);
+      toast.success(
+        `${variables.endpoint === "objectives" ? "Objetivo" : "Meta"} atualizado!`
+      );
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Falha ao atualizar.";
+      const errorMessage =
+        error.response?.data?.message || "Falha ao atualizar.";
       toast.error("Erro ao atualizar", { description: errorMessage });
     },
   });
 
   return (
     <div className="space-y-4 mt-6">
-      <h3 className="text-xl text-[#f5b719] font-bold">Objetivos e Indicadores</h3>
+      <h3 className="text-xl text-[#f5b719] font-bold">
+        Objetivos e Indicadores
+      </h3>
       <Accordion type="multiple" className="w-full space-y-3">
         {/* Usamos os dados iniciais para a primeira renderização */}
         {initialObjectives.map((objective) => (

@@ -101,7 +101,7 @@ const PendenciesContent = ({
 
   const { mutate: updateTask, isPending: isUpdatingTask } = useMutation({
     mutationFn: (taskData: TaskFormValues) =>
-      axios.patch(`${API_URL}/tasks/${selectedItem!.id}`, taskData),
+      axios.patch(`${API_URL}/api/tasks/${selectedItem!.id}`, taskData),
     onSuccess: () => {
       toast.success("Tarefa atualizada com sucesso!");
       closeModal();
