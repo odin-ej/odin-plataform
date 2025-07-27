@@ -19,7 +19,7 @@ const Loading = () => {
           />
         </div>
         <p className="text-[#f5b719] text-lg font-semibold">
-          Só mais um pouco, sócio(a)! 
+          Só mais um pouquinho, sócio(a)! 
         </p>
       </div>
     </div>
