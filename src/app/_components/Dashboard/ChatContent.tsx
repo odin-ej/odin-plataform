@@ -101,7 +101,7 @@ const ChatContent = ({
           finalPrompt = `Eu acabei de fazer o upload de um documento chamado "${file.name}". Por favor, faça um resumo detalhado desse documento.`;
         } else {
           throw new Error(
-            "Tipo de ficheiro não suportado. Até 100MB de tamanho - PDF | JPG | JPEG | PNG"
+            "Tipo de arquivo não suportado. Até 100MB de tamanho - PDF | JPG | JPEG | PNG"
           );
         }
       }
