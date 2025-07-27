@@ -33,7 +33,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
   const { data: userTags = [], isLoading } = useQuery({
     queryKey: ["userTags", user?.id],
     queryFn: async (): Promise<UserTag[]> => {
-      const { data } = await axios.get(`${API_URL}/users/${user!.id}/tags`);
+      const { data } = await axios.get(`${API_URL}/api/users/${user!.id}/tags`);
       return data;
     },
     // Esta é a mágica: a query só é executada se o modal estiver aberto e um usuário selecionado

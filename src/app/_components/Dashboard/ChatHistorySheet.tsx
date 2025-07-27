@@ -41,14 +41,14 @@ const ChatHistorySheet = ({
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
     queryKey: ["conversations"],
     queryFn: async () => {
-      const { data } = await axios.get(`${API_URL}/conversations`);
+      const { data } = await axios.get(`${API_URL}/api/conversations`);
       return data;
     },
   });
 
   // --- MUTAÇÃO PARA CRIAR UMA NOVA CONVERSA ---
   const { mutate: createConversation, isPending: isCreating } = useMutation({
-    mutationFn: () => axios.post<Conversation>(`${API_URL}/conversations`),
+    mutationFn: () => axios.post<Conversation>(`${API_URL}/api/conversations`),
     onSuccess: (response) => {
       const newConversation = response.data;
       toast.success("Nova conversa iniciada!");
@@ -65,7 +65,7 @@ const ChatHistorySheet = ({
   // --- MUTAÇÃO PARA DELETAR UMA CONVERSA ---
   const { mutate: deleteConversation, isPending: isDeleting } = useMutation({
     mutationFn: (conversationId: string) =>
-      axios.delete(`${API_URL}/conversations/${conversationId}`),
+      axios.delete(`${API_URL}/api/conversations/${conversationId}`),
     // Usaremos onSettled para garantir que a lógica rode após sucesso ou erro
     onSuccess: (data, conversationId) => {
       toast.success("Conversa apagada com sucesso!");

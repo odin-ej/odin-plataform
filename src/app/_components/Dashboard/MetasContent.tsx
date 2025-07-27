@@ -18,7 +18,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Função que o TanStack Query usará para re-buscar os dados no cliente
 const fetchMetasData = async (): Promise<MetasPageProps> => {
-  const { data } = await axios.get(`${API_URL}/house-goals`);
+  const { data } = await axios.get(`${API_URL}/api/house-goals`);
   return { estrategyObjectives: data };
 };
 

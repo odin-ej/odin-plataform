@@ -32,8 +32,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const fetchStrategyData = async (): Promise<UpdateStrategyContentProps> => {
   const [objectivesRes, strategyRes] = await Promise.all([
-    axios.get(`${API_URL}/house-goals`),
-    axios.get(`${API_URL}/culture`),
+    axios.get(`${API_URL}/api/house-goals`),
+    axios.get(`${API_URL}/api/culture`),
   ]);
   return {
     estrategyObjectives: objectivesRes.data,

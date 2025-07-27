@@ -33,9 +33,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const fetchCulturalData = async (): Promise<CulturePageData> => {
   const [estrategyRes, usersRes, mondayRes] = await Promise.all([
-    axios.get(`${API_URL}/culture`),
-    axios.get(`${API_URL}/users`),
-    axios.get(`${API_URL}/monday-stats`),
+    axios.get(`${API_URL}/api/culture`),
+    axios.get(`${API_URL}/api/users`),
+    axios.get(`${API_URL}/api/monday-stats`),
   ]);
   return {
     estrategy: estrategyRes.data[0], // A API de cultura retorna um array

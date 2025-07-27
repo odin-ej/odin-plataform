@@ -56,7 +56,7 @@ const EnterprisePageContent = ({
   const { data, isLoading: isLoadingData } = useQuery({
     queryKey: ["enterprisePointsData"],
     queryFn: async (): Promise<JrEnterprisePointsPageData> => {
-      const { data } = await axios.get(`${API_URL}/jr-points`);
+      const { data } = await axios.get(`${API_URL}/api/jr-points`);
       return data;
     },
     initialData: initialData,

@@ -32,7 +32,7 @@ export async function GET(){
      } catch (error) {
       console.error("Erro ao buscar tarefas:", error);
       return NextResponse.json(
-        { message: "Erro ao buscar tarefas." },
+        { message: "Erro ao buscar tarefas.", error },
         { status: 500 }
       );
      }

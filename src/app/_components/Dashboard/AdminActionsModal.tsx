@@ -99,7 +99,7 @@ const AdminActionsModal = ({
       const apiCalls = [];
       if (realUserIds.length > 0) {
         apiCalls.push(
-          axios.post(`${API_URL}/tags/add-to-users`, {
+          axios.post(`${API_URL}/api/tags/add-to-users`, {
             userIds: realUserIds,
             tagId,
           })
@@ -107,7 +107,7 @@ const AdminActionsModal = ({
       }
       if (isEnterpriseSelected) {
         apiCalls.push(
-          axios.post(`${API_URL}/enterprise-points/add-tags`, {
+          axios.post(`${API_URL}/api/enterprise-points/add-tags`, {
             tagIds: [tagId],
           })
         );
@@ -130,7 +130,7 @@ const AdminActionsModal = ({
   // Função genérica para criar novas entidades (Tags ou Tipos de Ação)
   const { mutate: createTag, isPending: isCreatingTag } = useMutation({
     mutationFn: (data: z.infer<typeof tagSchema>) =>
-      axios.post(`${API_URL}/tags`, data),
+      axios.post(`${API_URL}/api/tags`, data),
     onSuccess: () => {
       toast.success("Tag criada com sucesso!");
       createTagForm.reset();
@@ -147,7 +147,7 @@ const AdminActionsModal = ({
   const { mutate: createActionType, isPending: isCreatingAction } = useMutation(
     {
       mutationFn: (data: z.infer<typeof actionTypeSchema>) =>
-        axios.post(`${API_URL}/action-types`, data),
+        axios.post(`${API_URL}/api/action-types`, data),
       onSuccess: () => {
         toast.success("Tipo de Ação criado com sucesso!");
         createActionTypeForm.reset();

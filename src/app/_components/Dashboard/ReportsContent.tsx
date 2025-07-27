@@ -43,9 +43,9 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
     queryKey: ["reportsData"],
     queryFn: async (): Promise<ReportsPageData> => {
       const [reportsRes, usersRes, rolesRes] = await Promise.all([
-        axios.get(`${API_URL}/reports`),
-        axios.get(`${API_URL}/users`),
-        axios.get(`${API_URL}/roles`),
+        axios.get(`${API_URL}/api/reports`),
+        axios.get(`${API_URL}/api/users`),
+        axios.get(`${API_URL}/api/roles`),
       ]);
       return {
         myReports: reportsRes.data.myReports,
@@ -62,7 +62,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
   // 1. Create a new report
   const { mutate: createReport, isPending: isCreating } = useMutation({
     mutationFn: (reportData: ReportFormValues) =>
-      axios.post(`${API_URL}/reports`, reportData),
+      axios.post(`${API_URL}/api/reports`, reportData),
     onSuccess: () => {
       toast.success("Report enviado com sucesso!");
       setIsCreateModalOpen(false);

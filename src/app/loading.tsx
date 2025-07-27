@@ -14,6 +14,8 @@ const Loading = () => {
           <Image
             src="/logo-amarela.png" // URL de imagem de exemplo (substitua pelo seu logo)
             alt="Logo da Empresa"
+            height={40}
+            width={40}
             className="absolute inset-0 m-auto w-10 h-10 rounded-full" // Centraliza a imagem sem rotação
             onError={(e) => { e.currentTarget.src = 'https://placehold.co/40x40/f5b719/00205e?text=LOGO'; }} // Fallback para a imagem
           />

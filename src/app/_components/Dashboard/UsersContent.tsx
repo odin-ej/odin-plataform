@@ -69,8 +69,8 @@ const UsersContent = ({
       const listEndpoint =
         type === "approve" ? "/registration-requests" : "/users";
       const [listRes, rolesRes] = await Promise.all([
-        axios.get(`${API_URL}${listEndpoint}`),
-        axios.get(`${API_URL}/roles`),
+        axios.get(`${API_URL}/api${listEndpoint}`),
+        axios.get(`${API_URL}/api/roles`),
       ]);
       // Normalizamos a resposta para sempre ter uma propriedade 'list' e 'roles'
       return {
@@ -144,7 +144,7 @@ const UsersContent = ({
   // 3. APROVAR EM MASSA
   const { mutate: bulkApprove, isPending: isApprovingInBulk } = useMutation({
     mutationFn: (ids: string[]) =>
-      axios.post(`${API_URL}/users/register-many`, { ids }),
+      axios.post(`${API_URL}/api/users/register-many`, { ids }),
     onSuccess: (response) => {
       const { successful, failed } = response.data;
       if (successful.length > 0)

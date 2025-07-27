@@ -80,8 +80,8 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     queryFn: async (): Promise<TasksPageData> => {
       // A função de fetch aqui precisa replicar a lógica do servidor
       const [tasksRes, usersRes] = await Promise.all([
-        axios.get(`${API_URL}/tasks`),
-        axios.get(`${API_URL}/users`),
+        axios.get(`${API_URL}/api/tasks`),
+        axios.get(`${API_URL}/api/users`),
       ]);
       return { tasks: tasksRes.data, formatedUsers: usersRes.data };
     },
@@ -90,7 +90,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
 
   const { mutate: createTask, isPending: isCreating } = useMutation({
     mutationFn: (taskData: TaskCreateFormValues) =>
-      axios.post(`${API_URL}/tasks`, taskData),
+      axios.post(`${API_URL}/api/tasks`, taskData),
     onSuccess: () => {
       toast.success("Tarefa criada com sucesso!");
       closeCreateModal();

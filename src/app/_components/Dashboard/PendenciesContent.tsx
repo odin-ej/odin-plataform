@@ -91,8 +91,8 @@ const PendenciesContent = ({
     queryKey: ["myTasksData"],
     queryFn: async (): Promise<MyPendenciesPageData> => {
       const [tasksRes, usersRes] = await Promise.all([
-        axios.get(`${API_URL}/tasks`),
-        axios.get(`${API_URL}/users`),
+        axios.get(`${API_URL}/api/tasks`),
+        axios.get(`${API_URL}/api/users`),
       ]);
       return { myTasks: tasksRes.data, allUsers: usersRes.data.users };
     },

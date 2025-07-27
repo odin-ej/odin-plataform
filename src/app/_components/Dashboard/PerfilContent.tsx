@@ -33,8 +33,8 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     queryKey: ["userProfile", userId],
     queryFn: async (): Promise<PerfilPageData> => {
       const [userRes, rolesRes] = await Promise.all([
-        axios.get(`${API_URL}/users/${userId}`),
-        axios.get(`${API_URL}/roles`),
+        axios.get(`${API_URL}/api/users/${userId}`),
+        axios.get(`${API_URL}/api/roles`),
       ]);
       return { user: userRes.data, roles: rolesRes.data };
     },

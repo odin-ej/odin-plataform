@@ -99,7 +99,7 @@ const RoomsContent = ({
   const { data, isLoading: isLoadingData } = useQuery({
     queryKey: ["reservationsData"],
     queryFn: async (): Promise<RoomsPageData> => {
-      const { data } = await axios.get(`${API_URL}/reserve`);
+      const { data } = await axios.get(`${API_URL}/api/reserve`);
       return data;
     },
     initialData: initialData,

@@ -46,7 +46,7 @@ const ChatContent = ({
     queryKey: ["conversation", conversationId],
     queryFn: async (): Promise<ConversationType> => {
       const { data } = await axios.get(
-        `${API_URL}/conversations/${conversationId}`
+        `${API_URL}/api/conversations/${conversationId}`
       );
       return data;
     },
@@ -107,10 +107,13 @@ const ChatContent = ({
       }
 
       // A chamada final para a API do chat
-      const response = await axios.post(`${API_URL}/chat/${conversationId}`, {
-        prompt: finalPrompt,
-        fileData,
-      });
+      const response = await axios.post(
+        `${API_URL}/api/chat/${conversationId}`,
+        {
+          prompt: finalPrompt,
+          fileData,
+        }
+      );
 
       return response.data; // Retorna a resposta da IA
     },

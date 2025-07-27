@@ -20,7 +20,10 @@ const KnowledgeContent = () => {
       formData.append("file", fileToUpload);
 
       // Usamos axios para consistência e melhor tratamento de erros
-      const { data } = await axios.post(`${API_URL}/knowledge/upload`, formData);
+      const { data } = await axios.post(
+        `${API_URL}/api/knowledge/upload`,
+        formData
+      );
       return data;
     },
     onSuccess: (data) => {
@@ -28,7 +31,8 @@ const KnowledgeContent = () => {
       setFile(null); // Limpa o input após o sucesso
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Falha no upload do ficheiro.";
+      const errorMessage =
+        error.response?.data?.message || "Falha no upload do ficheiro.";
       toast.error("Erro no Upload", { description: errorMessage });
     },
   });
@@ -62,9 +66,9 @@ const KnowledgeContent = () => {
           Base de Conhecimento da IA
         </h1>
         <p className="text-gray-300 mb-6">
-          Faça o upload de ficheiros (PDF, TXT) para &quot;treinar&quot; a IA. O conteúdo
-          destes documentos será usado para fornecer respostas mais precisas
-          sobre a empresa.
+          Faça o upload de ficheiros (PDF, TXT) para &quot;treinar&quot; a IA. O
+          conteúdo destes documentos será usado para fornecer respostas mais
+          precisas sobre a empresa.
         </p>
 
         <div className="max-w-xl p-6 bg-[#010d26] rounded-lg border border-gray-700 space-y-4">
@@ -107,6 +111,6 @@ const KnowledgeContent = () => {
       </div>
     </div>
   );
-}
+};
 
 export default KnowledgeContent;

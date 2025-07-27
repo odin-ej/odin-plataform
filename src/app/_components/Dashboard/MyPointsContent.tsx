@@ -14,8 +14,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Função que o TanStack Query usará para re-buscar os dados no cliente
 const fetchMyPoints = async (userId: string): Promise<MyPointsData> => {
-    const { data } = await axios.get(`${API_URL}/my-points/${userId}`);
-    return data;
+  const { data } = await axios.get(`${API_URL}/api/my-points/${userId}`);
+  return data;
 };
 
 const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
@@ -25,7 +25,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   // --- QUERY PRINCIPAL (Gerencia os dados da página) ---
   const { data, isLoading, isError } = useQuery({
     // A chave da query inclui o ID do usuário para ser única
-    queryKey: ['myPoints', userId],
+    queryKey: ["myPoints", userId],
     queryFn: () => fetchMyPoints(userId!),
     initialData: initialData,
     // A query só será executada no cliente se o userId estiver disponível
@@ -42,9 +42,13 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   }
 
   if (isError || !data?.myPoints) {
-    return <div className="p-8 text-white text-center">Erro ao carregar seus pontos.</div>;
+    return (
+      <div className="p-8 text-white text-center">
+        Erro ao carregar seus pontos.
+      </div>
+    );
   }
-  
+
   // Usamos os dados do 'data' do useQuery como fonte da verdade
   const { myPoints } = data;
 

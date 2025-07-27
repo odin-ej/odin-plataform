@@ -17,27 +17,38 @@ import { useQuery } from "@tanstack/react-query";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const fetchHomeData = async (): Promise<HomeContentData> => {
-  // No cliente, a autenticação é gerenciada pelo axios/fetch, não precisamos do ID
-  const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes] =
-    await Promise.all([
-      axios.get(`${API_URL}/house-goals`),
-      axios.get(`${API_URL}/my-points`), // Supondo que a API sabe o usuário logado
-      axios.get(`${API_URL}/my-tasks`),
-      axios.get(`${API_URL}/useful-links`),
-    ]);
-
-  const goals = strategyRes.data?.flatMap((obj: any) => obj.goals) || [];
-  const myPoints = myPointsRes.data?.myPoints?.totalPoints ?? 0;
-  const numberOfTasks = myTasksRes.data?.length || 0;
-  const usefulLinks = usefulLinksRes.data?.links || [];
-
-  return { goals, myPoints, numberOfTasks, usefulLinks };
-};
-
 const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
   const [view, setView] = useState<"personal" | "odin">("odin");
   const { user } = useAuth();
+
+  const fetchHomeData = async (): Promise<HomeContentData> => {
+    // Use o 'user' do useAuth() diretamente
+    if (!user || user.isExMember) {
+      // Se não houver user ou for ex-membro, não deve buscar
+      // Isso já é tratado pelo 'enabled' do useQuery, mas é bom ter uma validação aqui
+      throw new Error(
+        "Usuário não autenticado ou não elegível para buscar dados."
+      );
+    }
+
+    const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes] =
+      await Promise.all([
+        axios.get(`${API_URL}/api/api/house-goals`),
+        // Use user.id diretamente
+        axios.get(`${API_URL}/api/api/my-points/${user.id}`),
+        // Para my-tasks, axios precisa estar configurado para enviar cookies/headers de autenticação
+        axios.get(`${API_URL}/api/api/my-tasks`),
+        // Use user.id diretamente
+        axios.get(`${API_URL}/api/api/users/${user.id}/useful-links`),
+      ]);
+
+    const goals = strategyRes.data?.flatMap((obj: any) => obj.goals) || [];
+    const myPoints = myPointsRes.data?.myPoints?.totalPoints ?? 0;
+    const numberOfTasks = myTasksRes.data?.length || 0;
+    const usefulLinks = usefulLinksRes.data?.links || [];
+
+    return { goals, myPoints, numberOfTasks, usefulLinks };
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["homeDashboardData"],
@@ -48,7 +59,6 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
   });
 
   const { goals, myPoints, numberOfTasks, usefulLinks } = data || initialData;
-
   const slidesData: SlideData[] = goals.map((goal) => ({
     progress: Math.floor(Number(Number(goal.value) / Number(goal.goal)) * 100),
     valueText: `${goal.value} de ${goal.goal}`,
