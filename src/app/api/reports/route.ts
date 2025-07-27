@@ -40,13 +40,12 @@ export async function POST(request: Request) {
 
     const { title, content, recipientUserId, recipientRoleId } =
       validation.data;
-
     // 2. Cria o report na base de dados, ligando o 'referent' ao utilizador logado
     const newReport = await prisma.report.create({
       data: {
         title,
         content,
-        status: "DRAFT", // O status inicial é sempre 'DRAFT'
+        status: "SUBMITTED", // O status inicial é sempre 'DRAFT'
         referentId: user.id!, // O remetente é o utilizador logado
         recipientUserId: recipientUserId,
         recipientNotes: "",

@@ -22,6 +22,8 @@ import {
   parse,
   addDays,
   areIntervalsOverlapping,
+  isBefore,
+  startOfToday,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -135,7 +137,7 @@ const RoomsContent = ({
           );
 
         const payload = {
-          date: new Date(formData.date).toISOString(),
+          date: hourEnter.toISOString(),
           hourEnter: hourEnter.toISOString(),
           hourLeave: hourLeave.toISOString(),
           roomId: formData.roomId,
@@ -395,6 +397,7 @@ const RoomsContent = ({
                 new Date(a.hourEnter).getTime() -
                 new Date(b.hourEnter).getTime()
             );
+            const isPast = isBefore(day, startOfToday());
             return (
               <div
                 key={day.toString()}
@@ -403,10 +406,12 @@ const RoomsContent = ({
                   view === "month" &&
                     !isSameMonth(day, monthStart) &&
                     "text-gray-600 bg-black/20 pointer-events-none",
+                    isPast && "text-gray-600 bg-black/20 pointer-events-none",
                   isToday(day) && "bg-blue-500/20",
                   "hover:bg-[#00205e]"
                 )}
                 onClick={() => {
+                  if (isPast) return;
                   if (view === "month" && !isSameMonth(day, monthStart)) return;
                   openModal(undefined, day);
                 }}
@@ -427,12 +432,16 @@ const RoomsContent = ({
                       <div
                         key={res.id}
                         className="bg-[#0126fb]/70 p-1 rounded truncate"
-                        title={`${format(new Date(res.hourEnter), "HH:mm")} ${
+                        title={`${format(new Date(res.hourEnter), "HH:mm")} - ${ format(new Date(res.hourLeave), "HH:mm")} ${
                           res.room.name
                         } - ${res.user.name}`}
                       >
                         <span className="hidden sm:inline">{`${format(
                           new Date(res.hourEnter),
+                          "HH:mm"
+                        )} `}</span>{" "}-{" "}
+                        <span className="hidden sm:inline">{`${format(
+                          new Date(res.hourLeave),
                           "HH:mm"
                         )} `}</span>
                         <span className="font-semibold">{res.room.name}</span>

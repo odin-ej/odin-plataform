@@ -44,7 +44,7 @@ enum ProjectStatus {
 enum ReportStatus {
   DRAFT
   SUBMITTED
-  REVIEWED
+  REJECTED
   APPROVED
 }
 

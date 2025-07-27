@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { Value } from "@prisma/client";
 
+
 interface UpdateStrategyContentProps {
   estrategyObjectives: EstrategyObjectiveWithGoals[];
   fullStrategy: fullStrategyType;
@@ -31,15 +32,28 @@ enum Item {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const fetchStrategyData = async (): Promise<UpdateStrategyContentProps> => {
+
   const [objectivesRes, strategyRes] = await Promise.all([
-    axios.get(`${API_URL}/api/house-goals`),
-    axios.get(`${API_URL}/api/culture`),
+    fetch(`${API_URL}/api/house-goals`, { cache: "no-store" }),
+    fetch(`${API_URL}/api/culture`, { cache: "no-store" }),
   ]);
-  return {
-    estrategyObjectives: objectivesRes.data,
-    fullStrategy: strategyRes.data,
+
+  const estrategyObjectivesData = objectivesRes.ok ? await objectivesRes.json() : [];
+  const strategyData = strategyRes.ok ? await strategyRes.json() : {}; // Pode ser um objeto vazio se falhar
+
+  // Se a API /api/culture retorna um array, pegue o primeiro item
+  const fullStrategyData = Array.isArray(strategyData) ? strategyData[0] : strategyData;
+
+  const result = {
+    estrategyObjectives: estrategyObjectivesData,
+    fullStrategy: fullStrategyData,
   };
-};
+
+  // CRÍTICO: Retorne uma CÓPIA PROFUNDA para o initialData
+  // Isso impede que qualquer mutação posterior no servidor ou cliente afete o objeto original.
+  return structuredClone(result); // OU JSON.parse(JSON.stringify(result));
+}
+
 
 const UpdateStrategyContent = ({
   estrategyObjectives,
@@ -55,7 +69,7 @@ const UpdateStrategyContent = ({
     queryFn: fetchStrategyData, // Função que busca os dados
     initialData: { estrategyObjectives, fullStrategy }, // "Hidrata" com os dados do servidor!
   });
-
+  console.log('Após useQuery:', data.fullStrategy.values, data.fullStrategy.propose, data.fullStrategy.mission, data.fullStrategy.vision);
   // --- HOOK PARA ATUALIZAR A ESTRATÉGIA ---
   const { mutate: updateStrategy, isPending: isUpdating } = useMutation({
     mutationFn: (newData: { field: string; value: string }) =>
@@ -78,7 +92,7 @@ const UpdateStrategyContent = ({
       // A lógica de chamada da API agora vive aqui
       const { id, ...payload } = valueData;
       const { data } = await axios.patch(
-        `${API_URL}/api/values/${id}`,
+        `${API_URL}/api/culture/values/${id}`,
         payload
       );
       return data;
@@ -98,7 +112,7 @@ const UpdateStrategyContent = ({
   // Mostra o estado de carregamento se o TanStack Query estiver buscando os dados
   if (isLoading) return <div>Carregando estratégia...</div>;
   if (isError) return <div>Erro ao carregar os dados.</div>;
-
+  console.log(data.fullStrategy.values, data.fullStrategy.propose, data.fullStrategy.mission, data.fullStrategy.vision);
   return (
     <>
       <CustomCard

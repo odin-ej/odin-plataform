@@ -165,7 +165,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
     },
   ];
 
-  const reportFields: FieldConfig<ReportFormValues>[] = [
+  const reportFields: FieldConfig<ExtendedReport>[] = [
     {
       header: "Título",
       accessorKey: "title",
@@ -183,18 +183,47 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
       options: [
         { value: "SUBMITTED", label: "Em análise" },
         { value: "APPROVED", label: "Aprovado" },
-        { value: "REJECTED", label: "Recusado" },
+        { value: "REJECTED", label: "Rejeitado" },
         { value: "DRAFT", label: "Rascunho" },
       ],
+      renderView: (row) => {
+        switch (row.status) {
+          case ReportStatus.DRAFT:
+            return "Rascunho";
+          case ReportStatus.SUBMITTED:
+            return "Em análise";
+          case ReportStatus.APPROVED:
+            return "Aprovado";
+          case ReportStatus.REJECTED:
+            return "Recusado";
+          default:
+            return "Desconhecido";
+        }
+      },
     },
     {
-      header: "Destinatário (Usuário)",
+      header: "Destinatário",
       accessorKey: "recipientUserId",
-      type: "select",
-      options: data.allUsers.map((user) => ({
-        value: user.id,
-        label: user.name,
-      })),
+      type: "text",
+      renderView: (row) => {
+        const typedRow = row as Partial<ExtendedReport>;
+
+        // Usa os objetos aninhados se estiverem disponíveis
+        const userName = typedRow.recipientUser?.name;
+        const roleName = typedRow.recipientRole?.name;
+
+        // Fallback via ID se necessário (buscando manualmente)
+        const userFromId = data.allUsers.find(
+          (u) => u.id === typedRow.recipientUserId
+        )?.name;
+        const roleFromId = data.allRoles.find(
+          (r) => r.id === typedRow.recipientRoleId
+        )?.name;
+
+        return (
+          userName || roleName || userFromId || roleFromId || "Não especificado"
+        );
+      },
     },
     {
       header: 'Notas do "Destinatário"',
@@ -216,7 +245,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
       options: [
         { value: "SUBMITTED", label: "Em análise" },
         { value: "APPROVED", label: "Aprovado" },
-        { value: "REJECTED", label: "Recusado" },
+        { value: "REJECTED", label: "Rejeitado" },
         { value: "DRAFT", label: "Rascunho" },
       ],
     },

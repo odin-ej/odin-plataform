@@ -26,6 +26,8 @@ import ModalConfirm from "../Global/ModalConfirm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { TasksPageData } from "@/app/(dashboard)/tarefas/page";
+import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -57,13 +59,17 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FullTask | null>(null);
   const [itemToDelete, setItemToDelete] = useState<FullTask | null>(null);
+  const { user } = useAuth();
 
-  // Formulário para editar uma tarefa existente (usa o schema de update com campos opcionais)
   const editTaskForm = useForm<TaskFormValues>({
     resolver: zodResolver(taskUpdateSchema),
   });
 
-  // CORREÇÃO: Formulário para criar uma nova tarefa (usa o schema de criação com campos obrigatórios)
+  const queryKey = useMemo(
+    () => ["tasksData", { userId: user?.id, roleId: user?.currentRoleId }],
+    [user?.id, user?.currentRoleId]
+  );
+
   const createTaskForm = useForm<TaskCreateFormValues>({
     resolver: zodResolver(taskCreateSchema),
     defaultValues: {
@@ -76,16 +82,33 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
   });
 
   const { data, isLoading: isLoadingData } = useQuery({
-    queryKey: ["tasksData"],
+    queryKey,
     queryFn: async (): Promise<TasksPageData> => {
-      // A função de fetch aqui precisa replicar a lógica do servidor
+      if (!user?.id) {
+        return { tasks: [], formatedUsers: [] };
+      }
+
+    
       const [tasksRes, usersRes] = await Promise.all([
         axios.get(`${API_URL}/api/tasks`),
         axios.get(`${API_URL}/api/users`),
       ]);
-      return { tasks: tasksRes.data, formatedUsers: usersRes.data };
+      const users: MemberWithRoles[] = usersRes.data.users.filter(
+        (u: MemberWithRoles) => !u.isExMember
+      );
+      const formatedUsers = users.map((u: MemberWithRoles) => ({
+        value: u.id,
+        label: u.name,
+      }));
+
+      const fetchedData = structuredClone({
+        tasks: tasksRes.data,
+        formatedUsers,
+      });
+      return fetchedData;
     },
-    initialData: initialData,
+    staleTime: 1000 * 5,
+    initialData,
   });
 
   const { mutate: createTask, isPending: isCreating } = useMutation({
@@ -94,6 +117,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     onSuccess: () => {
       toast.success("Tarefa criada com sucesso!");
       closeCreateModal();
+      // ✅ SOLUÇÃO: Invalida qualquer query cuja chave comece com 'tasksData'.
       queryClient.invalidateQueries({ queryKey: ["tasksData"] });
     },
     onError: (error: any) =>
@@ -108,6 +132,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     onSuccess: () => {
       toast.success("Tarefa atualizada com sucesso!");
       closeEditModal();
+      // ✅ SOLUÇÃO: Invalida qualquer query cuja chave comece com 'tasksData'.
       queryClient.invalidateQueries({ queryKey: ["tasksData"] });
     },
     onError: (error: any) =>
@@ -117,10 +142,12 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
   });
 
   const { mutate: deleteTask, isPending: isDeleting } = useMutation({
-    mutationFn: (taskId: string) => axios.delete(`${API_URL}/api/tasks/${taskId}`),
+    mutationFn: (taskId: string) =>
+      axios.delete(`${API_URL}/api/tasks/${taskId}`),
     onSuccess: () => {
       toast.success("Tarefa deletada com sucesso!");
       setItemToDelete(null);
+      // ✅ SOLUÇÃO: Invalida qualquer query cuja chave comece com 'tasksData'.
       queryClient.invalidateQueries({ queryKey: ["tasksData"] });
     },
     onError: (error: any) =>
@@ -129,7 +156,6 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
       }),
   });
 
-  // --- HANDLERS simplificados ---
   const handleCreateSubmit = (formData: TaskCreateFormValues) =>
     createTask(formData);
   const handleUpdateSubmit = (formData: TaskFormValues) => updateTask(formData);
@@ -142,7 +168,6 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
         deadline: formatDateForInput(selectedItem.deadline),
         responsibles: selectedItem.responsibles.map((r) => r.id),
       });
-      // Data vem do banco de dados certa! O problema é aqui no front-end talvez no formatDateForInput - Se for melhor crie um componente de calendario para cuidar de campos como esse de datas
     }
   }, [selectedItem, editTaskForm]);
 
@@ -163,9 +188,9 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
       title: "",
       description: "",
       status: TaskStatus.PENDING,
-      deadline: formatDateForInput(new Date()), // Formata a data para o input
+      deadline: formatDateForInput(new Date()),
       responsibles: [],
-    }); // Limpa o formulário de criação
+    });
     setIsCreateModalOpen(true);
   };
 
@@ -173,12 +198,10 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     setIsCreateModalOpen(false);
   };
 
-  const formatedUsers = data?.formatedUsers || [];
-
   const sortedTasks = useMemo(() => {
     const tasks = data?.tasks || [];
     return sortTasks(tasks);
-  }, [data.tasks]);
+  }, [data?.tasks]);
 
   const taskColumns = useMemo<ColumnDef<FullTask>[]>(
     () => [
@@ -247,6 +270,8 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     []
   );
 
+  const formatedUsers = data?.formatedUsers ?? [];
+
   const editTaskFields: FieldConfig<TaskFormValues>[] = [
     { accessorKey: "title", header: "Título", type: "text" },
     { accessorKey: "description", header: "Descrição", type: "text" },
@@ -299,9 +324,9 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     },
   ];
 
-  if (isLoadingData) {
+  if (isLoadingData && !data?.tasks.length) {
     return (
-      <div className="flex justify-center items-center mt-20">
+      <div className="flex justify-center min-h-full items-center mt-20">
         <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
       </div>
     );
@@ -312,9 +337,9 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
       <CustomCard
         type="introduction"
         icon={ClipboardList}
-        title="Tarefas e Projetos"
-        description="Acompanhe as tarefas e projetos da casinha dos sonhos"
-        value={data.tasks.length}
+        title="Tarefas"
+        description="Acompanhe as tarefas da casinha dos sonhos"
+        value={data?.tasks.length as number}
       />
 
       <div className="mt-6 space-y-8">
@@ -333,7 +358,6 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
         />
       </div>
 
-      {/* Modal para Editar/Visualizar Tarefa */}
       {isEditModalOpen && (
         <CustomModal
           isOpen={isEditModalOpen}
@@ -348,7 +372,6 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
         />
       )}
 
-      {/* Modal para Criar Tarefa */}
       <CustomModal
         isOpen={isCreateModalOpen}
         onClose={closeCreateModal}

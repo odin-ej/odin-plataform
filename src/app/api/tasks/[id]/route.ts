@@ -69,6 +69,7 @@ export async function DELETE(
 
     const { id } = await params;
     await prisma.task.delete({ where: { id } });
+    revalidatePath("/tarefas");
     return NextResponse.json({ status: 204 });
   } catch (error) {
     return NextResponse.json(

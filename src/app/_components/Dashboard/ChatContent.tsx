@@ -18,6 +18,9 @@ import CustomCard from "../Global/Custom/CustomCard";
 import { AreaRoles } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import 'github-markdown-css/github-markdown-dark.css';
 
 type MessageWithImageUrl = Message & { imageUrl?: string };
 
@@ -41,7 +44,6 @@ const ChatContent = ({
   const queryClient = useQueryClient();
   const conversationId = initialConversation.id;
 
-  // --- QUERY PARA GERENCIAR A CONVERSA ---
   const { data: conversation } = useQuery({
     queryKey: ["conversation", conversationId],
     queryFn: async (): Promise<ConversationType> => {
@@ -53,22 +55,17 @@ const ChatContent = ({
     initialData: initialConversation,
   });
 
-  // --- MUTAÇÃO PARA ENVIAR MENSAGEM (COM UPLOAD E OTIMISMO) ---
   const { mutate: sendMessage, isPending: isLoading } = useMutation({
-    // A 'mutationFn' contém toda a lógica assíncrona
     mutationFn: async (variables: { prompt: string; file?: File }) => {
       const { prompt, file } = variables;
       let finalPrompt = prompt;
       let fileData: { mimeType: string; base64: string } | undefined;
 
       if (file) {
-        // Se for uma imagem, converte para base64 para análise imediata
         if (file.type.startsWith("image/")) {
           fileData = await fileToBase64(file);
           finalPrompt = prompt || `Analise a imagem que enviei.`;
-        }
-        // Se for um PDF ou outro documento, faz o upload para o S3 para o RAG
-        else if (file.type === "application/pdf") {
+        } else if (file.type === "application/pdf") {
           const presignedUrlResponse = await fetch("/api/s3-chat-upload", {
             method: "POST",
             body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
@@ -96,8 +93,7 @@ const ChatContent = ({
           });
           const knowledgeResult = await knowledgeResponse.json();
           if (!knowledgeResponse.ok) throw new Error(knowledgeResult.message);
-
-          // Informa o utilizador e a IA que o ficheiro foi adicionado
+          
           finalPrompt = `Eu acabei de fazer o upload de um documento chamado "${file.name}". Por favor, faça um resumo detalhado desse documento.`;
         } else {
           throw new Error(
@@ -105,20 +101,18 @@ const ChatContent = ({
           );
         }
       }
-
-      // A chamada final para a API do chat
+      
       const response = await axios.post(
-        `${API_URL}/api/chat/${conversationId}`,
+        `${API_URL}/api/chat`,
         {
           prompt: finalPrompt,
           fileData,
+          conversationId,
         }
       );
 
-      return response.data; // Retorna a resposta da IA
+      return response.data;
     },
-
-    // ATUALIZAÇÃO OTIMISTA DA MENSAGEM DO USUÁRIO
     onMutate: async (variables: { prompt: string; file?: File }) => {
       await queryClient.cancelQueries({
         queryKey: ["conversation", conversationId],
@@ -152,13 +146,11 @@ const ChatContent = ({
 
       return { previousConversation };
     },
-
-    // ADICIONA A RESPOSTA DA IA EM CASO DE SUCESSO
     onSuccess: (data) => {
       const aiMessage: Message = {
         id: crypto.randomUUID(),
         role: "model",
-        content: data.response, // Supondo que a API retorne { response: '...' }
+        content: data.response,
         conversationId: conversationId,
         createdAt: new Date(),
       };
@@ -171,11 +163,8 @@ const ChatContent = ({
         })
       );
     },
-
-    // REVERTE E MOSTRA O ERRO EM CASO DE FALHA
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (error: any, variables, context) => {
-      // Reverte para o estado anterior em caso de erro
       if (context?.previousConversation) {
         queryClient.setQueryData(
           ["conversation", conversationId],
@@ -203,18 +192,14 @@ const ChatContent = ({
         })
       );
     },
-
-    // LIMPEZA APÓS A CONCLUSÃO
     onSettled: () => {
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Limpa o input de arquivo
-      // Podemos revalidar para garantir 100% de consistência com o DB, se necessário
+      if (fileInputRef.current) fileInputRef.current.value = "";
       queryClient.invalidateQueries({
         queryKey: ["conversation", conversationId],
       });
     },
   });
 
-  // O NOVO HANDLER, MUITO MAIS SIMPLES
   const handleSendMessage: SubmitHandler<{ prompt: string }> = (data) => {
     const file = fileInputRef.current?.files?.[0];
     if ((!data.prompt.trim() && !file) || isLoading) return;
@@ -224,7 +209,6 @@ const ChatContent = ({
   };
 
   useEffect(() => {
-    // O scroll agora depende dos dados da query
     scrollAreaRef.current?.scrollTo(0, scrollAreaRef.current.scrollHeight);
   }, [conversation?.messages]);
 
@@ -260,7 +244,6 @@ const ChatContent = ({
         />
       </div>
       <div className="rounded-lg flex h-full max-h-[85vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent flex-col bg-[#010d26] text-white">
-        {/* Top action bar */}
         <div className="sticky rounded-lg top-0 z-10 w-full bg-[#010d26] border-b border-[#0126fb]/30 p-4 flex justify-end">
           <ChatHistorySheet activeConversationId={initialConversation.id}>
             <Button
@@ -272,7 +255,7 @@ const ChatContent = ({
             </Button>
           </ChatHistorySheet>
         </div>
-        {/* Chat messages */}
+        
         <div
           ref={scrollAreaRef}
           className="flex-1 min-h-[60vh] overflow-y-auto space-y-6 px-4 py-6"
@@ -311,9 +294,13 @@ const ChatContent = ({
                     className="rounded-lg mb-2 max-w-xs"
                   />
                 )}
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
-                </p>
+                
+                {/* ✅ SOLUÇÃO APLICADA AQUI ✅ */}
+                <div className="markdown-body !bg-transparent">
+                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                     {msg.content}
+                   </ReactMarkdown>
+                </div>
               </div>
 
               {msg.role === "user" && (
@@ -344,7 +331,6 @@ const ChatContent = ({
           )}
         </div>
 
-        {/* Input section */}
         <div className="border-t border-gray-700 bg-[#00205e] p-4">
           <Form {...form}>
             <form
@@ -378,7 +364,7 @@ const ChatContent = ({
                     ? "Opa... seu limite diário acabou!"
                     : "Digite a sua mensagem..."
                 }
-                className="flex-1 bg-[#010d26] border-gray-700 focus-visible:ring-1 focus-visible:ring-[#0126fb] resize-none"
+                className="flex-1 bg-[#010d26] max-h-300px scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent border-gray-700 focus-visible:ring-1 focus-visible:ring-[#0126fb] resize-none"
                 onKeyDown={(e: React.KeyboardEvent) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

@@ -27,9 +27,12 @@ async function getLastConversation(): Promise<Conversation | null> {
 // Esta função chama a sua API para criar uma nova conversa.
 async function createNewConversation(): Promise<Conversation | null> {
   try {
+    const cookiesStore = await cookies();
+    const headers = { Cookie: cookiesStore.toString() };
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const response = await fetch(`${baseUrl}/api/conversations`, {
       method: "POST",
+      headers,
     });
     if (!response.ok) throw new Error("Falha ao criar uma nova conversa.");
     return await response.json();

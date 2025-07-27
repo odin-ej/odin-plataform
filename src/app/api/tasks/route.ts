@@ -3,6 +3,7 @@ import { getTasksWhereClauseForUser } from "@/lib/permissions";
 import { taskCreateSchema } from "@/lib/schemas/projectsAreaSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { parseBrazilianDate } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -14,7 +15,10 @@ export async function GET() {
     }
 
     const whereClause = getTasksWhereClauseForUser(authUser);
-
+    console.log(
+      "[API GET /api/tasks] whereClause gerado:",
+      JSON.stringify(whereClause, null, 2)
+    );
     const tasks = await prisma.task.findMany({
       where: whereClause,
       include: {
@@ -58,7 +62,9 @@ export async function POST(request: Request) {
     const { responsibles, deadline, ...taskData } = validation.data;
 
     const parsedDeadline: string | Date =
-      typeof deadline! === "string" ? parseBrazilianDate(deadline) as Date : "";
+      typeof deadline! === "string"
+        ? (parseBrazilianDate(deadline) as Date)
+        : "";
 
     const dataForPrisma = {
       ...taskData,
@@ -72,6 +78,7 @@ export async function POST(request: Request) {
     };
 
     const newTask = await prisma.task.create({ data: dataForPrisma });
+    revalidatePath("/tarefas");
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar tarefa:", error);

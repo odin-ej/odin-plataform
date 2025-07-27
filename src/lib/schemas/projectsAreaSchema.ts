@@ -22,7 +22,7 @@ export const taskCreateSchema = z.object({
 
 export const projectCreateSchema = z.object({
   account: z.nativeEnum(AccountType),
-  description: z.string().min(10, "A descrição é obrigatória."),
+  description: z.string().min(6, "A descrição é obrigatória e deve ter no mínimo 6 letras."),
   title: z.string().min(3, "O título é obrigatório."),
   status: z.nativeEnum(ProjectStatus),
   deadline: z.date(),

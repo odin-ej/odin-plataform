@@ -5,7 +5,7 @@ export const reportSchema = z
   .object({
     title: z.string().min(5, "O título deve ter pelo menos 5 caracteres."),
     content: z.string().min(20, "A descrição precisa de mais detalhes."),
-    status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REVIEWED"]).optional(),
+    status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REJECTED"]).optional(),
     // Um report deve ter ou um utilizador ou um cargo como destinatário, mas não ambos.
     recipientUserId: z.string().optional(),
     recipientRoleId: z.string().optional(),

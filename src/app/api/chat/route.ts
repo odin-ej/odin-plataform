@@ -26,8 +26,8 @@ const tools: Tool[] = [
 ];
 
 const systemPrompt = `
-Você é Hórus IA, um assistente de inteligência artificial para a Empresa Júnior ADM UFBA. 
-O seu propósito é ajudar os membros a encontrar informações, analisar dados e impulsionar os sonhos da empresa.
+Você é Hórus IA, um assistente de inteligência artificial para a Empresa Junior ADM UFBA. 
+O seu propósito é ajudar os membros da Empresa Junior ADM UFBA a encontrar informações, analisar dados e impulsionar os sonhos da empresa.
 Responda sempre de forma prestativa, profissional e alinhada com os valores da empresa: Ser sốcio, Inquietação, Só faça, Envolvimento, Sintonia, Só faça.
 Quando um utilizador fizer uma pergunta, responda como se fosse Hórus IA.
 `;
@@ -117,7 +117,14 @@ export async function POST(request: Request) {
     `;
 
     const context = contextChunks.map((c) => c.content).join("\n---\n");
-    const finalPrompt = `Com base no seguinte contexto da nossa empresa:\n\n${context}\n\nResponda à pergunta do utilizador: "${prompt}"`;
+    const finalPrompt = `${systemPrompt}
+
+        --- CONTEXTO RELEVANTE DA EMPRESA ---
+        ${context}
+
+        --- PERGUNTA DO USUÁRIO ---
+        ${prompt}
+      `;
 
     const modelParts: Part[] = [{ text: finalPrompt }];
 
@@ -151,11 +158,10 @@ export async function POST(request: Request) {
       history.pop();
     }
     const useTools = shouldUseTools(prompt);
-  
+
     const model = getModelForPrompt(prompt, useTools);
     const chat = model.startChat({
       history,
-      systemInstruction: systemPrompt,
       ...(useTools && { tools }),
     });
 
@@ -164,8 +170,6 @@ export async function POST(request: Request) {
     const functionCall = result.response.candidates?.[0]?.content?.parts?.find(
       (p) => "functionCall" in p
     )?.functionCall;
-
-    
 
     // Se a IA solicitar a ferramenta
     if (functionCall?.name === "searchGoogle") {

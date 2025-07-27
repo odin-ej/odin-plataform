@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import z from "zod";
 
 const reportUpdateSchema = z.object({
-  recipientNotes: z.string().min(5, "A descrição precisa de mais detalhes."),
-  status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REVIEWED"]),
+  recipientNotes: z.string().min(2, "A descrição precisa de mais detalhes."),
+  status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REJECTED"]),
 });
 
 export async function PATCH(
@@ -20,6 +20,7 @@ export async function PATCH(
   try {
     const body = await request.json();
     const validation = reportUpdateSchema.safeParse(body);
+    console.log(body)
     if (!validation.success) {
       return NextResponse.json(
         { message: "Dados inválidos.", errors: validation.error.formErrors },

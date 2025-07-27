@@ -1,6 +1,7 @@
-'use client'
+"use client";
 import { CardHeader, Card, CardTitle, CardContent } from "@/components/ui/card";
 import { ShieldBan } from "lucide-react";
+import Link from "next/link";
 const ForgotPassswordContent = () => {
   return (
     <Card className="max-w-lg w-full bg-[#010d26] border border-[#0126fb] rounded-2xl shadow-lg">
@@ -30,6 +31,15 @@ const ForgotPassswordContent = () => {
           Toma cuidado para não esquecer de novo! Deixa anotado no celular,
           computador, papel, caderno, mas não esquece!
         </p>
+
+        <div>
+          <Link
+            href="/login"
+            className="text-[#f5b719] text-sm font-semibold hover:underline"
+          >
+            Voltar
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

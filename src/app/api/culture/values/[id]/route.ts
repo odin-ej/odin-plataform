@@ -26,18 +26,19 @@ export async function PATCH(
         { status: 400 }
       );
     }
-
     const updatedValue = await prisma.value.update({
       where: { id },
       data: validation.data,
     });
-
+    if (!updatedValue) {
+      return NextResponse.json({
+        message: `Esse valor não existe, ${id}`
+      });
+    }
     revalidatePath("/atualizar-estrategia");
-
     return NextResponse.json(updatedValue);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    
     return NextResponse.json(
       { message: "Ocorreu um erro no servidor." },
       { status: 500 }
