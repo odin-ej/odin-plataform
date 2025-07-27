@@ -33,13 +33,13 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
 
     const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes] =
       await Promise.all([
-        axios.get(`${API_URL}/api/api/house-goals`),
+        axios.get(`${API_URL}/api/house-goals`),
         // Use user.id diretamente
-        axios.get(`${API_URL}/api/api/my-points/${user.id}`),
+        axios.get(`${API_URL}/api/my-points/${user.id}`),
         // Para my-tasks, axios precisa estar configurado para enviar cookies/headers de autenticação
-        axios.get(`${API_URL}/api/api/my-tasks`),
+        axios.get(`${API_URL}/api/my-tasks`),
         // Use user.id diretamente
-        axios.get(`${API_URL}/api/api/users/${user.id}/useful-links`),
+        axios.get(`${API_URL}/api/users/${user.id}/useful-links`),
       ]);
 
     const goals = strategyRes.data?.flatMap((obj: any) => obj.goals) || [];
