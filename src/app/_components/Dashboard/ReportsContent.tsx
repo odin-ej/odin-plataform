@@ -150,7 +150,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
               row.status === ReportStatus.SUBMITTED,
             "bg-green-500/20 text-green-400":
               row.status === ReportStatus.APPROVED,
-            "bg-red-500/20 text-red-400": row.status === ReportStatus.REVIEWED, // Supondo que REVIEWED seja um estado de "rejeitado"
+            "bg-red-500/20 text-red-400": row.status === ReportStatus.REJECTED, // Supondo que REVIEWED seja um estado de "rejeitado"
           })}
         >
           {row.status === ReportStatus.DRAFT
@@ -165,7 +165,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
     },
   ];
 
-  const reportFields: FieldConfig<ExtendedReport>[] = [
+  const reportFields: FieldConfig<ReportFormValues>[] = [
     {
       header: "Título",
       accessorKey: "title",
