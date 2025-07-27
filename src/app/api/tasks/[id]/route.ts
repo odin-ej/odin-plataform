@@ -4,6 +4,7 @@ import { parseBrazilianDate } from "@/lib/utils";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/db";
 
 export async function PATCH(
   request: Request,
