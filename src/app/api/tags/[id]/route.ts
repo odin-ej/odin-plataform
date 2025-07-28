@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { prisma } from "@/db";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission, parseBrazilianDate } from "@/lib/utils";
@@ -129,7 +130,7 @@ export async function PATCH(
             typeof newData.value === "number" &&
             newData.value !== originalTag.value;
           if (valueIsChanging) {
-            const pointDifference = Number(!newData.value) - +originalTag.value;
+            const pointDifference = Number(newData.value) - Number(originalTag.value);
             if (userClones.length > 0) {
               await tx.userPoints.updateMany({
                 where: {
@@ -257,7 +258,7 @@ export async function DELETE(
         const tagToDelete = await tx.tag.findUnique({
           where: { id },
         });
-        console.log('TagToDelete:',tagToDelete)
+      
         if (!tagToDelete) {
           throw new Error("Tag não encontrada.");
         }
@@ -266,7 +267,7 @@ export async function DELETE(
         const isModelTag =
           tagToDelete.userPointsId === null &&
           tagToDelete.enterprisePointsId === null;
-          console.log('isModelTag: ',isModelTag)
+      
         if (isModelTag) {
           // --- LÓGICA PARA APAGAR UM MODELO E TODOS OS SEUS CLONES ---
 
@@ -285,7 +286,7 @@ export async function DELETE(
               enterprisePointsId: { not: null },
             },
           });
-console.log('UserClones: ',userClones)
+
           // b. Reverte pontos dos utilizadores
           if (userClones.length > 0) {
             for (const clone of userClones) {
@@ -295,7 +296,7 @@ console.log('UserClones: ',userClones)
               });
             }
           }
-          console.log('EnterpriseClones: ',enterpriseClones)
+
           
           // c. Reverte pontos da empresa
           if (enterpriseClones.length > 0) {
@@ -320,7 +321,7 @@ console.log('UserClones: ',userClones)
               where: { id: { in: allCloneIds } },
             });
           }
-          console.log('AllCloneIds: ',allCloneIds)
+
           // e. Apaga a tag modelo
           await tx.tag.delete({ where: { id: tagToDelete.id } });
         } else {
@@ -337,7 +338,7 @@ console.log('UserClones: ',userClones)
               data: { value: { decrement: tagToDelete.value } },
             });
           }
-          console.log('TagToDelete IsNot Model: ',tagToDelete)
+
           await tx.tag.delete({ where: { id: tagToDelete.id } });
         }
       }
