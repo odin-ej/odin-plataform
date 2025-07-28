@@ -96,12 +96,18 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
       header: "Cargo",
       type: "select",
       options: formatedRoles,
+      renderView(data) {
+        return data?.roles?.map((role) => role).join(", ");
+      },
     },
     {
       accessorKey: "roles" as Path<T>,
       header: "Cargos",
       type: "checkbox",
       options: formatedRoles,
+      renderView(data) {
+        return data?.roles?.map((role) => role).join(", ");
+      },
     },
     {
       accessorKey: "isExMember" as Path<T>,

@@ -266,7 +266,6 @@ export async function DELETE(
         const isModelTag =
           tagToDelete.userPointsId === null &&
           tagToDelete.enterprisePointsId === null;
-
         if (isModelTag) {
           // --- LÓGICA PARA APAGAR UM MODELO E TODOS OS SEUS CLONES ---
 

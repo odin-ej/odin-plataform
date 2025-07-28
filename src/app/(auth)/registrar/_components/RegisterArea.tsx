@@ -38,13 +38,12 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
         });
-
+        
         if (!presignedUrlResponse.ok) {
           throw new Error("Não foi possível preparar o upload da imagem.");
         }
 
         const { url, key } = await presignedUrlResponse.json();
-
         // Usa a nova função de upload que atualiza o estado de progresso
         const uploadResponse = await fetch(url, {
           method: "PUT",

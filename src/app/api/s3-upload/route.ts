@@ -48,7 +48,6 @@ export async function POST(request: Request) {
     // process.env, você daria à "Execution Role" da sua Lambda permissão para
     // aceder ao S3, e o SDK da AWS usaria essas permissões automaticamente, sem
     // precisar de accessKeyId e secretAccessKey no código.
-
     return NextResponse.json({ url: presignedUrl, key: key });
   } catch (error) {
     console.error("Erro ao gerar URL pré-assinado:", error);

@@ -49,12 +49,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
+   
     const newTag = await prisma.tag.create({
       data: {
         ...validation.data,
         value: formatedValue,
         assignerId: authUser.id,
+        areas: validation.data.areas,
         datePerformed: new Date(),
       },
     });

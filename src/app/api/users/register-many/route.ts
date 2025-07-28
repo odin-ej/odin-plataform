@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
         const cognitoUser = await cognitoClient.send(
           new AdminCreateUserCommand({
-            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
             Username: req.email,
             UserAttributes: [
               { Name: "email", Value: req.email },
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
               },
               {
                 Name: "custom:role",
-                Value: req.roles.length > 0 ? req.roles[0].name : "",
+                Value: req.roleId ? req.roles.find((role) => role.id === req.roleId)?.name ?? req.roles[req.roles.length - 1]?.name : req.roles[req.roles.length - 1]?.name || "Outro",
               },
               {
                 Name: "custom:isExMember",
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
 
         await cognitoClient.send(
           new AdminSetUserPasswordCommand({
-            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
             Username: req.email,
             Password: req.password,
             Permanent: true,
@@ -151,6 +151,7 @@ export async function POST(request: Request) {
           req.roles
             ?.filter((role) => role.name !== "Outro")
             .map((role) => ({ id: role.id })) || [];
+
 
         const userData = {
           id: cognitoUser.User?.Attributes?.find((attr) => attr.Name === "sub")
@@ -168,9 +169,7 @@ export async function POST(request: Request) {
           linkedin: req.linkedin,
           about: req.about,
           roles: { connect: rolesToConnect },
-          ...(rolesToConnect.length > 0 && {
-            currentRoleId: rolesToConnect[0].id,
-          }),
+          ...(req.roleId && {currentRoleId: req.roleId}),
           ...(req.semesterLeaveEj && { semesterLeaveEj: req.semesterLeaveEj }),
           ...(req.aboutEj && { aboutEj: req.aboutEj }),
           ...(req.isExMember && { isExMember: req.isExMember }),

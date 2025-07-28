@@ -6,6 +6,7 @@ import {
   CognitoIdentityProviderClient,
   AdminDeleteUserCommand,
   AdminUpdateUserAttributesCommand,
+  AdminSetUserPasswordCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { prisma } from "@/db";
 import { Prisma } from "@prisma/client";
@@ -161,6 +162,15 @@ export async function PATCH(
 
     // Atualiza a senha apenas se uma nova foi fornecida
     if (validatedData.password && validatedData.password.length > 0) {
+      await cognitoClient.send(
+      new AdminSetUserPasswordCommand({
+        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+        Username: userToUpdate.email, // O e-mail é o username no Cognito
+        Password: validatedData.password, // Envia a senha em texto plano
+        Permanent: true, // Define a senha como permanente (não expira)
+      })
+    );
+
       updateData.password = await bcrypt.hash(validatedData.password, 10);
     }
 

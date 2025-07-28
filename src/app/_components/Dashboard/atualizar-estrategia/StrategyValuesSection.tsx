@@ -16,7 +16,6 @@ export function StrategyValuesSection({
 }: Props) {
   // A função 'handleUpdateDatabase' foi REMOVIDA daqui.
   // O 'useRouter' também não é mais necessário.
-  console.log(values) // Retorna os valores certinhos do servidor
   return (
     <div className="space-y-4">
       <h3 className="text-2xl text-[#f5b719] font-bold">Valores da Casinha</h3>

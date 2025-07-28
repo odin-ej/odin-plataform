@@ -69,7 +69,6 @@ const UpdateStrategyContent = ({
     queryFn: fetchStrategyData, // Função que busca os dados
     initialData: { estrategyObjectives, fullStrategy }, // "Hidrata" com os dados do servidor!
   });
-  console.log('Após useQuery:', data.fullStrategy.values, data.fullStrategy.propose, data.fullStrategy.mission, data.fullStrategy.vision);
   // --- HOOK PARA ATUALIZAR A ESTRATÉGIA ---
   const { mutate: updateStrategy, isPending: isUpdating } = useMutation({
     mutationFn: (newData: { field: string; value: string }) =>
@@ -112,7 +111,6 @@ const UpdateStrategyContent = ({
   // Mostra o estado de carregamento se o TanStack Query estiver buscando os dados
   if (isLoading) return <div>Carregando estratégia...</div>;
   if (isError) return <div>Erro ao carregar os dados.</div>;
-  console.log(data.fullStrategy.values, data.fullStrategy.propose, data.fullStrategy.mission, data.fullStrategy.vision);
   return (
     <>
       <CustomCard

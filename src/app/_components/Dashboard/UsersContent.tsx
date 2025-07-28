@@ -15,6 +15,7 @@ import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import CustomModal from "../Global/Custom/CustomModal";
 import {
   MemberWithFullRoles,
+  RegistrationRequestWithRoles,
   UniversalMember,
   userProfileSchema,
   UserProfileValues,
@@ -48,6 +49,8 @@ const UsersContent = ({
 }: UsersContentProps) => {
   // --- ESTADO DA UI (Permanece) ---
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // No início do seu componente UsersContent
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedItems, setSelectedItems] = useState<UniversalMember[]>([]);
   const [itemToDelete, setItemToDelete] = useState<UniversalMember | null>(
@@ -169,9 +172,8 @@ const UsersContent = ({
     updateUser(formData);
 
   const handleDeleteConfirm = (item: UniversalMember) => {
-    setItemToDelete(item);
-    setIsModalOpen(true);
-    if (itemToDelete) deleteUser(itemToDelete);
+    setItemToDelete(item); // 1. Guarda o item que será deletado
+    setIsDeleteModalOpen(true);
   };
 
   const handleActionClick = () => {
@@ -232,7 +234,15 @@ const UsersContent = ({
 
         // 2. Se não existir (caso de um RegistrationRequest), usa a lógica antiga como fallback
         if (row.roles.length > 0) {
-          return row.roles[0].name;
+          return row.roles[row.roles.length - 1].name;
+        }
+
+        if ((row as RegistrationRequestWithRoles).roleId) {
+          return (
+            availableRoles.find(
+              (role) => role.id === (row as RegistrationRequestWithRoles).roleId
+            )?.name || "Outro"
+          );
         }
 
         // 3. Fallback final se não houver nenhum cargo
@@ -315,7 +325,10 @@ const UsersContent = ({
       isExMember: user.isExMember ? "Sim" : "Não",
       alumniDreamer: (user.alumniDreamer ?? false) ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
       roles: user.roles.map((role) => role.id), // O schema da API espera um array de IDs
-      roleId: "currentRole" in user ? user.currentRole?.id : undefined,
+      roleId:
+        "currentRole" in user
+          ? user.currentRole?.id
+          : (user.roleId ?? user.roles[user.roles.length - 1]?.id),
     });
     setIsEditing(isButtonEdit);
     setIsModalOpen(true);
@@ -350,7 +363,7 @@ const UsersContent = ({
           data={members}
           onRowClick={(row) => openModal(row, false)}
           onEdit={(row) => openModal(row, true)}
-          onDelete={handleDeleteConfirm}
+          onDelete={(row) => handleDeleteConfirm(row)}
           title="Membros"
           itemsPerPage={10}
           onSelectionChange={setSelectedItems}
@@ -374,7 +387,7 @@ const UsersContent = ({
           title="Ex-membros"
           onRowClick={(row) => openModal(row, false)}
           onEdit={(row) => openModal(row, true)}
-          onDelete={handleDeleteConfirm}
+          onDelete={(row) => handleDeleteConfirm(row)}
           isActionLoading={isApprovingInBulk}
           itemsPerPage={10}
           onSelectionChange={setSelectedItems}
@@ -399,7 +412,7 @@ const UsersContent = ({
 
       {itemToDelete && (
         <ModalConfirm
-          open={isModalOpen}
+          open={isDeleteModalOpen}
           onCancel={() => setIsModalOpen(false)}
           onConfirm={() => deleteUser(itemToDelete)}
           isLoading={isDeletingUser}

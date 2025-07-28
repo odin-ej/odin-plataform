@@ -95,6 +95,7 @@ model RegistrationRequest {
   linkedin        String?
   about           String?       @db.Text
   aboutEj         String?       @db.Text
+  roleId          String?
   roles           Role[]        @relation("RegistrationRequestRoles")
   otherRole       String?
   isExMember      Boolean       @default(false) @map("ex_member")

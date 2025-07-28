@@ -49,7 +49,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
 
   const { mutate: unlinkTag, isPending: isUnlinking } = useMutation({
     mutationFn: (tagId: string) =>
-      axios.patch(`${API_URL}/api/tags/${tagId}`, { userPointsId: null }),
+      axios.delete(`${API_URL}/api/tags/${tagId}`),
     onSuccess: () => {
       toast.success("Tag desvinculada com sucesso!");
       // Invalida tanto a query deste modal quanto a query principal da página de pontos

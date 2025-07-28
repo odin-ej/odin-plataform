@@ -130,7 +130,7 @@ const AdminActionsModal = ({
           })
         );
       }
-      if (isEnterpriseSelected) {
+      if (isEnterpriseSelected[0] === "enterprise-points-id") {
         apiCalls.push(
           axios.post(`${API_URL}/api/enterprise-points/add-tags`, {
             tagIds: [tagId],
@@ -304,7 +304,7 @@ const AdminActionsModal = ({
                                             : "opacity-0"
                                         )}
                                       />
-                                      {tag.description} (+{tag.value} pts)
+                                      {tag.description} ({tag.value > 0 && "+"}{tag.value} pts)
                                     </CommandItem>
                                   ))}
                                 </CommandGroup>

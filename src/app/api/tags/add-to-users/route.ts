@@ -69,6 +69,7 @@ export async function POST(request: Request) {
             value: templateTag.value,
             assignerId: validation.data.assignerId || authUser.id,
             datePerformed: formatedDate,
+            areas: templateTag.areas,
             actionTypeId: templateTag.actionTypeId,
             userPointsId: userPoints.id, // Conexão explícita
           },
