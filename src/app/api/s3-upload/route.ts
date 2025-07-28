@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const key = `${fileName}.${fileExtension}`;
 
     const command = new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET_NAME!,
+      Bucket: process.env.AWS_S3_BUCKET_NAME!,
       Key: key,
       ContentType: fileType,
       ContentLength: fileSize,

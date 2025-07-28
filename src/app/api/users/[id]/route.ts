@@ -120,7 +120,7 @@ export async function PATCH(
         if (oldKey) {
           await s3Client.send(
             new DeleteObjectCommand({
-              Bucket: process.env.S3_BUCKET_NAME!,
+              Bucket: process.env.AWS_S3_BUCKET_NAME!,
               Key: oldKey,
             })
           );
@@ -225,7 +225,7 @@ export async function PATCH(
     if (attributesToUpdate.length > 0) {
       await cognitoClient.send(
         new AdminUpdateUserAttributesCommand({
-          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
           Username: userToUpdate.email,
           UserAttributes: attributesToUpdate,
         })
@@ -283,7 +283,7 @@ export async function DELETE(
     // 2. Apaga o utilizador do AWS Cognito
     await cognitoClient.send(
       new AdminDeleteUserCommand({
-        UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
         Username: user.email, // O username no Cognito é o e-mail
       })
     );

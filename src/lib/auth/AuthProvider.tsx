@@ -22,9 +22,10 @@ try {
     {
       Auth: {
         Cognito: {
-          userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID as string,
+          userPoolId: process.env
+            .NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID as string,
           userPoolClientId: process.env
-            .NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID as string,
+            .NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID as string,
         },
       },
     },

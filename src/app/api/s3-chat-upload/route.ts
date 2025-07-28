@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const command = new PutObjectCommand({
       // CORREÇÃO: Usa a nova variável de ambiente para o bucket do chat.
-      Bucket: process.env.S3_CHAT_BUCKET_NAME!,
+      Bucket: process.env.AWS_S3_CHAT_BUCKET_NAME!,
       Key: key,
       ContentType: fileType,
       ContentLength: fileSize,

@@ -56,7 +56,7 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           throw new Error("Falha ao enviar a imagem para o S3.");
         }
 
-        imageUrl = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+        imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
       }
 
       // Passo 2: Prepara os dados finais para enviar para a nossa API de criação de pedido

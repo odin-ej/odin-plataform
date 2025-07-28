@@ -309,7 +309,7 @@ async function main() {
     // Verifica se o utilizador já existe no Cognito
     const existingCognitoUser = await cognitoClient.send(
       new AdminGetUserCommand({
-        UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
         Username: adminEmail,
       })
     );
@@ -323,7 +323,7 @@ async function main() {
       console.log(`Utilizador não encontrado no Cognito. A criar...`);
       const createCognitoUserResponse = await cognitoClient.send(
         new AdminCreateUserCommand({
-          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
           Username: adminEmail,
           UserAttributes: [
             { Name: "email", Value: adminEmail },
@@ -341,7 +341,7 @@ async function main() {
       // Define a senha do novo utilizador como permanente
       await cognitoClient.send(
         new AdminSetUserPasswordCommand({
-          UserPoolId: process.env.COGNITO_USER_POOL_ID!,
+          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
           Username: adminEmail,
           Password: adminPassword,
           Permanent: true,
