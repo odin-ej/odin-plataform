@@ -18,12 +18,19 @@ import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { getLabelForArea } from "./AdminActionsModal";
 
 interface UserTagsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: UserRankingInfo | null;
 }
+
+type UserTagWithAssigner = UserTag & {
+  assigner: {
+    name: string;
+  };
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -32,7 +39,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
 
   const { data: userTags = [], isLoading } = useQuery({
     queryKey: ["userTags", user?.id],
-    queryFn: async (): Promise<UserTag[]> => {
+    queryFn: async (): Promise<UserTagWithAssigner[]> => {
       const { data } = await axios.get(`${API_URL}/api/users/${user!.id}/tags`);
       return data;
     },
@@ -65,13 +72,37 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
     }
   };
 
-  const userTagsColumns: ColumnDef<UserTag>[] = [
+  const userTagsColumns: ColumnDef<UserTagWithAssigner>[] = [
     { accessorKey: "description", header: "Descrição" },
+    { accessorKey: "assignerId", header: "Vinculado por", 
+      cell: (row) => {
+        const assigner = row?.assigner?.name;
+        return assigner ? (
+          <span className="text-[#f5b719]">{assigner}</span>
+        ) : (
+          <span className="text-gray-400">Desconhecido</span>
+        );
+      }
+     },
     {
       accessorKey: "datePerformed",
       header: "Data",
       cell: (row) => new Date(row.datePerformed).toLocaleDateString("pt-BR"),
     },
+    {accessorKey: "areas", header: "Áreas",
+      cell: (row) => {
+        const areas = row.areas;
+        return areas ? (
+          <>
+            {areas.map((area) => (
+              <span key={area} className="text-[#f5b719] text-xs">{getLabelForArea(area)}{" "}</span>
+            ))}
+          </>
+        ) : (
+          <span className="text-gray-400">Desconhecido</span>
+        );
+      }
+     },
     { accessorKey: "value", header: "Pontos", className: "text-right" },
   ];
 
@@ -79,7 +110,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-hidden" />
-        <DialogContent className="max-w-[95vw] sm:max-w-lg bg-[#010d26] border-2 border-[#0126fb] text-white max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-[#010d26] overflow-x-hidden">
+        <DialogContent className="max-w-[100vw] sm:max-w-lg md:max-w-3xl bg-[#010d26] border-2 border-[#0126fb] text-white max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-[#010d26] overflow-x-hidden">
           <DialogHeader>
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
@@ -102,7 +133,7 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
               <X className="h-4 w-4" />
             </DialogClose>
           </DialogHeader>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 overflow-x-auto w-full">
             {isLoading || isUnlinking ? (
               <div className="w-full h-auto rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-4 sm:p-6 text-white shadow-lg flex flex-col items-center justify-center">
                 <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
@@ -111,11 +142,11 @@ const UserTagsModal = ({ isOpen, onClose, user }: UserTagsModalProps) => {
                 </p>
               </div>
             ) : (
-              <CustomTable<UserTag>
+              <CustomTable<UserTagWithAssigner>
                 title="Histórico de Pontos"
                 columns={userTagsColumns}
                 data={userTags}
-                filterColumns={["description"]}
+                filterColumns={["description", "datePerformed", "assigner", "value", "areas"]}
                 onDelete={(row) => handleDeleteTag(row.id)}
                 itemsPerPage={4}
                 type="onlyDelete"

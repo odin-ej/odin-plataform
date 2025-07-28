@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { User, Tag, ActionType } from "@prisma/client";
+import { User, Tag, ActionType, TagAreas } from "@prisma/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   actionTypeSchema,
@@ -51,6 +51,8 @@ import {
 } from "@/components/ui/popover";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import CustomCheckboxGroup from "../Global/Custom/CustomCheckboxGroup";
 
 interface AdminActionsModalProps {
   isOpen: boolean;
@@ -62,6 +64,25 @@ interface AdminActionsModalProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+export const getLabelForArea = (area: TagAreas) => {
+    switch (area) {
+      case TagAreas.GERAL:
+        return "Geral";
+      case TagAreas.MERCADO:
+        return "Mercado";
+      case TagAreas.OPERACOES:
+        return "Operações";
+      case TagAreas.PRESIDENCIA:
+        return "Presidência";
+      case TagAreas.PROJETOS:
+        return "Projetos";
+      case TagAreas.PESSOAS:
+        return 'Gestão de Pessoas';
+      default:
+        return area;
+    }
+  };
+
 const AdminActionsModal = ({
   isOpen,
   onClose,
@@ -71,10 +92,10 @@ const AdminActionsModal = ({
 }: AdminActionsModalProps) => {
   const queryClient = useQueryClient();
   const [popoverOpen, setPopoverOpen] = useState(false);
-
+  const {user} = useAuth()
   const addTagForm = useForm<z.infer<typeof addTagToUsersSchema>>({
     resolver: zodResolver(addTagToUsersSchema),
-    defaultValues: { userIds: [], tagId: undefined },
+    defaultValues: { userIds: [], tagId: undefined, datePerformed: "" },
   });
   const createActionTypeForm = useForm<z.infer<typeof actionTypeSchema>>({
     resolver: zodResolver(actionTypeSchema),
@@ -84,17 +105,19 @@ const AdminActionsModal = ({
     resolver: zodResolver(tagSchema),
     defaultValues: {
       description: "",
-      value: 0,
+      value: '0',
       actionTypeId: undefined,
       datePerformed: "",
+      areas: [],
+      assignerId: user?.id, 
     },
   });
 
   const { mutate: addPoints, isPending: isAddingPoints } = useMutation({
     mutationFn: async (data: z.infer<typeof addTagToUsersSchema>) => {
-      const { userIds, tagId } = data;
+      const { userIds, tagId, datePerformed } = data;
       const realUserIds = userIds.filter((id) => id !== "enterprise-points-id");
-      const isEnterpriseSelected = userIds.includes("enterprise-points-id");
+      const isEnterpriseSelected = userIds.filter((id) => id === "enterprise-points-id");
 
       const apiCalls = [];
       if (realUserIds.length > 0) {
@@ -102,6 +125,8 @@ const AdminActionsModal = ({
           axios.post(`${API_URL}/api/tags/add-to-users`, {
             userIds: realUserIds,
             tagId,
+            datePerformed,
+            assignerId: user?.id, // Passa o ID do usuário autenticado
           })
         );
       }
@@ -109,6 +134,8 @@ const AdminActionsModal = ({
         apiCalls.push(
           axios.post(`${API_URL}/api/enterprise-points/add-tags`, {
             tagIds: [tagId],
+            datePerformed,
+            assignerId: user?.id, // Passa o ID do usuário autenticado
           })
         );
       }
@@ -175,6 +202,13 @@ const AdminActionsModal = ({
     // Chame a mutação passando apenas os dados do formulário
     createActionType(formData);
   };
+
+   
+
+  const formatedTagAreas = Object.values(TagAreas).map((area: TagAreas) => ({
+    value: area,
+    label: getLabelForArea(area),
+  }));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -282,7 +316,13 @@ const AdminActionsModal = ({
                       </FormItem>
                     )}
                   />
-
+                  <CustomInput
+                    form={addTagForm}
+                    field="datePerformed"
+                    label="Data de Realização"
+                    placeholder="DD/MM/AAAA"
+                    mask="date"
+                  />
                   <FormField
                     control={addTagForm.control}
                     name="userIds"
@@ -329,7 +369,7 @@ const AdminActionsModal = ({
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={isAddingPoints}>
+                  <Button className='bg-[#0126fb] hover:bg-[#0126fb]/70' type="submit" disabled={isAddingPoints}>
                     {isAddingPoints ? "Adicionando..." : "Adicionar Pontos"}
                   </Button>
                 </form>
@@ -371,7 +411,13 @@ const AdminActionsModal = ({
                       label: at.name,
                     }))}
                   />
-                  <Button type="submit" disabled={isCreatingTag}>
+                  <CustomCheckboxGroup
+                    control={createTagForm.control}
+                    name="areas"
+                    label="Áreas da Tag"
+                    options={formatedTagAreas}
+                  />
+                  <Button className='bg-[#0126fb] hover:bg-[#0126fb]/70' type="submit" disabled={isCreatingTag}>
                     {isCreatingTag ? "Criando..." : "Criar Tipo de Tag"}
                   </Button>
                 </form>
@@ -398,7 +444,7 @@ const AdminActionsModal = ({
                     label="Descrição"
                     placeholder="Descreva o que este tipo de ação representa..."
                   />
-                  <Button type="submit" disabled={isCreatingAction}>
+                  <Button className='bg-[#0126fb] hover:bg-[#0126fb]/70' type="submit" disabled={isCreatingAction}>
                     {isCreatingAction ? "Criando..." : "Criar Tipo de Ação"}
                   </Button>
                 </form>

@@ -25,7 +25,7 @@ export const welcomeEmailCommand = ({
                                     <p style="font-size: 16px; line-height: 1.6;">Olá, ${name}!</p>
                                     <p style="font-size: 16px; line-height: 1.6;">É com enorme alegria que confirmamos a aprovação do seu registo! Seja oficialmente bem-vindo(a) à nossa <strong>Casinha dos Sonhos</strong>.</p>
                                     <p style="font-size: 16px; line-height: 1.6;">Estamos muito felizes por ter você conosco para construir um legado e transformar o ecossistema empreendedor. O seu primeiro passo nesta jornada é aceder à nossa plataforma.</p>
-                                    <a href="${process.env.NEXT_PUBLIC_API_URL}/login" style="display: inline-block; background-color: #0126fb;; color: #ffffff; font-weight: bold; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 30px 0;">Aceder à Plataforma</a>
+                                    <a href="${process.env.NEXT_PUBLIC_API_URL}/login" style="display: inline-block; background-color: #0126fb;; color: #ffffff; font-weight: bold; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 30px 0;">Entrar na Casinha</a>
                                     <p style="font-size: 14px; color: #555;">Mal podemos esperar para ver tudo o que vamos conquistar juntos.</p>
                                     <p style="font-size: 14px; color: #555;">Até já! Você pode realizar o login com o mesmo email e senha cadastrados.</p>
                                 </div>
@@ -66,7 +66,7 @@ export const exMemberWelcomeEmailCommand = ({
                             <p style="font-size: 16px; line-height: 1.6;">Olá, ${name}!</p>
                             <p style="font-size: 16px; line-height: 1.6;">Uma vez parte da Casinha, sempre parte da Casinha. É com grande satisfação que aprovamos o seu cadastro na plataforma da <b style="color: #0126fb;">Casinha dos Sonhos</b>.</p>
                             <p style="font-size: 16px; line-height: 1.6;">Aqui, você poderá se reconectar com outros membros, acompanhar o crescimento da empresa e continuar a fazer parte do nosso legado. O seu percurso pode ter terminado, mas a sua história conosco continua.</p>
-                            <a href="${process.env.NEXT_PUBLIC_API_URL}/login" style="display: inline-block; background-color: #0126fb; color: #ffffff; font-weight: bold; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 30px 0;">Acessar a Plataforma</a>
+                            <a href="${process.env.NEXT_PUBLIC_API_URL}/login" style="display: inline-block; background-color: #0126fb; color: #ffffff; font-weight: bold; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 30px 0;">Entrar na Casinha</a>
                             <p style="font-size: 14px; color: #555;">Estamos ansiosos para reencontrá-lo(a).</p>
                             <p style="font-size: 14px; color: #555;">Você pode realizar o login com o mesmo email e senha cadastrados.</p>
                         </div>

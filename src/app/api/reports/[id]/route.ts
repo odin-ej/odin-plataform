@@ -20,7 +20,6 @@ export async function PATCH(
   try {
     const body = await request.json();
     const validation = reportUpdateSchema.safeParse(body);
-    console.log(body)
     if (!validation.success) {
       return NextResponse.json(
         { message: "Dados inválidos.", errors: validation.error.formErrors },

@@ -15,10 +15,8 @@ export async function GET() {
     }
 
     const whereClause = getTasksWhereClauseForUser(authUser);
-    console.log(
-      "[API GET /api/tasks] whereClause gerado:",
-      JSON.stringify(whereClause, null, 2)
-    );
+
+  
     const tasks = await prisma.task.findMany({
       where: whereClause,
       include: {

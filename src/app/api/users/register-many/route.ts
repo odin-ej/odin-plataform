@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
         const cognitoUser = await cognitoClient.send(
           new AdminCreateUserCommand({
-            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
             Username: req.email,
             UserAttributes: [
               { Name: "email", Value: req.email },
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
 
         await cognitoClient.send(
           new AdminSetUserPasswordCommand({
-            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            UserPoolId: process.env.COGNITO_USER_POOL_ID!,
             Username: req.email,
             Password: req.password,
             Permanent: true,

@@ -3,10 +3,12 @@ import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { parseBrazilianDate } from "@/lib/utils";
 
 // Schema para validar os dados recebidos (uma lista de IDs de tags)
 const addTagsToEnterpriseSchema = z.object({
   tagIds: z.array(z.string()).min(1, "Selecione pelo menos uma tag."),
+  datePerformed: z.string().min(5, "A data de realização é obrigatória."),
 });
 
 export async function POST(request: Request) {
@@ -27,52 +29,61 @@ export async function POST(request: Request) {
       );
     }
 
-    const { tagIds } = validation.data;
+    const { tagIds, datePerformed } = validation.data;
+
+    const formatedDate =
+      typeof datePerformed === "string"
+        ? (parseBrazilianDate(datePerformed) as Date)
+        : new Date(datePerformed);
 
     // A ID do registo de EnterprisePoints é sempre 1, conforme o seu schema.
     const enterprisePointsId = 1;
 
     // Uma transação garante que todas as operações são bem-sucedidas.
     await prisma.$transaction(async (tx) => {
+      // ✅ PASSO ADICIONADO: Garante que o registo da empresa existe.
+      await tx.enterprisePoints.upsert({
+        where: { id: enterprisePointsId },
+        update: {}, // Não precisamos de atualizar nada se já existir
+        create: {
+          id: enterprisePointsId,
+          value: 0,
+          description: "Pontuação geral da empresa",
+        },
+      });
+
+      // O resto da sua lógica agora pode correr em segurança
       for (const tagId of tagIds) {
-        // 1. Encontra a tag "molde" para obter os seus dados.
-        const templateTag = await tx.tag.findUnique({
-          where: { id: tagId },
-        });
+        const templateTag = await tx.tag.findUnique({ where: { id: tagId } });
 
         if (!templateTag) {
           throw new Error(`A tag com ID ${tagId} não foi encontrada.`);
         }
 
-        // 2. Cria uma nova tag (uma cópia) para ser associada à empresa.
         await tx.tag.create({
           data: {
             description: templateTag.description,
             value: templateTag.value,
-            datePerformed: new Date(),
+            datePerformed: formatedDate,
             actionTypeId: templateTag.actionTypeId,
-            // 3. Conecta a nova tag diretamente ao registo de pontos da empresa.
             enterprisePointsId: enterprisePointsId,
+            assignerId: authUser.id,
           },
         });
+        
         await tx.enterprisePoints.update({
           where: { id: enterprisePointsId },
           data: {
-            value: {
-            increment: templateTag.value,
-            },
+            value: { increment: templateTag.value },
           },
-        })
+        });
       }
     });
-
-    // Revalida o cache da página para mostrar os dados atualizados.
 
     revalidatePath("/jr-points/nossa-empresa");
     return NextResponse.json({
       message: `${tagIds.length} tag(s) adicionada(s) à empresa com sucesso!`,
     });
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Erro ao adicionar tags à empresa:", error);

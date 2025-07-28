@@ -2,13 +2,18 @@ import { z } from "zod";
 import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { TagAreas } from "@prisma/client";
 
 const tagSchema = z.object({
   description: z.string().min(5, "A descrição é obrigatória."),
-  value: z.number(), // Permite qualquer número: positivo, negativo ou zero.ghi
+  value: z.string().min(1, "O valor é obrigatório."), // Permite qualquer número: positivo, negativo ou zero.ghi
   actionTypeId: z.string({
     required_error: "É necessário selecionar um tipo de ação.",
   }),
+  areas: z
+    .array(z.nativeEnum(TagAreas))
+    .min(1, "Selecione pelo menos uma área."),
+  assignerId: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -28,10 +33,28 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const { value } = validation.data;
+
+    const formatedValue = value.replace(",", ".").match(/^-?\d+(\.\d+)?$/)
+      ? parseFloat(value)
+      : value;
+
+    if (
+      isNaN(formatedValue as number) ||
+      typeof formatedValue !== "number" ||
+      !formatedValue
+    ) {
+      return NextResponse.json(
+        { message: "O valor deve ser um número." },
+        { status: 400 }
+      );
+    }
 
     const newTag = await prisma.tag.create({
       data: {
         ...validation.data,
+        value: formatedValue,
+        assignerId: authUser.id,
         datePerformed: new Date(),
       },
     });

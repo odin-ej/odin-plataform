@@ -3,10 +3,13 @@ import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { parseBrazilianDate } from "@/lib/utils";
 
 const addTagToUsersSchema = z.object({
   userIds: z.array(z.string()).min(1, "Selecione pelo menos um utilizador."),
   tagId: z.string({ required_error: "É necessário selecionar uma tag." }),
+  datePerformed: z.string().min(5, "A data de realização é obrigatória."),
+  assignerId: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -18,16 +21,22 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validation = addTagToUsersSchema.safeParse(body);
-
     if (!validation.success) {
       return NextResponse.json(
-        { message: "Dados inválidos.", errors: validation.error.flatten().fieldErrors },
+        {
+          message: "Dados inválidos.",
+          errors: validation.error.flatten().fieldErrors,
+        },
         { status: 400 }
       );
     }
 
-    const { userIds, tagId } = validation.data;
+    const { userIds, tagId, datePerformed } = validation.data;
 
+    const formatedDate =
+      typeof datePerformed === "string"
+        ? (parseBrazilianDate(datePerformed) as Date)
+        : new Date(datePerformed);
     const templateTag = await prisma.tag.findUnique({
       where: { id: tagId },
     });
@@ -40,57 +49,30 @@ export async function POST(request: Request) {
     }
 
     // CORREÇÃO: A lógica da transação foi reestruturada para ser mais explícita e robusta.
-await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       for (const userId of userIds) {
-        if (userId === 'enterprise-points-id') {
-          // --- LÓGICA CORRIGIDA PARA A EMPRESA ---
+        // 1. Garante que o registo de pontos do usuário existe e atualiza o total de pontos.
+        const userPoints = await tx.userPoints.upsert({
+          where: { userId },
+          update: { totalPoints: { increment: templateTag.value } },
+          create: {
+            userId,
+            totalPoints: templateTag.value,
+            
+          },
+        });
 
-          // 1. Garante que o registo de pontos da empresa existe e atualiza o valor.
-          const enterprisePoints = await tx.enterprisePoints.upsert({
-            where: { id: 1 },
-            update: { value: { increment: templateTag.value } },
-            create: {
-              id: 1,
-              value: templateTag.value,
-              description: "Pontuação geral da Empresa JR.",
-            },
-          });
-
-          // 2. Cria a nova tag "clone", conectando-a explicitamente ao registo de pontos da empresa.
-          await tx.tag.create({
-            data: {
-              description: templateTag.description,
-              value: templateTag.value,
-              datePerformed: new Date(),
-              actionTypeId: templateTag.actionTypeId,
-              enterprisePointsId: enterprisePoints.id, // Conexão explícita
-            },
-          });
-
-        } else {
-          // --- LÓGICA PARA USUÁRIOS NORMAIS ---
-
-          // 1. Garante que o registo de pontos do usuário existe e atualiza o total de pontos.
-          const userPoints = await tx.userPoints.upsert({
-            where: { userId },
-            update: { totalPoints: { increment: templateTag.value } },
-            create: {
-              userId,
-              totalPoints: templateTag.value,
-            },
-          });
-
-          // 2. Cria a nova tag "clone", conectando-a explicitamente ao registo de pontos do usuário.
-          await tx.tag.create({
-            data: {
-              description: templateTag.description,
-              value: templateTag.value,
-              datePerformed: new Date(),
-              actionTypeId: templateTag.actionTypeId,
-              userPointsId: userPoints.id, // Conexão explícita
-            },
-          });
-        }
+        // 2. Cria a nova tag "clone", conectando-a explicitamente ao registo de pontos do usuário.
+        await tx.tag.create({
+          data: {
+            description: templateTag.description,
+            value: templateTag.value,
+            assignerId: validation.data.assignerId || authUser.id,
+            datePerformed: formatedDate,
+            actionTypeId: templateTag.actionTypeId,
+            userPointsId: userPoints.id, // Conexão explícita
+          },
+        });
       }
     });
 
@@ -100,7 +82,7 @@ await prisma.$transaction(async (tx) => {
       message: `${userIds.length} item(ns) receberam a tag com sucesso!`,
     });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Erro ao adicionar tag:", error);
     return NextResponse.json(

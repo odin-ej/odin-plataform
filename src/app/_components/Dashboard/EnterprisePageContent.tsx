@@ -3,10 +3,10 @@
 
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
-import { Tag, User, ActionType } from "@prisma/client";
+import { Tag, User, ActionType, TagAreas } from "@prisma/client";
 import { JrPointIconBlue } from "../Global/JrPointsIcon";
 import { useState } from "react";
-import AdminActionsModal from "./AdminActionsModal";
+import AdminActionsModal, { getLabelForArea } from "./AdminActionsModal";
 
 import {
   ActionTypeWithCount,
@@ -14,7 +14,7 @@ import {
   UserRankingInfo,
 } from "@/lib/schemas/pointsSchema";
 import UserTagsModal from "./UserTagsModal";
-import CustomModal from "../Global/Custom/CustomModal";
+import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Plus } from "lucide-react";
@@ -48,7 +48,8 @@ const EnterprisePageContent = ({
     id: string;
   } | null>(null);
 
-  const form = useForm(); // Formulário genérico para o modal de edição
+  const tagForm = useForm<TagWithAction>();
+  const actionTypeForm = useForm<ActionType>(); // Formulário genérico para o modal de edição
   const { user } = useAuth();
 
   const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
@@ -93,14 +94,31 @@ const EnterprisePageContent = ({
       }),
   });
 
-  const handleEditSubmit = (formData: any) => editItem(formData);
+  const handleEditSubmit = (formData: TagWithAction | ActionType) => {
+    if (!editingItem) return;
+    editItem(formData);
+  };
   const handleDeleteConfirm = () => itemToDelete && deleteItem(itemToDelete);
 
   const handleOpenEditModal = (
     item: Tag | ActionType,
     type: "tag" | "action-type"
   ) => {
-    form.reset(item);
+    if (type === "tag") {
+      // Como sabemos que é uma tag, podemos converter o tipo com segurança
+      const tagItem = item as TagWithAction;
+      const formattedData = {
+        ...tagItem,
+        datePerformed: new Date(tagItem.datePerformed).toLocaleDateString().split('T')[0],
+      };
+      // Usa o formulário de tag
+      tagForm.reset(formattedData as any);
+    } else {
+      // Se for um 'action-type', simplesmente passa o item original, pois não há data para formatar
+      const actionTypeItem = item as ActionType;
+      // Usa o formulário de tipo de ação
+      actionTypeForm.reset(actionTypeItem);
+    }
     setEditingItem({ ...item, type });
     setIsEditModalOpen(true);
   };
@@ -206,6 +224,31 @@ const EnterprisePageContent = ({
     );
   }
 
+  const areasOptions = Object.values(TagAreas).map((area) => ({
+    value: area,
+    label: getLabelForArea(area),
+  }));
+
+  const tagFields: FieldConfig<TagWithAction>[] = [
+    { accessorKey: "description", header: "Descrição" },
+    {
+      accessorKey: "actionTypeId",
+      header: "Tipo de Ação",
+      type: "select",
+      options: actionTypesOptions,
+    },
+    {
+      accessorKey: "datePerformed",
+      header: "Data de Realização",
+      mask: "date",
+      renderView(data) {
+        return new Date(data.datePerformed).toLocaleDateString("pt-BR");
+      },
+    },
+    { accessorKey: "value", header: "Valor" },
+    {accessorKey: "areas", header: "Áreas", type: "checkbox", options: areasOptions},
+  ];
+
   return (
     <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -307,35 +350,34 @@ const EnterprisePageContent = ({
       />
 
       {/* O CustomModal é agora usado para edição */}
-      {editingItem && (
-        <CustomModal
+      {editingItem?.type === "tag" && (
+        <CustomModal<TagWithAction>
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          form={form}
+          form={tagForm} // Passa o formulário de tag
           onSubmit={handleEditSubmit}
-          fields={
-            editingItem.type === "tag"
-              ? [
-                  { accessorKey: "description", header: "Descrição" },
-                  {
-                    accessorKey: "actionTypeId",
-                    header: "Tipo de Ação",
-                    type: "select",
-                    options: actionTypesOptions,
-                  },
-                  { accessorKey: "value", header: "Valor" },
-                ]
-              : [
-                  { accessorKey: "name", header: "Nome" },
-                  { accessorKey: "description", header: "Descrição" },
-                ]
-          }
-          title={`Editar ${
-            editingItem.type === "tag" ? "Tag" : "Tipo de Ação"
-          }`}
-          isEditing={editingItem ? true : false}
+          fields={tagFields}
+          title="Editar Tag"
+          isEditing={true}
           isLoading={isEditingItem}
-          setIsEditing={() => editingItem && setIsEditModalOpen(false)}
+          setIsEditing={() => setIsEditModalOpen(false)}
+        />
+      )}
+
+      {editingItem?.type === "action-type" && (
+        <CustomModal<ActionType>
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          form={actionTypeForm} // Passa o formulário de tipo de ação
+          onSubmit={handleEditSubmit}
+          fields={[
+            { accessorKey: "name", header: "Nome" },
+            { accessorKey: "description", header: "Descrição" },
+          ]}
+          title="Editar Tipo de Ação"
+          isEditing={true}
+          isLoading={isEditingItem}
+          setIsEditing={() => setIsEditModalOpen(false)}
         />
       )}
 

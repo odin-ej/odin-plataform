@@ -61,6 +61,15 @@ enum AreaRoles {
   OUTRO
 }
 
+enum TagAreas {
+  PRESIDENCIA
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+  GERAL
+}
+
 enum RequestStatus {
   PENDING
   APPROVED
@@ -133,6 +142,7 @@ model User {
   roomReservation        RoomReservation[]
   tasksAuthor            Task[]
   usefulLinks            UsefulLink[]
+  assignedTags           Tag[]             @relation("AssignedTags")
 }
 
 model UsefulLink {
@@ -195,7 +205,8 @@ model Tag {
   datePerformed DateTime @map("date_performed")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
+  areas          TagAreas[] @default([GERAL])
+  //Preciso adicionar um assigner. Ou seja, quem atribuiu a tag a um usuario.
   actionTypeId String
   // CORREÇÃO: Adicionado onDelete: Cascade. Se um ActionType for excluído, todas as tags associadas serão excluídas.
   actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
@@ -203,7 +214,8 @@ model Tag {
   userPointsId String?
   // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos de um usuário forem excluídos, suas tags também serão.
   userPoints   UserPoints? @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
-
+assignerId         String?  // ID de quem atribuiu a tag
+  assigner           User?    @relation("AssignedTags", fields: [assignerId], references: [id])
   enterprisePointsId Int?
   // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos da empresa forem excluídos, suas tags também serão.
   enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)

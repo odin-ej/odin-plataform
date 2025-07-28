@@ -21,6 +21,13 @@ export async function GET(
       orderBy: {
         datePerformed: "desc",
       },
+      include: {
+        assigner: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
     return NextResponse.json(userTags);
   } catch (error) {
