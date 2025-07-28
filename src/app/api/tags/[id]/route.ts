@@ -257,7 +257,7 @@ export async function DELETE(
         const tagToDelete = await tx.tag.findUnique({
           where: { id },
         });
-
+        console.log('TagToDelete:',tagToDelete)
         if (!tagToDelete) {
           throw new Error("Tag não encontrada.");
         }
@@ -266,6 +266,7 @@ export async function DELETE(
         const isModelTag =
           tagToDelete.userPointsId === null &&
           tagToDelete.enterprisePointsId === null;
+          console.log('isModelTag: ',isModelTag)
         if (isModelTag) {
           // --- LÓGICA PARA APAGAR UM MODELO E TODOS OS SEUS CLONES ---
 
@@ -284,7 +285,7 @@ export async function DELETE(
               enterprisePointsId: { not: null },
             },
           });
-
+console.log('UserClones: ',userClones)
           // b. Reverte pontos dos utilizadores
           if (userClones.length > 0) {
             for (const clone of userClones) {
@@ -294,7 +295,8 @@ export async function DELETE(
               });
             }
           }
-
+          console.log('EnterpriseClones: ',enterpriseClones)
+          
           // c. Reverte pontos da empresa
           if (enterpriseClones.length > 0) {
             const totalValueToDecrement = enterpriseClones.reduce(
@@ -318,7 +320,7 @@ export async function DELETE(
               where: { id: { in: allCloneIds } },
             });
           }
-
+          console.log('AllCloneIds: ',allCloneIds)
           // e. Apaga a tag modelo
           await tx.tag.delete({ where: { id: tagToDelete.id } });
         } else {
@@ -335,6 +337,7 @@ export async function DELETE(
               data: { value: { decrement: tagToDelete.value } },
             });
           }
+          console.log('TagToDelete IsNot Model: ',tagToDelete)
           await tx.tag.delete({ where: { id: tagToDelete.id } });
         }
       }
@@ -343,6 +346,7 @@ export async function DELETE(
     revalidatePath("/jr-points/nossa-empresa");
     return new NextResponse(null, { status: 204 });
   } catch (error: any) {
+    console.error(error)
     return NextResponse.json(
       { message: "Erro ao apagar tag.", error: error.message },
       { status: 500 }
