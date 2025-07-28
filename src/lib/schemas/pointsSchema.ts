@@ -8,7 +8,7 @@ export const actionTypeSchema = z.object({
 export const tagSchema = z.object({
   description: z.string().min(5, "A descrição é obrigatória."),
   datePerformed: z.string().min(5, "A data de realização é obrigatória."),
-  value: z.coerce.number().min(1, "Os pontos devem ser maiores que zero."),
+  value: z.number(), // Permite qualquer número: positivo, negativo ou zero.
   actionTypeId: z.string({
     required_error: "É necessário selecionar um tipo de ação.",
   }),

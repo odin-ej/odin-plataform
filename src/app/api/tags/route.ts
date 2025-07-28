@@ -5,7 +5,7 @@ import { getAuthenticatedUser } from "@/lib/server-utils";
 
 const tagSchema = z.object({
   description: z.string().min(5, "A descrição é obrigatória."),
-  value: z.coerce.number().min(1, "Os pontos devem ser maiores que zero."),
+  value: z.number(), // Permite qualquer número: positivo, negativo ou zero.ghi
   actionTypeId: z.string({
     required_error: "É necessário selecionar um tipo de ação.",
   }),
