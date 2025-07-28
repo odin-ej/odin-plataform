@@ -38,10 +38,15 @@ export async function POST(request: Request) {
 
     // Verifica se já existe um pedido ou um utilizador com este e-mail
     const existingRequest = await prisma.registrationRequest.findFirst({
-      where: { OR: [{}, { emailEJ }] },
+      where: {
+        OR: [{ email: email }, { emailEJ: emailEJ }],
+      },
     });
+
     const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { emailEJ }] },
+      where: {
+        OR: [{ email: email }, { emailEJ: emailEJ }],
+      },
     });
 
     if (existingRequest || existingUser) {
@@ -60,25 +65,27 @@ export async function POST(request: Request) {
       );
     }
 
-    const uniqueRoleIds = new Set<string>();
-
-    // 1. Adiciona o cargo atual (roleId), se ele for fornecido.
-    if (roleId && typeof roleId === "string") {
-      uniqueRoleIds.add(roleId);
+    if (!roleId || typeof roleId !== "string") {
+      return NextResponse.json(
+        { message: "O cargo principal (roleId) é obrigatório." },
+        { status: 400 }
+      );
     }
 
-    // 2. Adiciona os cargos anteriores (roles), se forem fornecidos.
-    // O Set irá automaticamente ignorar qualquer ID que já tenha sido adicionado (ex: se o cargo atual estiver na lista de anteriores).
+    // 1. Inicia a lista de IDs com o `roleId` principal, garantindo que ele seja o primeiro.
+    const finalRoleIds = [roleId];
+
+    // 2. Adiciona os cargos anteriores (`roles`), garantindo que não haja duplicatas.
     if (roles && Array.isArray(roles)) {
-      roles.forEach((id) => {
-        if (typeof id === "string") {
-          uniqueRoleIds.add(id);
-        }
-      });
+      // Filtra os cargos anteriores para incluir apenas IDs que não sejam o `roleId` principal.
+      const otherRoles = roles.filter((id) => id && id !== roleId);
+
+      // Usa um Set para remover duplicatas internas da lista `otherRoles` e depois adiciona ao array final.
+      finalRoleIds.push(...new Set(otherRoles));
     }
 
-    // 3. Constrói o objeto de conexão para o Prisma a partir dos IDs únicos.
-    const rolesToConnect = Array.from(uniqueRoleIds).map((id) => ({ id }));
+    // 3. Constrói o objeto de conexão para o Prisma.
+    const rolesToConnect = finalRoleIds.map((id) => ({ id }));
 
     // CORREÇÃO 3: Usar a data convertida (`parsedBirthDate`) ao criar o registro.
     await prisma.registrationRequest.create({
