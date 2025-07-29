@@ -291,37 +291,44 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     ],
     []
   );
-  
+
   const formatedUsers = useMemo(
     () => taskData?.formatedUsers ?? [],
     [taskData]
   );
- 
- // Define todos os campos possíveis para o modal de edição
-  const allEditFields = useMemo<FieldConfig<TaskFormValues>[]>(() => [
-    { accessorKey: "title", header: "Título", type: "text" },
-    { accessorKey: "description", header: "Descrição", type: "text" },
-    { accessorKey: "deadline", header: "Prazo", mask: "date" },
-    {
-      accessorKey: "status",
-      header: "Status",
-      type: "select",
-      options: Object.values(TaskStatus).map((s) => ({ value: s, label: statusConfig[s].label })),
-    },
-    {
-      accessorKey: "responsibles",
-      header: "Responsáveis",
-      type: "checkbox",
-      options: formatedUsers,
-    },
-  ], [formatedUsers]);
+
+  // Define todos os campos possíveis para o modal de edição
+  const allEditFields = useMemo<FieldConfig<TaskFormValues>[]>(
+    () => [
+      { accessorKey: "title", header: "Título", type: "text" },
+      { accessorKey: "description", header: "Descrição", type: "text" },
+      { accessorKey: "deadline", header: "Prazo", mask: "date" },
+      {
+        accessorKey: "status",
+        header: "Status",
+        type: "select",
+        options: Object.values(TaskStatus).map((s) => ({
+          value: s,
+          label: statusConfig[s].label,
+        })),
+      },
+      {
+        accessorKey: "responsibles",
+        header: "Responsáveis",
+        type: "checkbox",
+        options: formatedUsers,
+      },
+    ],
+    [formatedUsers]
+  );
 
   // CORREÇÃO: `statusFieldOnly` também é memoizado.
   // Ele só será recriado se `allEditFields` mudar.
-  const statusFieldOnly = useMemo<FieldConfig<TaskFormValues>[]>(() =>
-    allEditFields.filter((field) => field.accessorKey === "status"),
-  [allEditFields]);
-  
+  const statusFieldOnly = useMemo<FieldConfig<TaskFormValues>[]>(
+    () => allEditFields.filter((field) => field.accessorKey === "status"),
+    [allEditFields]
+  );
+
   // Agora, este useMemo funcionará corretamente, pois suas dependências são estáveis.
   const fieldsForEditModal = useMemo(() => {
     if (!selectedItem || !user) return [];
@@ -378,6 +385,14 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     );
   }
 
+    const canDelete = (task: FullTask) => {
+      return (
+        task.authorId === user?.id ||
+        user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
+          .length > 0
+      );
+    };
+
   return (
     <>
       <CustomCard
@@ -400,6 +415,8 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           onRowClick={(row) => openEditModal(row, false)}
           itemsPerPage={10}
           disabled={false}
+          isActionLoading={isCreating}
+          isRowDeletable={canDelete}
           type="noSelection"
         />
       </div>

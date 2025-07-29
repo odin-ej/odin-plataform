@@ -106,45 +106,76 @@ export const getTasksWhereClauseForUser = (
 ): Prisma.TaskWhereInput => {
   // Se não houver usuário logado, não retorna nenhuma tarefa.
   if (!currentUser) {
-    return { id: { equals: "no-tasks" } }; // Cláusula que nunca será verdadeira
+    return { id: { equals: "no-tasks-for-guest" } };
   }
 
-  // Pega todas as áreas de todos os cargos do usuário, sem duplicatas.
-  // Ex: um Diretor de Pessoas terá [DIRETORIA, PESSOAS]
-  const userAreas = [
-    ...new Set(currentUser.roles.flatMap((role) => role.area)),
-  ];
-
-  // Constrói a cláusula de busca principal com as regras de visibilidade
-  return {
-    OR: [
-      // Condição 1: Tarefas criadas PELO usuário atual.
-      {
-        authorId: currentUser.id,
-      },
-      // Condição 2: Tarefas onde o usuário atual é UM DOS responsáveis.
-      {
-        responsibles: {
-          some: {
-            id: currentUser.id,
-          },
+  // --- CONDIÇÕES BÁSICAS (Para TODOS os usuários) ---
+  // Um array que começa com as regras que se aplicam a todos.
+  const conditions: Prisma.TaskWhereInput[] = [
+    // Condição 1: Tarefas criadas PELO usuário atual.
+    {
+      authorId: currentUser.id,
+    },
+    // Condição 2: Tarefas onde o usuário atual é UM DOS responsáveis.
+    {
+      responsibles: {
+        some: {
+          id: currentUser.id,
         },
       },
-      // Condição 3: Tarefas da ÁREA DE COMANDO do usuário.
-      // Ou seja, tarefas onde pelo menos um dos responsáveis pertence a uma das áreas do usuário atual.
-      {
-        responsibles: {
-          some: {
-            roles: {
-              some: {
-                area: {
-                  hasSome: userAreas,
+    },
+  ];
+
+  // --- CONDIÇÕES DE LIDERANÇA (Apenas para Diretores) ---
+
+  // Verifica se o usuário tem o nível de 'Diretoria' em algum de seus cargos.
+  const isDirector = currentUser.roles.some((role) =>
+    role.area.includes(AreaRoles.DIRETORIA)
+  );
+
+  // Se o usuário for um Diretor, adicionamos as regras de supervisão.
+  if (isDirector) {
+    // Pega as áreas de comando do Diretor (ex: PROJETOS, PESSOAS),
+    // excluindo a área genérica 'DIRETORIA' para focar na sua especialidade.
+    const commandAreas = currentUser.roles
+      .flatMap((role) => role.area)
+      .filter((area) => area !== AreaRoles.DIRETORIA);
+
+    // Adiciona as condições de supervisão ao array principal se houver áreas de comando.
+    if (commandAreas.length > 0) {
+      conditions.push(
+        // Condição 3: Tarefas onde OS RESPONSÁVEIS pertencem à área de comando do Diretor.
+        {
+          responsibles: {
+            some: {
+              roles: {
+                some: {
+                  area: {
+                    hasSome: commandAreas,
+                  },
                 },
               },
             },
           },
         },
-      },
-    ],
+        // Condição 4: Tarefas CRIADAS POR ALGUÉM da área de comando do Diretor.
+        {
+          author: {
+            roles: {
+              some: {
+                area: {
+                  hasSome: commandAreas,
+                },
+              },
+            },
+          },
+        }
+      );
+    }
+  }
+
+  // Retorna a combinação final de todas as condições permitidas para o usuário.
+  return {
+    OR: conditions,
   };
 };
