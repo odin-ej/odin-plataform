@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 // mas o .disconnect() garante que não haja muitas conexões abertas.
 
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
     console.log('Início da execução da API Route para resetar limite de mensagens.');
 
     try {

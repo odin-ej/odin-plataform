@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 // Esta função é projetada para ser chamada por um serviço automatizado (Cron Job).
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
     // 1. Segurança: Protege a rota com um "segredo".
     // Isso impede que qualquer pessoa execute esta função, exceto o seu serviço de Cron.
