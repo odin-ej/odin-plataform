@@ -131,6 +131,11 @@ const RoomsContent = ({
             { start: new Date(res.hourEnter), end: new Date(res.hourLeave) }
           );
         });
+
+        if (hourEnter >= hourLeave) {
+          throw new Error("Hora de entrada deve ser menor que a hora de saída.");
+        }
+
         if (hasConflict)
           throw new Error(
             "Esta sala já está reservada para o horário selecionado."

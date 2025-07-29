@@ -1,12 +1,12 @@
 import PendenciesContent from "@/app/_components/Dashboard/PendenciesContent";
+import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
-import { User } from "@prisma/client";
 import { cookies } from "next/headers";
 
 // Tipagem para os dados da página
 export interface MyPendenciesPageData {
   myTasks: FullTask[];
-  allUsers: User[];
+  allUsers: MemberWithRoles[];
 }
 
 export const dynamic = "force-dynamic";

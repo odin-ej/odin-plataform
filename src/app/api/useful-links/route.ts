@@ -1,20 +1,61 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { linkSchema } from "@/lib/schemas/linksSchema";
+import { revalidatePath } from "next/cache";
 
 export async function POST(request: Request) {
-try {
-     const authUser = await getAuthenticatedUser();
-  if (!authUser) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+  try {
+    const authUser = await getAuthenticatedUser();
+    if (!authUser)
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
-  const { title, url } = await request.json();
-  if (!title || !url) return NextResponse.json({ message: "Título e URL são obrigatórios." }, { status: 400 });
+    const {isGlobal, ...body } = await request.json();
 
-  const newLink = await prisma.usefulLink.create({
-    data: { title, url, userId: authUser.id },
-  });
-  return NextResponse.json(newLink, { status: 201 });
-} catch (error) {
-  return NextResponse.json({ message: "Erro ao criar link.", error }, { status: 500 });
+    const validation = linkSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { message: "Dados inválidos.", errors: validation.error.formErrors },
+        { status: 400 }
+      );
+    }
+    const data = validation.data;
+
+    const newLink = await prisma.usefulLink.create({
+      data: {
+        ...data,
+        isGlobal,
+        userId: authUser.id,
+      },
+    });
+    revalidatePath('/')
+    return NextResponse.json(newLink, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { message: "Erro ao criar link.", error },
+      { status: 500 }
+    );
+  }
 }
+
+export async function GET() {
+  try {
+    const authUser = await getAuthenticatedUser();
+    if (!authUser)
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+
+    const links = await prisma.usefulLink.findMany({
+      orderBy: { createdAt: "desc" },
+      where: {
+        isGlobal: true, // Filtra apenas links globais
+      },
+    });
+    return NextResponse.json({ links });
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Erro ao buscar links.", error },
+      { status: 500 }
+    );
+  }
 }

@@ -22,8 +22,8 @@ export type ReportFormValues = z.infer<typeof reportSchema>;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const extendedReportPayload = Prisma.validator<Prisma.ReportDefaultArgs>()({
   include: {
-    recipientUser: { select: { name: true } },
-    recipientRole: { select: { name: true } },
+    recipientUser: {select: { id: true, name: true, imageUrl: true } },
+    recipientRole: {select: { id: true, name: true } },
   },
 });
 

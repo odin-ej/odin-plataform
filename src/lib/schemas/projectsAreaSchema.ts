@@ -56,6 +56,7 @@ export type ProjectCreateFormValues = z.infer<typeof projectCreateSchema>;
 
 export type FullTask = Task & {
   responsibles: User[];
+  author: User | null;
   project?: Project | null;
 };
 export type FullProject = Project & { responsibles: User[]; tasks: Task[] };

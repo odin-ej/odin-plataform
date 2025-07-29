@@ -28,6 +28,7 @@ import axios from "axios";
 import { TasksPageData } from "@/app/(dashboard)/tarefas/page";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { getAssignableUsers } from "@/lib/permissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -64,7 +65,6 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
   const editTaskForm = useForm<TaskFormValues>({
     resolver: zodResolver(taskUpdateSchema),
   });
-
   const queryKey = useMemo(
     () => ["tasksData", { userId: user?.id, roleId: user?.currentRoleId }],
     [user?.id, user?.currentRoleId]
@@ -81,14 +81,13 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     },
   });
 
-  const { data, isLoading: isLoadingData } = useQuery({
+  const { data: taskData, isLoading: isLoadingData } = useQuery({
     queryKey,
     queryFn: async (): Promise<TasksPageData> => {
       if (!user?.id) {
         return { tasks: [], formatedUsers: [] };
       }
 
-    
       const [tasksRes, usersRes] = await Promise.all([
         axios.get(`${API_URL}/api/tasks`),
         axios.get(`${API_URL}/api/users`),
@@ -96,9 +95,11 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
       const users: MemberWithRoles[] = usersRes.data.users.filter(
         (u: MemberWithRoles) => !u.isExMember
       );
-      const formatedUsers = users.map((u: MemberWithRoles) => ({
-        value: u.id,
-        label: u.name,
+      const verifiedUsers: MemberWithRoles[] = getAssignableUsers(user, users);
+      const verifyIsMe = (user_: MemberWithRoles) => user_.id === user.id;
+      const formatedUsers = verifiedUsers.map((user: MemberWithRoles) => ({
+        value: user.id,
+        label: verifyIsMe(user) ? "Eu" : user.name,
       }));
 
       const fetchedData = structuredClone({
@@ -199,9 +200,9 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
   };
 
   const sortedTasks = useMemo(() => {
-    const tasks = data?.tasks || [];
+    const tasks = taskData?.tasks || [];
     return sortTasks(tasks);
-  }, [data?.tasks]);
+  }, [taskData?.tasks]);
 
   const taskColumns = useMemo<ColumnDef<FullTask>[]>(
     () => [
@@ -219,6 +220,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           );
         },
       },
+
       {
         accessorKey: "deadline",
         header: "Prazo",
@@ -266,12 +268,31 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           );
         },
       },
+      {
+        accessorKey: "authorId",
+        header: "Autor",
+        cell: (row) => {
+          const author = row.author;
+          if (!author)
+            return <span className="text-xs text-gray-500">Desconhecido</span>;
+          return (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={author.imageUrl || ""} alt={author.name} />
+                <AvatarFallback className="text-xs bg-gray-700">
+                  {author.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm">{author.name}</span>
+            </div>
+          );
+        },
+      },
     ],
     []
   );
 
-  const formatedUsers = data?.formatedUsers ?? [];
-
+  const formatedUsers = taskData?.formatedUsers ?? [];
   const editTaskFields: FieldConfig<TaskFormValues>[] = [
     { accessorKey: "title", header: "Título", type: "text" },
     { accessorKey: "description", header: "Descrição", type: "text" },
@@ -288,12 +309,50 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
         value: s,
         label: statusConfig[s].label,
       })),
+      renderView(data) {
+        const status = data.status;
+        if (!status)
+          return <span className="text-xs text-gray-500">Indefinido</span>;
+
+        const config = statusConfig[status];
+
+        return (
+          <Badge className={` text-white border-none`}>{config.label}</Badge>
+        );
+      },
     },
     {
       accessorKey: "responsibles",
       header: "Responsáveis",
       type: "checkbox",
       options: formatedUsers,
+      renderView(data) {
+        const responsibles = data.responsibles || [];
+        const tasksUser = taskData.tasks.filter((task, index) =>
+          task.responsibles.filter((user) => user.id === responsibles[index])
+        );
+        if (responsibles.length === 0) return <span>Nenhum</span>;
+        return (
+          <div className="flex items-center -space-x-2">
+            {tasksUser[0].responsibles.slice(0, 3).map((user: User) => (
+              <Avatar
+                key={user.id}
+                className="h-7 w-7 border-2 border-background"
+              >
+                <AvatarImage src={user.imageUrl || ""} alt={user.name} />
+                <AvatarFallback className="text-xs bg-gray-700">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {responsibles.length > 3 && (
+              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-[#0126fb] text-white text-xs font-bold z-10 border-2 border-background">
+                +{responsibles.length - 3}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -324,7 +383,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     },
   ];
 
-  if (isLoadingData && !data?.tasks.length) {
+  if (isLoadingData && !taskData?.tasks.length) {
     return (
       <div className="flex justify-center min-h-full items-center mt-20">
         <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
@@ -339,7 +398,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
         icon={ClipboardList}
         title="Tarefas"
         description="Acompanhe as tarefas da casinha dos sonhos"
-        value={data?.tasks.length as number}
+        value={taskData?.tasks.length as number}
       />
 
       <div className="mt-6 space-y-8">

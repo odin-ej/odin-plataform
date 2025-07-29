@@ -12,7 +12,7 @@ import z from "zod";
 
 const tagUpdateSchema = z.object({
   description: z.string().min(5).optional(),
-  value: z.number().optional(),
+  value: z.string().optional(),
   actionTypeId: z.string().optional(),
   areas: z
     .array(z.nativeEnum(TagAreas))
@@ -59,6 +59,12 @@ export async function PATCH(
         ? (parseBrazilianDate(validation.data.datePerformed) as Date)
         : new Date(validation.data.datePerformed!);
     const newData = { ...validation.data, datePerformed: formatedDate };
+
+    const formatedValue = newData.value
+      ? newData.value.replace(",", ".").match(/^-?\d+(\.\d+\d+)?$/)
+        ? parseFloat(newData.value)
+        : newData.value
+      : null;
 
     await prisma.$transaction(
       async (tx: {
@@ -127,10 +133,10 @@ export async function PATCH(
           });
 
           const valueIsChanging =
-            typeof newData.value === "number" &&
-            newData.value !== originalTag.value;
+            typeof formatedValue === "number" &&
+            formatedValue !== originalTag.value;
           if (valueIsChanging) {
-            const pointDifference = Number(newData.value) - Number(originalTag.value);
+            const pointDifference = formatedValue - Number(originalTag.value);
             if (userClones.length > 0) {
               await tx.userPoints.updateMany({
                 where: {
@@ -164,17 +170,20 @@ export async function PATCH(
           if (allCloneIds.length > 0) {
             await tx.tag.updateMany({
               where: { id: { in: allCloneIds } },
-              data: dataForClones, // Usa os dados sem a data
+              data: { ...dataForClones, value: formatedValue }, // Usa os dados sem a data
             });
           }
 
           // Atualiza a tag modelo com todos os dados (incluindo a data)
-          await tx.tag.update({ where: { id }, data: newData });
+          await tx.tag.update({
+            where: { id },
+            data: { ...newData, value: formatedValue },
+          });
         } else {
           // Lógica para atualizar uma única tag individual (clone)
           const pointDifference =
-            typeof newData.value === "number"
-              ? newData.value - originalTag.value
+            typeof formatedValue === "number"
+              ? formatedValue - originalTag.value
               : 0;
           if (pointDifference !== 0) {
             if (originalTag.userPointsId) {
@@ -190,7 +199,10 @@ export async function PATCH(
               });
             }
           }
-          await tx.tag.update({ where: { id }, data: newData });
+          await tx.tag.update({
+            where: { id },
+            data: { ...newData, value: formatedValue },
+          });
         }
       }
     );
@@ -258,7 +270,7 @@ export async function DELETE(
         const tagToDelete = await tx.tag.findUnique({
           where: { id },
         });
-      
+
         if (!tagToDelete) {
           throw new Error("Tag não encontrada.");
         }
@@ -267,7 +279,7 @@ export async function DELETE(
         const isModelTag =
           tagToDelete.userPointsId === null &&
           tagToDelete.enterprisePointsId === null;
-      
+
         if (isModelTag) {
           // --- LÓGICA PARA APAGAR UM MODELO E TODOS OS SEUS CLONES ---
 
@@ -297,7 +309,6 @@ export async function DELETE(
             }
           }
 
-          
           // c. Reverte pontos da empresa
           if (enterpriseClones.length > 0) {
             const totalValueToDecrement = enterpriseClones.reduce(
@@ -347,7 +358,7 @@ export async function DELETE(
     revalidatePath("/jr-points/nossa-empresa");
     return new NextResponse(null, { status: 204 });
   } catch (error: any) {
-    console.error(error)
+    console.error(error);
     return NextResponse.json(
       { message: "Erro ao apagar tag.", error: error.message },
       { status: 500 }

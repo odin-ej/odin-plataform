@@ -53,7 +53,7 @@ const Page = async () => {
     value: user.id,
     label: verifyIsMe(user) ? "Eu" : user.name,
   }));
-
+  console.log(formatedUsers);
   const initialData: TasksPageData = { tasks, formatedUsers };
 
   return (

@@ -82,14 +82,14 @@ const MemberViewModal = ({
               <span className="text-zinc-400">Instagram</span>
 
               {user.instagram ? (
-                <Link href={user.instagram}>{user.instagram}</Link>
+                <Link className='underline' href={user.instagram}>Acessar Perfil</Link>
               ) : (
                 <span>-</span>
               )}
 
               <span className="text-zinc-400">LinkedIn</span>
               {user.linkedin ? (
-                <Link href={user.linkedin}>{user.linkedin}</Link>
+                <Link className='underline'  href={user.linkedin}>Acessar Perfil</Link>
               ) : (
                 <span>-</span>
               )}

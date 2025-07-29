@@ -5,7 +5,7 @@ import CustomCard from "../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../Global/Custom/CustomCarousel";
 import CustomCalendarOAuth from "../Global/Calendar/CalendarOAuth";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { checkUserPermission, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Image from "next/image";
@@ -14,6 +14,7 @@ import UsefulLinksSection from "./UsefulLinksSection";
 import axios from "axios";
 import { HomeContentData } from "@/app/(dashboard)/page";
 import { useQuery } from "@tanstack/react-query";
+import { AreaRoles, LinkAreas } from "@prisma/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -31,7 +32,7 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
       );
     }
 
-    const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes] =
+    const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes, globalLinksRes] =
       await Promise.all([
         axios.get(`${API_URL}/api/house-goals`),
         // Use user.id diretamente
@@ -40,14 +41,16 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
         axios.get(`${API_URL}/api/my-tasks`),
         // Use user.id diretamente
         axios.get(`${API_URL}/api/users/${user.id}/useful-links`),
+        axios.get(`${API_URL}/api/useful-links`),
       ]);
 
     const goals = strategyRes.data?.flatMap((obj: any) => obj.goals) || [];
     const myPoints = myPointsRes.data?.myPoints?.totalPoints ?? 0;
     const numberOfTasks = myTasksRes.data?.length || 0;
     const usefulLinks = usefulLinksRes.data?.links || [];
+    const globalLinks = globalLinksRes.data?.links || [];
 
-    return { goals, myPoints, numberOfTasks, usefulLinks };
+    return { goals, myPoints, numberOfTasks, usefulLinks, globalLinks };
   };
 
   const { data, isLoading } = useQuery({
@@ -58,7 +61,7 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
     enabled: !user?.isExMember,
   });
 
-  const { goals, myPoints, numberOfTasks, usefulLinks } = data || initialData;
+  const { goals, myPoints, numberOfTasks, usefulLinks, globalLinks } = data || initialData;
   const slidesData: SlideData[] = goals.map((goal) => ({
     progress: Math.floor(Number(Number(goal.value) / Number(goal.goal)) * 100),
     valueText: `${goal.value} de ${goal.goal}`,
@@ -77,6 +80,44 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
     date: new Date().toLocaleDateString("pt-BR"),
   }));
 
+  const isConsultant = checkUserPermission(user, {allowedAreas: [AreaRoles.CONSULTORIA]})
+
+const getSpecificLinks = () => {
+  // Se não houver usuário ou cargo definido, não mostre links específicos.
+  if (!user?.currentRole) {
+    // Retorna apenas os links GERAIS para usuários sem cargo definido (caso de segurança)
+    // CORREÇÃO: Usa o enum LinkAreas.GERAL em vez da string 'GERAL'
+    return globalLinks.filter((link) => link.area === LinkAreas.GERAL);
+  }
+
+  const userRoleAreas = user.currentRole.area;
+  
+  return globalLinks.filter((link) => {
+    // Regra 1: Link da área GERAL é sempre visível.
+    // CORREÇÃO: Usa o enum LinkAreas.GERAL
+    if (link.area === LinkAreas.GERAL) {
+      return true;
+    }
+
+    // Regra 2: Você sempre vê os links que você mesmo criou.
+    if (link.userId === user.id) {
+      return true;
+    }
+    // Regra 5: Todos podem ver links que pertencem diretamente às suas áreas.
+    // A tipagem 'as AreaRoles' é necessária aqui porque estamos comparando
+    // um valor de `LinkAreas` com um array de `AreaRoles`.
+    // Isso funciona desde que os nomes das áreas correspondentes sejam iguais nos dois enums.
+    if (userRoleAreas.includes(link.area as AreaRoles)) {
+      return true;
+    }
+
+    // Se nenhuma das regras acima for atendida, o link não é visível.
+    return false;
+  });
+};
+
+  const specificLinks = getSpecificLinks();
+  console.log(specificLinks)
   if (isLoading)
     return (
       <div className="flex justify-center items-center mt-20">
@@ -105,7 +146,9 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
             />
           </div>
 
-          <UsefulLinksSection links={usefulLinks} />
+        <UsefulLinksSection links={specificLinks} isGlobal={true} isConsultant={isConsultant} />
+
+          <UsefulLinksSection links={usefulLinks} isGlobal={false} />
 
           <div className="grid grid-cols-1 w-full mt-8">
             <CustomCarousel title="Metas da Casinha" slides={slidesData} />

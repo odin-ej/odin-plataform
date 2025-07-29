@@ -74,6 +74,7 @@ export async function POST(request: Request) {
       where: { id: validation.data.roomId },
       select: { name: true },
     });
+
     // CORREÇÃO: Os dados já estão no formato string ISO correto, não precisa de `new Date()`.
     // O Prisma converte a string ISO para o tipo DateTime do banco de dados automaticamente.
     const googleRes = await fetch(

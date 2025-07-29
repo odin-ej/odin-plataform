@@ -26,6 +26,13 @@ import ModalConfirm from "../Global/ModalConfirm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MyPendenciesPageData } from "@/app/(dashboard)/minhas-pendencias/page";
 import axios from "axios";
+import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
+import { getAssignableUsers } from "@/lib/permissions";
+
+interface PendenciesContentQueryData{
+  myTasks: FullTask[];
+  formatedUsers: { value: string; label: string }[];
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -87,16 +94,38 @@ const PendenciesContent = ({
     setSelectedItem(null);
   };
 
+  const formatedInitialData = useMemo(() => {
+    const verifiedUsers: MemberWithRoles[] = getAssignableUsers(
+      user!,
+      initialData.allUsers
+    );
+    const verifyIsMe = (user_: MemberWithRoles) => user_.id === user?.id;
+    const formatedUsers = verifiedUsers.map((user: MemberWithRoles) => ({
+      value: user.id,
+      label: verifyIsMe(user) ? "Eu" : user.name,
+    }));
+    return { myTasks: initialData.myTasks, formatedUsers };
+  }, [initialData, user]);
+
   const { data, isLoading: isLoadingData } = useQuery({
     queryKey: ["myTasksData"],
-    queryFn: async (): Promise<MyPendenciesPageData> => {
+    queryFn: async (): Promise<PendenciesContentQueryData> => {
       const [tasksRes, usersRes] = await Promise.all([
         axios.get(`${API_URL}/api/tasks`),
         axios.get(`${API_URL}/api/users`),
       ]);
-      return { myTasks: tasksRes.data, allUsers: usersRes.data.users };
+      const users: MemberWithRoles[] = usersRes.data.users.filter(
+        (u: MemberWithRoles) => !u.isExMember
+      );
+      const verifiedUsers: MemberWithRoles[] = getAssignableUsers(user, users);
+      const verifyIsMe = (user_: MemberWithRoles) => user_.id === user?.id;
+      const formatedUsers = verifiedUsers.map((user: MemberWithRoles) => ({
+        value: user.id,
+        label: verifyIsMe(user) ? "Eu" : user.name,
+      }));
+      return { myTasks: tasksRes.data, formatedUsers: formatedUsers };
     },
-    initialData: initialData,
+    initialData: formatedInitialData,
   });
 
   const { mutate: updateTask, isPending: isUpdatingTask } = useMutation({
@@ -114,7 +143,8 @@ const PendenciesContent = ({
   });
 
   const { mutate: deleteTask, isPending: isDeletingTask } = useMutation({
-    mutationFn: (taskId: string) => axios.delete(`${API_URL}/api/tasks/${taskId}`),
+    mutationFn: (taskId: string) =>
+      axios.delete(`${API_URL}/api/tasks/${taskId}`),
     onSuccess: () => {
       toast.success("Tarefa deletada com sucesso!");
       setItemToDelete(null);
@@ -203,17 +233,30 @@ const PendenciesContent = ({
           );
         },
       },
+      {
+        accessorKey: "authorId",
+        header: "Autor(a)",
+        cell: (row) => {
+          const author = row.author;
+          if (!author)
+            return <span className="text-xs text-gray-500">Desconhecido</span>;
+          return (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={author.imageUrl || ""} alt={author.name} />
+                <AvatarFallback className="text-xs bg-gray-700">
+                  {author.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm">{author.name}</span>
+            </div>
+          );
+        },
+      },
     ],
     []
   );
 
-  const responsibleOptions = useMemo(() => {
-    const allUsers = data?.allUsers || [];
-    return allUsers.map((user) => ({
-      value: user.id,
-      label: `${user.name.split(" ")[0]} ${user.name.split(" ").pop()}`,
-    }));
-  }, [data?.allUsers]);
 
   const taskFields: FieldConfig<TaskFormValues>[] = [
     { accessorKey: "title", header: "Título" },
@@ -232,7 +275,7 @@ const PendenciesContent = ({
       accessorKey: "responsibles",
       header: "Responsáveis",
       type: "checkbox",
-      options: responsibleOptions, // Isso daqui não está funcionando! Me ajude aqui!,
+      options: data.formatedUsers,
     },
   ];
 
@@ -280,7 +323,7 @@ const PendenciesContent = ({
           onRowClick={(row) => openModal(row, false)}
           onEdit={(row) => openModal(row, true)}
           onDelete={(row) => setItemToDelete(row)}
-          type="noSelection"
+          type={'noSelection'}
           isRowDeletable={canDelete}
           itemsPerPage={10}
         />

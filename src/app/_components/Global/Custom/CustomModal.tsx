@@ -205,7 +205,7 @@ const CustomModal = <T extends FieldValues>({
                               );
                             case "dropzone":
                               return (
-                                <div className="md:col-span-2">
+                                <div className="md:col-span-2 mt-2">
                                   <DynamicDropzone
                                     control={form.control}
                                     name={accessorKey}
@@ -251,7 +251,7 @@ const CustomModal = <T extends FieldValues>({
                                 <label className="text-sm font-semibold text-[#0126fb] mb-2">
                                   {fieldInfo.header}
                                 </label>
-                                <Avatar className="h-24 w-24 border-2 border-[#0126fb]">
+                              <Avatar className="h-24 w-24 border-2 border-[#0126fb]">
                                   <AvatarImage
                                     src={data.imageUrl}
                                     className="object-cover"
@@ -273,7 +273,7 @@ const CustomModal = <T extends FieldValues>({
                                 <label className="text-sm font-semibold text-[#0126fb]">
                                   {fieldInfo.header}
                                 </label>
-                                <div className="mt-1 w-full rounded-lg border border-transparent bg-[#00205e] p-3 text-white min-h-[44px]">
+                                <div className="mt-1 w-full rounded-lg border border-transparent  text-white min-h-[44px]">
                                   {fieldInfo.renderView(data)}
                                 </div>
                               </div>

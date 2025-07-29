@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { linkSchema } from "@/app/_components/Dashboard/UsefulLinksSection";
+import { linkSchema } from "@/lib/schemas/linksSchema";
 
 export async function PATCH(
   request: Request,
@@ -18,17 +18,6 @@ export async function PATCH(
 
     const validation = linkSchema.safeParse(body);
 
-    const user = await prisma.user.findUnique({
-      where: { id: authUser.id },
-    });
-
-    const link = await prisma.usefulLink.findUnique({
-      where: { id },
-    });
-
-    if (link?.userId !== user?.id) {
-      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-    }
 
     if (!validation.success) {
       return NextResponse.json({ message: "Dados inválidos" }, { status: 400 });
@@ -59,17 +48,6 @@ export async function DELETE(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
     const { id } = await params;
-    const user = await prisma.user.findUnique({
-      where: { id: authUser.id },
-    });
-
-    const link = await prisma.usefulLink.findUnique({
-      where: { id },
-    });
-
-    if (link?.userId !== user?.id) {
-      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-    }
 
     const deletedLink = await prisma.usefulLink.delete({
       where: { id },

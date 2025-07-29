@@ -20,6 +20,9 @@ import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ReportsPageData } from "@/app/(dashboard)/reports/page";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
@@ -36,6 +39,12 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
+    defaultValues: {
+      title: "",
+      content: "",
+      recipientUserId: "",
+     
+    },
   });
 
   // Função para abrir o modal de criação
@@ -189,15 +198,29 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
       renderView: (row) => {
         switch (row.status) {
           case ReportStatus.DRAFT:
-            return "Rascunho";
+            return (
+              <Badge className="bg-gray-500/20 text-gray-400">Rascunho</Badge>
+            );
           case ReportStatus.SUBMITTED:
-            return "Em análise";
+            return (
+              <Badge className="bg-yellow-500/20 text-yellow-400">
+                Em análise
+              </Badge>
+            );
           case ReportStatus.APPROVED:
-            return "Aprovado";
+            return (
+              <Badge className="bg-green-500/20 text-green-400">Aprovado</Badge>
+            );
           case ReportStatus.REJECTED:
-            return "Recusado";
+            return (
+              <Badge className="bg-red-500/20 text-red-400">Recusado</Badge>
+            );
           default:
-            return "Desconhecido";
+            return (
+              <Badge className="bg-gray-500/20 text-gray-400">
+                Desconhecido
+              </Badge>
+            );
         }
       },
     },
@@ -206,8 +229,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
       accessorKey: "recipientUserId",
       type: "text",
       renderView: (row) => {
-        const typedRow = row as Partial<ExtendedReport>;
-
+        const typedRow = row as ExtendedReport;
         // Usa os objetos aninhados se estiverem disponíveis
         const userName = typedRow.recipientUser?.name;
         const roleName = typedRow.recipientRole?.name;
@@ -219,9 +241,23 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
         const roleFromId = data.allRoles.find(
           (r) => r.id === typedRow.recipientRoleId
         )?.name;
+        const displayName =
+          userName ||
+          roleName ||
+          userFromId ||
+          roleFromId ||
+          "Não especificado";
 
         return (
-          userName || roleName || userFromId || roleFromId || "Não especificado"
+          <div className="bg-[#00205e] w-full min-h-11 rounded-lg flex items-center justify-start gap-2 p-3">
+            {displayName}
+            {typedRow.recipientUser?.imageUrl && (
+              <Avatar className="inline-block ml-2">
+                <AvatarImage src={typedRow.recipientUser.imageUrl} />
+                <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
+              </Avatar>
+            )}
+          </div>
         );
       },
     },

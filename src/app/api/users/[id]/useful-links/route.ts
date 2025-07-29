@@ -16,6 +16,7 @@ export async function GET(
     const links = await prisma.usefulLink.findMany({
       where: {
         userId: id,
+        isGlobal: false,
       },
     });
     return NextResponse.json({ links });

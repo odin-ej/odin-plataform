@@ -37,7 +37,6 @@ export async function GET(
       },
     });
     const userTags = userPointsRecord?.tags || [];
-    console.log(userTags)
     return NextResponse.json(userTags);
   } catch (error) {
     return NextResponse.json(

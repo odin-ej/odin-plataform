@@ -11,6 +11,7 @@ export interface HomeContentData {
   myPoints: number;
   numberOfTasks: number;
   usefulLinks: UsefulLink[];
+  globalLinks: UsefulLink[]; // Links globais, se necessário
 }
 
 export const metadata = constructMetadata({
@@ -26,7 +27,7 @@ async function getPageData(): Promise<HomeContentData> {
 
     // Para ex-membros, retorna dados vazios para evitar chamadas de API desnecessárias
     if (authUser.isExMember) {
-      return { goals: [], myPoints: 0, numberOfTasks: 0, usefulLinks: [] };
+      return { goals: [], myPoints: 0, numberOfTasks: 0, usefulLinks: [], globalLinks: [] };
     }
 
     const cookiesStore = await cookies();
@@ -37,6 +38,7 @@ async function getPageData(): Promise<HomeContentData> {
       myPointsResponse,
       numberOfTasksResponse,
       usefulLinksResponse,
+      globalLinksResponse,
     ] = await Promise.all([
       fetch(`${baseUrl}/api/house-goals`, { cache: "no-store", headers }),
       fetch(`${baseUrl}/api/my-points/${authUser.id}`, {
@@ -48,6 +50,7 @@ async function getPageData(): Promise<HomeContentData> {
         cache: "no-store",
         headers,
       }),
+      fetch(`${baseUrl}/api/useful-links`, { cache: "no-store", headers }),
     ]);
 
     // Processa cada resposta individualmente para maior resiliência
@@ -63,16 +66,20 @@ async function getPageData(): Promise<HomeContentData> {
     const usefulLinksData = usefulLinksResponse.ok
       ? await usefulLinksResponse.json()
       : { links: [] };
+    const globalLinksData = globalLinksResponse.ok
+      ? await globalLinksResponse.json()
+      : { links: [] };
 
     return {
       goals: goals,
       myPoints: myPointsData.myPoints?.totalPoints ?? 0,
       numberOfTasks: numberOfTasksData.length || 0,
       usefulLinks: usefulLinksData.links || [],
+      globalLinks: globalLinksData.links || [],
     };
   } catch (error) {
     console.error("Falha ao buscar dados do dashboard.", error);
-    return { goals: [], myPoints: 0, numberOfTasks: 0, usefulLinks: [] };
+    return { goals: [], myPoints: 0, numberOfTasks: 0, usefulLinks: [], globalLinks: [] };
   }
 }
 

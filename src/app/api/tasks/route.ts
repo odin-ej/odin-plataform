@@ -21,6 +21,7 @@ export async function GET() {
       where: whereClause,
       include: {
         responsibles: true,
+        author: true,
       },
       orderBy: {
         deadline: "asc",

@@ -1,10 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Role, AreaRoles, User } from "@prisma/client";
-import { UserProfileValues } from "./schemas/memberFormSchema";
+import { Role, AreaRoles, User, LinkAreas } from "@prisma/client";
+import {UserProfileValues } from "./schemas/memberFormSchema";
 import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,14 +30,14 @@ export function formatDateForInput(
 
 export function orderRolesByHiearchy(roles: Role[]) {
   const areaOrder = [
-    AreaRoles.PRESIDENCIA,
-    AreaRoles.DIRETORIA,
     AreaRoles.CONSELHO,
-    AreaRoles.TATICO,
+    AreaRoles.DIRETORIA,
+    AreaRoles.PRESIDENCIA,
     AreaRoles.OPERACOES,
     AreaRoles.PROJETOS,
     AreaRoles.MERCADO,
     AreaRoles.PESSOAS,
+    AreaRoles.TATICO,
     AreaRoles.CONSULTORIA,
     AreaRoles.OUTRO,
   ];
@@ -69,7 +70,6 @@ export function orderRolesByHiearchy(roles: Role[]) {
 
 export const getModalFields = <T extends UserProfileValues | ExMemberType>(
   isExMember: boolean,
-  formatedRoles: { value: string; label: string }[]
 ): FieldConfig<T>[] => {
   const commonFields: FieldConfig<T>[] = [
     { accessorKey: "name" as Path<T>, header: "Nome Completo" },
@@ -92,24 +92,6 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
     { accessorKey: "password" as Path<T>, header: "Senha" },
     { accessorKey: "confPassword" as Path<T>, header: "Confirmar Senha" },
     {
-      accessorKey: "roleId" as Path<T>,
-      header: "Cargo",
-      type: "select",
-      options: formatedRoles,
-      renderView(data) {
-        return data?.roles?.map((role) => role).join(", ");
-      },
-    },
-    {
-      accessorKey: "roles" as Path<T>,
-      header: "Cargos",
-      type: "checkbox",
-      options: formatedRoles,
-      renderView(data) {
-        return data?.roles?.map((role) => role).join(", ");
-      },
-    },
-    {
       accessorKey: "isExMember" as Path<T>,
       header: "Ex-Membro",
       type: "select",
@@ -126,11 +108,6 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
         { value: "Sim", label: "Sim" },
         { value: "Não", label: "Não" },
       ],
-    },
-    {
-      accessorKey: "image" as Path<T>,
-      header: "Imagem de Perfil",
-      type: "dropzone",
     },
   ];
 
@@ -301,4 +278,20 @@ export const fileToBase64 = (
     // 6. Define o que acontece se houver um erro durante a leitura.
     reader.onerror = (error) => reject(error);
   });
+};
+
+export // Coloque esta função fora do seu componente, no mesmo arquivo ou em um arquivo de utils.
+const getLabelForLinkArea = (area: LinkAreas): string => {
+  const labels: Record<LinkAreas, string> = {
+    GERAL: "Geral",
+    CONSULTORIA: "Consultoria",
+    DIRETORIA: "Diretoria",
+    TATICO: "Tático",
+    PRESIDENCIA: "Presidência",
+    OPERACOES: "Operações",
+    PESSOAS: "Gestão de Pessoas",
+    PROJETOS: "Projetos",
+    MERCADO: "Mercado",
+  };
+  return labels[area] || area;
 };

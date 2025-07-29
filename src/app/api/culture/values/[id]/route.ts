@@ -1,3 +1,4 @@
+import { prisma } from "@/db";
 import { valueUpdateSchema } from "@/lib/schemas/strategyUpdateSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { revalidatePath } from "next/cache";

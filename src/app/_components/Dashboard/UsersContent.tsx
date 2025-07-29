@@ -12,7 +12,7 @@ import { Role } from "@prisma/client";
 import CustomCard from "@/app/_components/Global/Custom/CustomCard";
 import { TicketCheck, Users } from "lucide-react";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
-import CustomModal from "../Global/Custom/CustomModal";
+import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
 import {
   MemberWithFullRoles,
   RegistrationRequestWithRoles,
@@ -286,12 +286,60 @@ const UsersContent = ({
   // REMOVA COMPLETAMENTE a constante 'allowedFields'.
 
   // Simplifique a criação dos campos:
-  const filteredRoles = formatedRoles.filter((role) => role.label !== "Outro");
   const fields = getModalFields<UserProfileValues>(
-    isExMemberBoolean, // A função já usa este booleano para a lógica
-    isExMemberBoolean ? formatedRoles : filteredRoles
+    isExMemberBoolean // A função já usa este booleano para a lógica
   );
 
+  const modalFields: FieldConfig<UserProfileValues>[] = [
+    ...fields,
+    {
+      accessorKey: "roleId",
+      header: "Cargo Atual",
+      type: "select",
+      options: formatedRoles,
+      renderView(data) {
+        if (isExMemberBoolean) return "Ex-membro";
+        const role = formatedRoles.find(
+          (role) => role.value === (data as UserProfileValues).roleId
+        )?.label;
+        if (!role) return "Nenhum cargo selecionionado";
+        return (
+          <div className="bg-[#00205e] w-full min-h-11 rounded-lg flex items-center justify-start gap-2 p-3">
+            {role}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "roles",
+      header: "Cargos",
+      type: "checkbox",
+      options: formatedRoles,
+      renderView(data) {
+        const roles = formatedRoles.filter((role) =>
+          data?.roles?.includes(role.value)
+        );
+        return (
+          <div className="bg-[#00205e] w-full min-h-11 rounded-lg flex items-center justify-start gap-2 p-3">
+            {roles.length > 0 ? (
+              roles.map((role) => (
+                <span key={role.value} className="text-sm">
+                  {role.label}
+                </span>
+              ))
+            ) : (
+              <span className="text-sm">Nenhum cargo selecionado</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "image",
+      header: "Imagem de Perfil",
+      type: "dropzone",
+    },
+  ];
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onInvalid = (_errors: any) => {
     toast.error("Formulário Inválido", {
@@ -402,7 +450,7 @@ const UsersContent = ({
         onClose={() => setIsModalOpen(false)}
         form={form}
         onSubmit={handleModalSubmit}
-        fields={fields} // Passa a definição dos campos para o modal
+        fields={modalFields} // Passa a definição dos campos para o modal
         title="Detalhes do Usuário"
         isEditing={isEditing}
         setIsEditing={setIsEditing}

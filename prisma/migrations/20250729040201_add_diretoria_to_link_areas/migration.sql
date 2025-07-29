@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "LinkAreas" ADD VALUE 'DIRETORIA';

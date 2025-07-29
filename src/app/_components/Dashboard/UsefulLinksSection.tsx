@@ -1,87 +1,141 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { UsefulLink } from "@prisma/client";
+import { AreaRoles, LinkAreas, UsefulLink } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { LinkIcon, Pencil, Plus, Trash2 } from "lucide-react";
-import CustomModal from "../Global/Custom/CustomModal";
+import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
 import ModalConfirm from "../Global/ModalConfirm";
 import Link from "next/link";
+import axios from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { checkUserPermission, getLabelForLinkArea } from "@/lib/utils";
+import { LinkFormData, linkSchema } from "@/lib/schemas/linksSchema";
+import { HomeContentData } from "@/app/(dashboard)/page";
 
-export const linkSchema = z.object({
-  title: z.string().min(1, "O título é obrigatório."),
-  url: z.string().url("Por favor, insira uma URL válida."),
-});
-type LinkFormData = z.infer<typeof linkSchema>;
-
-const UsefulLinksSection = ({ links }: { links: UsefulLink[] }) => {
+const UsefulLinksSection = ({
+  links,
+  isConsultant,
+  isGlobal,
+}: {
+  links: UsefulLink[];
+  isConsultant?: boolean;
+  isGlobal?: boolean;
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<UsefulLink | null>(null);
   const [removeLinkId, setRemoveLinkId] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const form = useForm<LinkFormData>({
     resolver: zodResolver(linkSchema),
+    defaultValues: {
+      title: "",
+      url: "",
+      area: LinkAreas.GERAL,
+    },
   });
 
   const openModal = (link?: UsefulLink) => {
     if (link) {
       setEditingLink(link);
-      form.reset({ title: link.title, url: link.url });
+      form.reset({
+        title: link.title ?? "",
+        url: link.url ?? "",
+        area: link.area ?? LinkAreas.GERAL,
+      });
     } else {
       setEditingLink(null);
-      form.reset({ title: "", url: "" });
+      form.reset({
+        title: "",
+        url: "",
+        area: LinkAreas.GERAL,
+      });
     }
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = async (data: LinkFormData) => {
-    const endpoint = editingLink
-      ? `/api/useful-links/${editingLink.id}`
-      : "/api/useful-links";
-    const method = editingLink ? "PATCH" : "POST";
+  const { mutate: addLink, isPending: isAdding } = useMutation({
+    mutationFn: async (data: LinkFormData) => {
+      const response = await axios.post("/api/useful-links", { isGlobal, ...data });
+      return response.data;
+    },
+    onSuccess: (newLink: UsefulLink) => {
+      toast.success("Link adicionado com sucesso!");
+      queryClient.setQueryData(['homeDashboardData'], (oldData: HomeContentData | undefined) => {
+        if (!oldData) return oldData;
 
-    const response = await fetch(endpoint, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    if (response.ok) {
-      toast.success(
-        `Link ${editingLink ? "atualizado" : "adicionado"} com sucesso!`
-      );
-      setIsModalOpen(false);
-      router.refresh(); // Atualiza os dados da página
-    } else {
-      toast.error("Ocorreu um erro ao salvar o link.");
-    }
-  };
-
-  const handleDelete = async (linkId: string) => {
-    if (isLoading) return;
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/useful-links/${linkId}`, {
-        method: "DELETE",
+        const listKey = isGlobal ? 'globalLinks' : 'usefulLinks';
+        const updatedList = [newLink, ...oldData[listKey]];
+        
+        return { ...oldData, [listKey]: updatedList };
       });
-      if (response.ok) {
-        toast.success("Link removido com sucesso!");
-        router.refresh();
-      } else {
-        toast.error("Falha ao remover o link.");
-      }
-    } catch (error) {
-      console.error("Erro ao remover o link:", error);
-      toast.error("Erro ao remover o link.");
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Erro ao adicionar link.";
+      toast.error(errorMessage);
+    },
+  });
+
+  const { mutate: updateLink, isPending: isUpdating } = useMutation({
+    mutationFn: async (data: LinkFormData & { id: string }) => {
+      const response = await axios.patch(`/api/useful-links/${data.id}`, data);
+      return response.data;
+    },
+    onSuccess: (updatedLink: UsefulLink) => {
+      toast.success("Link atualizado com sucesso!");
+      queryClient.setQueryData(['homeDashboardData'], (oldData: HomeContentData | undefined) => {
+        if (!oldData) return oldData;
+        
+        const listKey = isGlobal ? 'globalLinks' : 'usefulLinks';
+        const updatedList = oldData[listKey].map(link => 
+          link.id === updatedLink.id ? updatedLink : link
+        );
+
+        return { ...oldData, [listKey]: updatedList };
+      });
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Erro ao atualizar link.";
+      toast.error(errorMessage);
+    },
+  });
+
+  const { mutate: deleteLink, isPending: isDeleting } = useMutation({
+    mutationFn: async (linkId: string) => axios.delete(`/api/useful-links/${linkId}`),
+    onSuccess: (_, deletedLinkId) => {
+      toast.success("Link removido com sucesso!");
+      queryClient.setQueryData(['homeDashboardData'], (oldData: HomeContentData | undefined) => {
+        if (!oldData) return oldData;
+        
+        const listKey = isGlobal ? 'globalLinks' : 'usefulLinks';
+        const updatedList = oldData[listKey].filter(link => link.id !== deletedLinkId);
+
+        return { ...oldData, [listKey]: updatedList };
+      });
+      setRemoveLinkId(null);
+      setIsConfirmModalOpen(false);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Erro ao remover link.";
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleFormSubmit = (data: LinkFormData) => {
+    if (editingLink) {
+      updateLink({ ...data, id: editingLink.id });
+    } else {
+      addLink(data);
     }
-    setIsLoading(false);
   };
 
   const handleClickDeleteButton = (linkId: string) => {
@@ -89,16 +143,75 @@ const UsefulLinksSection = ({ links }: { links: UsefulLink[] }) => {
     setRemoveLinkId(linkId);
   };
 
+  const getCreatableAreaOptions = () => {
+    if (!user?.currentRole) {
+      return [];
+    }
+    const isDiretor = checkUserPermission(user, { allowedAreas: [AreaRoles.DIRETORIA] });
+    const isTatico = checkUserPermission(user, { allowedAreas: [AreaRoles.TATICO] });
+    const userRoleAreas = user.currentRole.area;
+
+    const allAreaOptions = Object.values(LinkAreas).map((area) => ({
+      value: area,
+      label: getLabelForLinkArea(area),
+    }));
+
+    return allAreaOptions.filter((option) => {
+      const areaValue = option.value;
+      if (areaValue === LinkAreas.GERAL) return true;
+      if (userRoleAreas.includes(areaValue as AreaRoles)) return true;
+      
+      const allowedDirectorAreas: LinkAreas[] = [LinkAreas.TATICO, LinkAreas.CONSULTORIA];
+      if (isDiretor && allowedDirectorAreas.includes(areaValue)) return true;
+      
+      if (isTatico && areaValue === LinkAreas.CONSULTORIA) return true;
+
+      return false;
+    });
+  };
+
+  const areaOptions = getCreatableAreaOptions();
+
+  const globalFields: FieldConfig<LinkFormData>[] = [
+    {
+      accessorKey: "area",
+      header: "Área do Link",
+      type: "select",
+      options: areaOptions,
+    },
+  ];
+  
+  const modalFields: FieldConfig<LinkFormData>[] = [
+    {
+      accessorKey: "title",
+      header: "Título",
+      type: "text",
+    },
+    {
+      accessorKey: "url",
+      header: "URL do Link",
+      type: "text",
+    },
+  ];
+
+  if (isGlobal && !isConsultant) {
+    modalFields.push(...globalFields);
+  }
+
   return (
     <div className="mt-8 bg-[#010d26] p-6 rounded-lg">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-[#0126fb]">Links Úteis</h2>
-        <Button
-          onClick={() => openModal()}
-          className="bg-transparent transition text-[#0126fb] hover:bg-[#0126fb]/10"
-        >
-          <Plus className="mr-2 h-4 w-4" /> Adicionar Link
-        </Button>
+        <h2 className="text-2xl font-bold text-[#0126fb]">
+          Links {isGlobal ? " Globais" : " Úteis"}
+        </h2>
+        {!isConsultant && (
+          <Button
+            onClick={() => openModal()}
+            className="bg-transparent transition text-[#0126fb] hover:bg-[#0126fb]/10"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Adicionar Link
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {links.map((link) => (
@@ -110,57 +223,60 @@ const UsefulLinksSection = ({ links }: { links: UsefulLink[] }) => {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 text-white font-medium truncate underline"
+              className="flex items-center gap-3 text-white font-medium truncate"
             >
               <LinkIcon className="h-5 w-5 text-[#f5b719]" />
-              <span className="truncate">{link.title}</span>
+              <span className="truncate hover:underline">{link.title.length > 14 ? `${link.title.substring(0, 14)}...` : link.title}</span>
             </Link>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:!bg-[#f5b719]/10"
-                onClick={() => openModal(link)}
-              >
-                <Pencil className="h-4 w-4 text-[#f5b719] hover:!bg-[#f5b719]/10" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-red-500/10"
-                onClick={() => handleClickDeleteButton(link.id)}
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </Button>
-            </div>
+            {(link.userId === user?.id || checkUserPermission(user, { allowedAreas: [AreaRoles.DIRETORIA] })) && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hover:!bg-[#f5b719]/10"
+                  onClick={() => openModal(link)}
+                >
+                  <Pencil className="h-4 w-4 text-[#f5b719]" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hover:bg-red-500/10"
+                  onClick={() => handleClickDeleteButton(link.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            )}
           </div>
         ))}
         {links.length === 0 && (
           <p className="text-gray-400 col-span-full text-center py-4">
-            Você ainda não adicionou nenhum link.
+            {isGlobal
+              ? "Nenhum link global adicionado ainda."
+              : "Você não adicionou nenhum link útil ainda."}
           </p>
         )}
       </div>
 
-      <CustomModal
+      <CustomModal<LinkFormData>
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingLink ? "Editar Link" : "Adicionar Novo Link"}
         form={form}
+        isLoading={isAdding || isUpdating}
         onSubmit={handleFormSubmit}
         isEditing={true}
         setIsEditing={() => {}}
-        fields={[
-          { accessorKey: "title", header: "Título" },
-          { accessorKey: "url", header: "URL do Link" },
-        ]}
+        fields={modalFields}
       />
 
-      {typeof removeLinkId === "string" && isConfirmModalOpen && (
+      {removeLinkId && (
         <ModalConfirm
           open={isConfirmModalOpen}
+          isLoading={isDeleting}
           onCancel={() => setIsConfirmModalOpen(false)}
-          onConfirm={() => handleDelete(removeLinkId)}
+          onConfirm={() => deleteLink(removeLinkId)}
         />
       )}
     </div>

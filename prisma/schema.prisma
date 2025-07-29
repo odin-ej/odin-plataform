@@ -70,6 +70,18 @@ enum TagAreas {
   GERAL
 }
 
+enum LinkAreas {
+  GERAL
+  CONSULTORIA
+  DIRETORIA
+  TATICO
+  PRESIDENCIA
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+}
+
 enum RequestStatus {
   PENDING
   APPROVED
@@ -156,6 +168,9 @@ model UsefulLink {
   // Relação: Cada link pertence a um usuário
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relação: Cada link pode ser global ou específico de uma área
+  isGlobal Boolean @default(false)
+  area     LinkAreas @default(GERAL) // Define a área do link, padrão é GERAL
 }
 
 model Role {
@@ -195,7 +210,6 @@ model EnterprisePoints {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   tags Tag[]
 }
 

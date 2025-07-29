@@ -326,7 +326,7 @@ const EnterprisePageContent = ({
               filterColumns={["name", "description"]}
               itemsPerPage={6}
               onEdit={(item) => handleOpenEditModal(item, "action-type")}
-              onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
+              onDelete={(item) => setItemToDelete({ type: "action-type", id: item.id })}
               onRowClick={(item) => handleOpenEditModal(item, "action-type")}
               type="noSelection"
             />
