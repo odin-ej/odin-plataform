@@ -6,8 +6,8 @@ import Header from "../_components/Global/Header";
 import Footer from "../_components/Global/Footer";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
-import { redirect } from "next/navigation";
 import { ROUTE_PERMISSIONS } from "@/lib/permissions";
+import DeniedAccess from "../_components/Global/DeniedAccess";
 
 export default async function Layout({
   children,
@@ -16,22 +16,17 @@ export default async function Layout({
 }>) {
   const headersList = await headers(); 
   const pathname = headersList.get('x-next-pathname');
-
-  if (pathname) {
+  let hasPermission = true;
+  if (pathname && pathname !== "/") {
     // 3. Verificar se a rota atual precisa de uma verificação de permissão.
     const requiredPermission = ROUTE_PERMISSIONS[pathname];
-
+    console.log("Rota atual:", pathname, "Permissão necessária:", requiredPermission);
     if (requiredPermission) {
       // 4. Se uma permissão é necessária, busca os dados do usuário.
       const user = await getAuthenticatedUser();
 
       // 5. Executa a verificação.
-      const hasPermission = checkUserPermission(user, requiredPermission);
-
-      // 6. Se o usuário não tiver permissão, redireciona para a página inicial.
-      if (!hasPermission) {
-        redirect("/");
-      }
+      hasPermission = checkUserPermission(user, requiredPermission);
     }
   }
 
@@ -47,7 +42,7 @@ export default async function Layout({
           <Header />
           <SidebarTrigger />
           {/* CORREÇÃO: O conteúdo principal cresce para empurrar o footer para baixo */}
-          <div className="flex-1">{children}</div>
+          <div className="flex-1">{hasPermission ? children : <DeniedAccess />}</div>
           <Footer />
         </main>
       </SidebarProvider>

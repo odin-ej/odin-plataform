@@ -41,6 +41,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/usuarios": DIRECTORS_ONLY,
   "/atualizar-estrategia": DIRECTORS_ONLY,
   "/aprovacao-cadastro": DIRECTORS_ONLY,
+  '/conhecimento-ia': DIRECTORS_ONLY,
   "/tarefas": MEMBERS_ONLY,
   "/chat": MEMBERS_ONLY,
   "/jr-points": MEMBERS_ONLY,
@@ -54,8 +55,9 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
 
 const HIERARCHY_LEVELS: Partial<Record<AreaRoles, number>> = {
   [AreaRoles.DIRETORIA]: 3,
+  [AreaRoles.CONSELHO]: 3,
   [AreaRoles.TATICO]: 2,
-  [AreaRoles.CONSULTORIA]: 1, // CORREÇÃO: Alterado de CONSULTOR para CONSULTORIA
+  [AreaRoles.CONSULTORIA]: 1,
 };
 
 // Função auxiliar para obter o nível hierárquico máximo de um usuário

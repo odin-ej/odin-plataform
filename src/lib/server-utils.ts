@@ -55,13 +55,12 @@ export async function getAuthenticatedUser(): Promise<FullUser | null> {
     });
 
     // Se o usuário não for encontrado no Prisma, retorna nulo
-    if (!prismaUser || !prismaUser.currentRole) {
+    if (!prismaUser) {
       console.warn(
-        `Usuário autenticado com ID ${amplifyUser.userId} não encontrado no banco de dados ou não possui um cargo atual (currentRole).`
+        `Usuário autenticado com ID ${amplifyUser.userId} não encontrado no banco de dados).`
       );
       return null;
     }
-
     // 3. Retorna o usuário completo do Prisma
     return prismaUser as FullUser;
   } catch (error) {

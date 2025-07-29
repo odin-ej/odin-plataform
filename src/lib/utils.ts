@@ -200,10 +200,9 @@ export const checkUserPermission = (
   if (!user) {
     return false;
   }
-
   // Se a regra permitir ex-membros e o utilizador for um, concede permissão.
-  if (permissions.allowExMembers && user.isExMember) {
-    return true;
+  if (user.isExMember) {
+    return permissions.allowExMembers === true;
   }
 
   // Verifica se alguma das áreas de atuação do utilizador está na lista de áreas permitidas.

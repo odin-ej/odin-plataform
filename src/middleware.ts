@@ -6,10 +6,10 @@ import { runWithAmplifyServerContext } from "./lib/server-utils";
 const publicRoutes = ["/login", "/registrar", "/esqueci-minha-senha"];
 
 export async function middleware(request: NextRequest) {
+  // Criamos uma resposta base que será usada se não houver redirecionamento
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 
-  // Executa a verificação de autenticação no contexto do servidor
   const authenticated = await runWithAmplifyServerContext({
     nextServerContext: { request, response },
     operation: async (contextSpec) => {
@@ -26,31 +26,35 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // --- LÓGICA DE REDIRECIONAMENTO CORRIGIDA ---
+  // --- LÓGICA DE REDIRECIONAMENTO ---
 
-  // 1. Se o utilizador está autenticado...
-  if (authenticated) {
-    // ... e tenta aceder a uma rota pública (login/registrar), redireciona-o para o dashboard.
-    if (publicRoutes.includes(pathname)) {
-      return NextResponse.redirect(new URL("/", request.url)); // Redireciona para a página inicial/dashboard
-    }
-    // Se não, permite que ele aceda a qualquer outra página protegida.
-    return response;
+  // 1. Se o usuário está autenticado e tenta acessar uma rota pública, redireciona para o dashboard.
+  if (authenticated && publicRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 2. Se o utilizador NÃO está autenticado...
-  if (!authenticated) {
-    // ... e tenta aceder a uma rota protegida, redireciona-o para o login.
-    if (!publicRoutes.includes(pathname)) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    // Se ele já está a tentar aceder a uma rota pública, permite.
-
-    return response;
+  // 2. Se o usuário NÃO está autenticado e tenta acessar uma rota protegida, redireciona para o login.
+  if (!authenticated && !publicRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Por padrão, permite a navegação.
-  return response;
+  // --- LÓGICA DE HEADER 'x-next-pathname' ---
+  
+  // 3. Se NENHUM redirecionamento ocorreu, a requisição irá prosseguir.
+  //    Este é o momento de adicionar o header para o Layout poder ler o pathname.
+  
+  // Clona os headers da requisição original para poder modificá-los
+  const requestHeaders = new Headers(request.headers);
+  
+  // Adiciona o novo header 'x-next-pathname'
+  requestHeaders.set('x-next-pathname', pathname);
+
+  // Retorna a resposta para prosseguir, mas com os headers atualizados.
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export const config = {
@@ -61,9 +65,7 @@ export const config = {
      * - _next/static (ficheiros estáticos)
      * - _next/image (ficheiros de otimização de imagem)
      * - favicon.ico (o ficheiro do favicon)
-     *
-     * CORREÇÃO: O matcher agora é mais simples e permite que a lógica do middleware
-     * lide com as rotas públicas e privadas.
+     * - qualquer caminho que contenha um ponto (ex: sitemap.xml), o que é uma boa prática.
      */
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],

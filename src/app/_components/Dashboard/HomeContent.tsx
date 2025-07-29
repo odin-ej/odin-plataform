@@ -117,7 +117,6 @@ const getSpecificLinks = () => {
 };
 
   const specificLinks = getSpecificLinks();
-  console.log(specificLinks)
   if (isLoading)
     return (
       <div className="flex justify-center items-center mt-20">

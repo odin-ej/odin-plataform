@@ -37,14 +37,16 @@ const LinksSidebar = () => {
   }, [user]);
 
   const filteredRestrictedLinks = useMemo(() => {
-    if (!user) return [];
+    if (!user || user?.isExMember) return [];
     return restrictedLinks.filter((link) =>
-      checkUserPermission(user, {
+    {
+      return checkUserPermission(user, {
         allowedRoles: link.roles.map((r) => r.name), // Extrai os nomes dos cargos
         allowedAreas: link.areas,
         // Garante que a regra 'exMemberCanAccess' do link seja respeitada
-        allowExMembers: link.exMemberCanAccess === true,
+        allowExMembers: link.exMemberCanAccess  === false ? false : true,
       })
+    }
     );
   }, [user]);
 
