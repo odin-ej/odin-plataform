@@ -104,26 +104,25 @@ export const getAssignableUsers = (
 export const getTasksWhereClauseForUser = (
   currentUser: (User & { roles: Role[] }) | null
 ): Prisma.TaskWhereInput => {
+  // Se não houver usuário logado, não retorna nenhuma tarefa.
   if (!currentUser) {
-    // Se não houver usuário, não retorna nenhuma tarefa
-    return { id: { equals: "no-tasks" } };
+    return { id: { equals: "no-tasks" } }; // Cláusula que nunca será verdadeira
   }
 
-  const currentUserLevel = getUserHierarchyLevel(currentUser);
+  // Pega todas as áreas de todos os cargos do usuário, sem duplicatas.
+  // Ex: um Diretor de Pessoas terá [DIRETORIA, PESSOAS]
+  const userAreas = [
+    ...new Set(currentUser.roles.flatMap((role) => role.area)),
+  ];
 
-  // Diretoria pode ver todas as tarefas
-  if (currentUserLevel === HIERARCHY_LEVELS.DIRETORIA) {
-    return {}; // Retorna um objeto vazio para não aplicar filtros
-  }
-
-  // Outros usuários podem ver tarefas atribuídas a eles OU a usuários de nível inferior
-  const subordinateLevels = Object.entries(HIERARCHY_LEVELS)
-    .filter(([, level]) => level < currentUserLevel)
-    .map(([area]) => area as AreaRoles);
-
+  // Constrói a cláusula de busca principal com as regras de visibilidade
   return {
     OR: [
-      // 1. Tarefas pelas quais o usuário atual é responsável
+      // Condição 1: Tarefas criadas PELO usuário atual.
+      {
+        authorId: currentUser.id,
+      },
+      // Condição 2: Tarefas onde o usuário atual é UM DOS responsáveis.
       {
         responsibles: {
           some: {
@@ -131,14 +130,15 @@ export const getTasksWhereClauseForUser = (
           },
         },
       },
-      // 2. Tarefas cujos responsáveis pertencem a uma área hierárquica inferior
+      // Condição 3: Tarefas da ÁREA DE COMANDO do usuário.
+      // Ou seja, tarefas onde pelo menos um dos responsáveis pertence a uma das áreas do usuário atual.
       {
         responsibles: {
           some: {
             roles: {
               some: {
                 area: {
-                  hasSome: subordinateLevels,
+                  hasSome: userAreas,
                 },
               },
             },

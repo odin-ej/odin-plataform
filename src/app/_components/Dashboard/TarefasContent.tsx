@@ -291,70 +291,57 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     ],
     []
   );
-
-  const formatedUsers = taskData?.formatedUsers ?? [];
-  const editTaskFields: FieldConfig<TaskFormValues>[] = [
+  
+  const formatedUsers = useMemo(
+    () => taskData?.formatedUsers ?? [],
+    [taskData]
+  );
+ 
+ // Define todos os campos possíveis para o modal de edição
+  const allEditFields = useMemo<FieldConfig<TaskFormValues>[]>(() => [
     { accessorKey: "title", header: "Título", type: "text" },
     { accessorKey: "description", header: "Descrição", type: "text" },
-    {
-      accessorKey: "deadline",
-      header: "Prazo",
-      mask: "date",
-    },
+    { accessorKey: "deadline", header: "Prazo", mask: "date" },
     {
       accessorKey: "status",
       header: "Status",
       type: "select",
-      options: Object.values(TaskStatus).map((s) => ({
-        value: s,
-        label: statusConfig[s].label,
-      })),
-      renderView(data) {
-        const status = data.status;
-        if (!status)
-          return <span className="text-xs text-gray-500">Indefinido</span>;
-
-        const config = statusConfig[status];
-
-        return (
-          <Badge className={` text-white border-none`}>{config.label}</Badge>
-        );
-      },
+      options: Object.values(TaskStatus).map((s) => ({ value: s, label: statusConfig[s].label })),
     },
     {
       accessorKey: "responsibles",
       header: "Responsáveis",
       type: "checkbox",
       options: formatedUsers,
-      renderView(data) {
-        const responsibles = data.responsibles || [];
-        const tasksUser = taskData.tasks.filter((task, index) =>
-          task.responsibles.filter((user) => user.id === responsibles[index])
-        );
-        if (responsibles.length === 0) return <span>Nenhum</span>;
-        return (
-          <div className="flex items-center -space-x-2">
-            {tasksUser[0].responsibles.slice(0, 3).map((user: User) => (
-              <Avatar
-                key={user.id}
-                className="h-7 w-7 border-2 border-background"
-              >
-                <AvatarImage src={user.imageUrl || ""} alt={user.name} />
-                <AvatarFallback className="text-xs bg-gray-700">
-                  {user.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            ))}
-            {responsibles.length > 3 && (
-              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-[#0126fb] text-white text-xs font-bold z-10 border-2 border-background">
-                +{responsibles.length - 3}
-              </div>
-            )}
-          </div>
-        );
-      },
     },
-  ];
+  ], [formatedUsers]);
+
+  // CORREÇÃO: `statusFieldOnly` também é memoizado.
+  // Ele só será recriado se `allEditFields` mudar.
+  const statusFieldOnly = useMemo<FieldConfig<TaskFormValues>[]>(() =>
+    allEditFields.filter((field) => field.accessorKey === "status"),
+  [allEditFields]);
+  
+  // Agora, este useMemo funcionará corretamente, pois suas dependências são estáveis.
+  const fieldsForEditModal = useMemo(() => {
+    if (!selectedItem || !user) return [];
+
+    // Regra 1: Se o usuário logado for o autor da tarefa, ele pode editar tudo.
+    if (selectedItem.authorId === user.id) {
+      return allEditFields;
+    }
+
+    // Regra 2: Se o usuário for um dos responsáveis (mas não o autor), ele pode editar apenas o status.
+    const isResponsible = selectedItem.responsibles.some(
+      (responsible) => responsible.id === user.id
+    );
+    if (isResponsible) {
+      return statusFieldOnly;
+    }
+
+    // Se não for nem autor nem responsável, não pode editar campo nenhum.
+    return [];
+  }, [selectedItem, user, allEditFields, statusFieldOnly]);
 
   const createTaskFields: FieldConfig<TaskCreateFormValues>[] = [
     { accessorKey: "title", header: "Título", type: "text" },
@@ -424,7 +411,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           title={isEditing ? "Editar Tarefa" : "Detalhes da Tarefa"}
           form={editTaskForm}
           onSubmit={handleUpdateSubmit}
-          fields={editTaskFields}
+          fields={fieldsForEditModal}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
           isLoading={isUpdating}
