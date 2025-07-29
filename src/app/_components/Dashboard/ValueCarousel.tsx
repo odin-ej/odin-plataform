@@ -41,7 +41,7 @@ const ValueCarousel = ({ slides }: ValueCarouselProps) => {
           {slides.map((slide, index) => (
             <CarouselItem
               key={index}
-              className="basis-full sm:basis-1/2 md:basis-1/3 flex justify-center"
+              className="basis-full sm:basis-1/2 lg:basis-1/3 flex justify-center"
             >
               <div className="w-full lg:max-w-none rounded-xl border-2 border-[#0126fb]/30 bg-[#010d26] h-full px-6 py-6 text-center shadow-md flex flex-col justify-center">
                 <h3 className="text-xl font-bold text-yellow-400 mb-2">

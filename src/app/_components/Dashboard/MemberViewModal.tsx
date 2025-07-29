@@ -35,14 +35,7 @@ const MemberViewModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <DialogContent className="bg-[#010d26] text-white rounded-2xl border-2 border-[#0126fb] p-0 max-w-md w-full">
-          <button
-            onClick={() => onOpenChange(false)}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 z-10"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
+        <DialogContent className="bg-[#010d26] text-white rounded-2xl border-2 border-[#0126fb] p-0 max-w-md w-full max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           {/* Cabeçalho com informações principais */}
           <div className="relative pt-12 pb-8 px-8 flex flex-col items-center justify-center text-center">
             <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#0126fb]/30 to-transparent rounded-t-xl" />
@@ -80,7 +73,7 @@ const MemberViewModal = ({
           </div>
 
           {/* Conteúdo com scroll */}
-          <div className="bg-[#00205e]/20 px-8 pb-8 pt-6 space-y-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          <div className="bg-[#00205e]/20 px-8 pb-8 pt-6 space-y-4">
             <div className="grid grid-cols-3 gap-x-4 gap-y-3 text-sm">
               <span className="text-zinc-400 font-medium col-span-1">
                 Email pessoal
