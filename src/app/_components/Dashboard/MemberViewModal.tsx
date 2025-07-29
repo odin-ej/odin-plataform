@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { getInitials } from "@/lib/utils";
-import { LinkIcon, X } from "lucide-react";
+import { LinkIcon, } from "lucide-react";
 
 interface MemberViewModalProps {
   user: MemberWithFullRoles | null;
