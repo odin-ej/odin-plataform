@@ -32,6 +32,7 @@ import { getAssignableUsers } from "@/lib/permissions";
 interface PendenciesContentQueryData {
   myTasks: FullTask[];
   formatedUsers: { value: string; label: string }[];
+
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -59,7 +60,7 @@ const statusConfig = {
 const PendenciesContent = ({
   initialData,
 }: {
-  initialData: MyPendenciesPageData;
+  initialData: MyPendenciesPageData ;
 }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -257,72 +258,106 @@ const PendenciesContent = ({
     []
   );
 
-  const taskFields: FieldConfig<TaskFormValues>[] = [
-    { accessorKey: "title", header: "Título" },
-    { accessorKey: "description", header: "Descrição", type: "text" },
-    { accessorKey: "deadline", header: "Prazo", mask: "date" },
-    {
-      accessorKey: "status",
-      header: "Status",
-      type: "select",
-      options: Object.values(TaskStatus).map((s) => ({
-        value: s,
-        label: statusConfig[s].label,
-      })),
-      renderView: (row) => {
-        switch (row.status) {
-          case TaskStatus.CANCELED:
-            return (
-              <Badge className="bg-gray-500/20 text-gray-400">Cancelada</Badge>
-            );
-          case TaskStatus.IN_PROGRESS:
-            return (
-              <Badge className="bg-yellow-500/20 text-yellow-400">
-                Em progresso
-              </Badge>
-            );
-          case TaskStatus.COMPLETED:
-            return (
-              <Badge className="bg-green-500/20 text-green-400">
-                Completada
-              </Badge>
-            );
-          case TaskStatus.PENDING:
-            return (
-              <Badge className="bg-red-500/20 text-red-400">Pendente</Badge>
-            );
-          default:
-            return (
-              <Badge className="bg-gray-500/20 text-gray-400">
-                Desconhecido
-              </Badge>
-            );
-        }
+  const allEditFields = useMemo<FieldConfig<TaskFormValues>[]>(
+    () => [
+      { accessorKey: "title", header: "Título", type: "text" },
+      { accessorKey: "description", header: "Descrição", type: "text" },
+      { accessorKey: "deadline", header: "Prazo", mask: "date" },
+      {
+        accessorKey: "status",
+        header: "Status",
+        type: "select",
+        options: Object.values(TaskStatus).filter(status => status !== TaskStatus.PENDING).map((s) => ({
+          value: s,
+          label: statusConfig[s].label,
+        })),
+        renderView: (row) => {
+          switch (row.status) {
+            case TaskStatus.CANCELED:
+              return (
+                <Badge className="bg-gray-500/20 text-gray-400">
+                  Cancelada
+                </Badge>
+              );
+            case TaskStatus.IN_PROGRESS:
+              return (
+                <Badge className="bg-yellow-500/20 text-yellow-400">
+                  Em progresso
+                </Badge>
+              );
+            case TaskStatus.COMPLETED:
+              return (
+                <Badge className="bg-green-500/20 text-green-400">
+                  Completada
+                </Badge>
+              );
+            case TaskStatus.PENDING:
+              return (
+                <Badge className="bg-red-500/20 text-red-400">Pendente</Badge>
+              );
+            default:
+              return (
+                <Badge className="bg-gray-500/20 text-gray-400">
+                  Desconhecido
+                </Badge>
+              );
+          }
+        },
       },
-    },
-    {
-      accessorKey: "responsibles",
-      header: "Responsáveis",
-      type: "checkbox",
-      options: data.formatedUsers,
-      renderView(row) {
-        if (!row.responsibles || row.responsibles.length === 0)
-          return <span className="text-xs text-gray-500">Ninguém</span>;
+      {
+        accessorKey: "responsibles",
+        header: "Responsáveis",
+        type: "checkbox",
+        options: data.formatedUsers,
+        renderView(row) {
+          if (!row.responsibles || row.responsibles.length === 0)
+            return <span className="text-xs text-gray-500">Ninguém</span>;
 
-        const responsibles = data.formatedUsers.filter((user) =>
-          row.responsibles!.includes(user.value)
-        );
+          const responsibles = data.formatedUsers.filter((user) =>
+            row.responsibles!.includes(user.value)
+          );
 
-        return (
-          <div className="flex items-center gap-2">
-            {responsibles.map((user) => (
-              <h3 key={user.value}>{user.label}</h3>
-            ))}
-          </div>
-        );
+          return (
+            <div className="flex items-center gap-2">
+              {responsibles.map((user) => (
+                <h3 key={user.value}>{user.label}</h3>
+              ))}
+            </div>
+          );
+        },
       },
-    },
-  ];
+    ],
+    [data.formatedUsers]
+  );
+
+  // CORREÇÃO: `statusFieldOnly` também é memoizado.
+  // Ele só será recriado se `allEditFields` mudar.
+  const statusFieldOnly = useMemo<FieldConfig<TaskFormValues>[]>(
+    () => allEditFields.filter((field) => field.accessorKey === "status"),
+    [allEditFields]
+  );
+
+  // Agora, este useMemo funcionará corretamente, pois suas dependências são estáveis.
+  const fieldsForEditModal = useMemo(() => {
+    if (!selectedItem || !user) return [];
+
+    // Regra 1: Se o usuário logado for o autor da tarefa, ele pode editar tudo.
+    if (selectedItem.authorId === user.id) {
+      return allEditFields;
+    }
+
+    // Regra 2: Se o usuário for um dos responsáveis (mas não o autor), ele pode editar apenas o status.
+    const isResponsible = selectedItem.responsibles.some(
+      (responsible) => responsible.id === user.id
+    );
+    if (isResponsible) {
+      if(isEditing) return statusFieldOnly
+      return allEditFields;
+    }
+
+    // Se não for nem autor nem responsável, não pode editar campo nenhum.
+    return [];
+  }, [selectedItem, user, allEditFields, statusFieldOnly, isEditing]);
 
   const handleUpdateSubmit = (formData: TaskFormValues) => {
     updateTask(formData);
@@ -335,15 +370,9 @@ const PendenciesContent = ({
   };
 
   const canDelete = (task: FullTask) => {
-    console.log(
-      task.authorId === user?.id ||
-        user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
-          .length > 0
-    );
     return (
       task.authorId === user?.id ||
-      user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
-        .length > 0
+      user!.currentRole.area.includes(AreaRoles.DIRETORIA)
     );
   };
 
@@ -382,7 +411,9 @@ const PendenciesContent = ({
           columns={taskColumns}
           filterColumns={["title", "status"]}
           title="Outras tarefas"
-          type="onlyView"
+          type="onlyEdit"
+          onRowClick={(row) => openModal(row, false)}
+          onEdit={(row) => openModal(row, true)}   
           itemsPerPage={10}
         />
       </div>
@@ -394,7 +425,7 @@ const PendenciesContent = ({
           title={isEditing ? "Editar Tarefa" : "Detalhes da Tarefa"}
           form={taskForm}
           onSubmit={handleUpdateSubmit}
-          fields={taskFields}
+          fields={fieldsForEditModal}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
           isLoading={isUpdatingTask}

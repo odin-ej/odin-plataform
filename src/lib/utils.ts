@@ -192,12 +192,13 @@ export interface PermissionCheck {
  * @param permissions - Um objeto que define as regras de permissão.
  * @returns `true` se o utilizador tiver permissão, `false` caso contrário.
 
- */
+*/
 export const checkUserPermission = (
   user: (User & { roles: Role[]; currentRole?: Role }) | null,
   permissions: PermissionCheck
 ): boolean => {
   // 1. Se não houver utilizador, não há permissão.
+  console.log(permissions.allowedRoles)
   if (!user) {
     return false;
   }
@@ -209,32 +210,44 @@ export const checkUserPermission = (
 
   // 3. A partir daqui, estamos a lidar apenas com membros ATIVOS.
 
+  // Verifica se a permissão exige cargos ou áreas específicas.
+  const hasSpecificRules =
+    (permissions.allowedRoles && permissions.allowedRoles.length > 0) ||
+    (permissions.allowedAreas && permissions.allowedAreas.length > 0);
+
+  // Se NÃO houver regras específicas, a permissão é concedida a qualquer membro ativo.
+  // Isto faz com que `MEMBERS_ONLY` funcione corretamente.
+  if (!hasSpecificRules) {
+    return true;
+  }
+
+  // Se HOUVER regras específicas, verifica se o cargo ATUAL do utilizador as cumpre.
+  // Se o utilizador não tiver um cargo atual, ele não pode ter permissões específicas.
+  if (!user.currentRole) {
+    return false;
+  }
+
   // Verifica a permissão com base nos cargos permitidos ('allowedRoles')
   if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
-    // CORREÇÃO: Mapeia os nomes dos cargos permitidos para uma lista de strings
     const allowedRoleNames = permissions.allowedRoles.map((r) => r);
-
-    // Prioriza a verificação do cargo atual do utilizador.
-    if (user.currentRole && allowedRoleNames.includes(user.currentRole.name)) {
-      return true; // Permissão concedida
+    if (allowedRoleNames.includes(user.currentRole.name)) {
+      return true; // Permissão concedida pelo cargo atual
     }
-    // Como alternativa, verifica se algum dos cargos do histórico do utilizador corresponde.
   }
 
   // Verifica a permissão com base nas áreas permitidas ('allowedAreas')
   if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
-    // Prioriza a verificação das áreas do cargo atual.
     if (
-      user.currentRole &&
       user.currentRole.area.some((area) =>
         permissions.allowedAreas!.includes(area)
       )
     ) {
-      return true; // Permissão concedida
+      return true; // Permissão concedida pela área do cargo atual
     }
   }
 
-  // 4. Se nenhuma das condições acima for satisfeita, a permissão é negada.
+  // 4. Se o utilizador for um membro ativo mas o seu cargo atual não cumprir
+  // nenhuma das regras específicas, a permissão é negada.
   return false;
 };
 

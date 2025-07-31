@@ -48,9 +48,11 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/metas": MEMBERS_ONLY,
   "/pendencias": MEMBERS_ONLY,
   "/meus-pontos": MEMBERS_ONLY,
-  // Rotas como '/' (Início), '/perfil', '/cultural' e '/reports' não estão aqui,
-  // então elas serão acessíveis por qualquer usuário autenticado (incluindo ex-membros,
-  // se a lógica padrão permitir).
+  "/minhas-pendencias": MEMBERS_ONLY,
+  "/perfil": ANYONE_LOGGED_IN,
+  '/cultural': ANYONE_LOGGED_IN,
+  '/reports': ANYONE_LOGGED_IN,
+  '/': ANYONE_LOGGED_IN
 };
 
 const HIERARCHY_LEVELS: Partial<Record<AreaRoles, number>> = {

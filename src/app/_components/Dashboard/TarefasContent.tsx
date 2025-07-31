@@ -307,7 +307,7 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
         accessorKey: "status",
         header: "Status",
         type: "select",
-        options: Object.values(TaskStatus).map((s) => ({
+        options: Object.values(TaskStatus).filter(status => status !== TaskStatus.PENDING).map((s) => ({
           value: s,
           label: statusConfig[s].label,
         })),
@@ -391,12 +391,13 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
       (responsible) => responsible.id === user.id
     );
     if (isResponsible) {
-      return statusFieldOnly;
+      if(isEditing) return statusFieldOnly
+      return allEditFields;
     }
 
     // Se não for nem autor nem responsável, não pode editar campo nenhum.
     return [];
-  }, [selectedItem, user, allEditFields, statusFieldOnly]);
+  }, [selectedItem, user, allEditFields, statusFieldOnly, isEditing]);
 
   const createTaskFields: FieldConfig<TaskCreateFormValues>[] = [
     { accessorKey: "title", header: "Título", type: "text" },
@@ -440,10 +441,6 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     );
   };
 
-  const onEdit = (task: FullTask) => {
-    return canDoAction(task) ? openEditModal(task, true) : false;
-  };
-
   return (
     <>
       <CustomCard
@@ -461,15 +458,14 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           data={sortedTasks}
           handleActionClick={openCreateModal}
           filterColumns={["title", "status"]}
-          onEdit={onEdit}
+          onEdit={(task) => openEditModal(task, true)}
           onDelete={(row) => setItemToDelete(row)}
           onRowClick={(row) => openEditModal(row, false)}
           itemsPerPage={10}
           disabled={false}
           isActionLoading={isCreating}
           isRowDeletable={canDoAction}
-          isRowEditable={canDoAction}
-          type={'noSelection'}
+          type={"noSelection"}
         />
       </div>
 
