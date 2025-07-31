@@ -2,6 +2,9 @@ import { Conversation, Message } from "@prisma/client";
 import ChatContent from "@/app/_components/Dashboard/ChatContent";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { verifyAccess } from "@/lib/utils";
 
 export const metadata = constructMetadata({ title: "Chat IA" });
 
@@ -34,7 +37,12 @@ const ConversationPage = async ({
 }: {
   params: Promise<{ conversationId: string }>;
 }) => {
+
+
   const { conversationId } = await params;
+    const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({ pathname: `chat/${conversationId}`, user: user! });
+  if (!hasPermission) return <DeniedAccess />;
   const conversation = await getConversation(conversationId);
 
   // Se a conversa não for encontrada, pode mostrar uma mensagem ou redirecionar.

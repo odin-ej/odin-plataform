@@ -1,10 +1,13 @@
 import EnterprisePageContent from "@/app/_components/Dashboard/EnterprisePageContent";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import {
   ActionTypeWithCount,
   TagWithAction,
   UserRankingInfo,
 } from "@/lib/schemas/pointsSchema";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
 import { User } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -48,7 +51,9 @@ async function getPageData(): Promise<JrEnterprisePointsPageData> {
 
 const Page = async () => {
   const initialData = await getPageData();
-
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({ pathname: "/jr-points/nossa-empresa", user: user! });
+  if(!hasPermission) return <DeniedAccess />
   return (
     <div className="md:p-8 p-4">
       <EnterprisePageContent initialData={initialData} />

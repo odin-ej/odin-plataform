@@ -3,6 +3,9 @@ import { constructMetadata } from "@/lib/metadata";
 import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
 import { RegistrationRequestWithRoles } from "@/lib/schemas/memberFormSchema";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
 
 export const metadata = constructMetadata({ title: "Aprovação de Cadastro" });
 
@@ -44,7 +47,9 @@ async function getPageData() {
 const Page = async () => {
   // Busca os dados iniciais
   const initialData = await getPageData();
-
+    const user = await getAuthenticatedUser();
+    const hasPermission = verifyAccess({ pathname: "/aprovacao-cadastro", user: user! });
+    if (!hasPermission) return <DeniedAccess />;
   // A lógica de filtro agora vai para o componente cliente.
   // A página do servidor apenas entrega os dados brutos.
   const members = initialData.requests.filter(
@@ -54,6 +59,7 @@ const Page = async () => {
   const exMembers = initialData.requests.filter(
     (request) => request.isExMember === true
   );
+
   return (
     <div className="md:p-8 p-4 w-full">
       <UsersContent

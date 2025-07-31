@@ -4,6 +4,9 @@ import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { fullStrategy } from "../atualizar-estrategia/page";
 import { cookies } from "next/headers";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 
 export const metadata = constructMetadata({ title: "Área Cultural" });
 
@@ -99,6 +102,9 @@ async function getPageData(): Promise<CulturePageProps> {
 const Page = async () => {
   const { allUsers, estrategy, mondayStats } = await getPageData();
   if (!allUsers || !estrategy || !mondayStats) return null;
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({ pathname: "/cultural", user: user! });
+  if (!hasPermission) return <DeniedAccess />;
   const initialData = { estrategy, allUsers, mondayStats };
   return (
     <div className="p-4 sm:p-8">

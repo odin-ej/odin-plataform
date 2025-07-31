@@ -4,6 +4,8 @@ import JrPointsContent, {
 } from "@/app/_components/Dashboard/JrPointsContent";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
+import { verifyAccess } from "@/lib/utils";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 
 // Tipagem para os dados da página
 export interface JrPointsPageData {
@@ -44,7 +46,8 @@ const Page = async () => {
     getPageData(),
   ]);
   if (!user) return <div>Não autenticado.</div>;
-
+  const hasPermission = verifyAccess({ pathname: "/jr-points", user: user! });
+  if (!hasPermission) return <DeniedAccess />;
   const myPoints =
     data.usersRanking.find((u) => u.id === user.id)?.totalPoints || 0;
   const rankingData: RankingItem[] = data.usersRanking

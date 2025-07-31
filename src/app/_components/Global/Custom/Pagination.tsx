@@ -19,7 +19,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) 
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
        
-        className="bg-[#00205e] border-none hover:bg-[#00205e]/70 hover:!text-[#f5b719]"
+        className="bg-[#00205e] text-white border-none hover:bg-[#00205e]/70 hover:!text-[#f5b719]"
       >
         <ChevronLeft className="h-4 w-4" />
         Anterior
@@ -29,7 +29,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) 
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="bg-[#00205e] border-none hover:bg-[#00205e]/70 hover:!text-[#f5b719]"
+        className="bg-[#00205e] text-white border-none hover:bg-[#00205e]/70 hover:!text-[#f5b719]"
       >
         Próximo
         <ChevronRight className="h-4 w-4" />

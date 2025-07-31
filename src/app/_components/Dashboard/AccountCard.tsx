@@ -33,7 +33,7 @@ const AccountCard = ({
       </CardHeader>
 
       {/* Conteúdo branco colado na imagem */}
-      <div className="relative h-[250px] z-30 bg-white w-full flex-1 flex flex-col items-center justify-center rounded-t-[2rem] pt-6 pb-6 -mt-6">
+      <div className="relative  z-30 bg-white w-full flex-1 flex flex-col items-center justify-center rounded-t-[2rem] pt-6 pb-6 -mt-6">
         <CardTitle
           className={cn("text-2xl font-semibold flex items-center pb-1", color)}
         >
@@ -47,8 +47,13 @@ const AccountCard = ({
           {description}
         </CardDescription>
 
-        <p className="text-gray-800 text-sm text-center flex items-center mt-4">
-          <span className={cn("mr-2 text-6xl font-bold", color)}>
+        <p className="text-gray-800 text-xs flex-wrap justify-center gap-2 md:text-sm text-center flex items-center mt-4 px-2">
+          <span
+            className={cn(
+              "mr-2 text-3xl md:text-4xl  lg:text-6xl font-bold",
+              color
+            )}
+          >
             {totalProjects}
           </span>
           Projetos em andamento

@@ -1,6 +1,9 @@
 import UsersContent from "@/app/_components/Dashboard/UsersContent";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
 import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -68,6 +71,11 @@ const Page = async () => {
   const exMembers = users!.filter(
     (user: MemberWithFullRoles) => user.isExMember === false
   );
+
+  const authUser = await getAuthenticatedUser();
+  if (!authUser) return <div>Não autenticado</div>;
+  const hasPermission = verifyAccess({ pathname: "/usuarios", user: authUser });
+  if (!hasPermission) return <DeniedAccess />;
 
   return (
     <div className="md:p-8 p-4">

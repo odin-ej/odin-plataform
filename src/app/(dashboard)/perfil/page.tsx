@@ -3,6 +3,8 @@ import PerfilContent from "../../_components/Dashboard/PerfilContent";
 import { Role, User } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
+import { verifyAccess } from "@/lib/utils";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 
 export const metadata = constructMetadata({ title: "Perfil" });
 
@@ -43,7 +45,8 @@ const Page = async () => {
   if (!authUser?.id) {
     return <div className="p-8 text-white">Usuário não autenticado.</div>;
   }
-
+  const hasPermission = verifyAccess({ pathname: "/perfil", user: authUser! });
+  if (!hasPermission) return <DeniedAccess />;
   const initialData = await getUserPageData(authUser.id);
 
   return (

@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from "@/lib/server-utils";
 import { UserPoints } from "@prisma/client";
 import { TagWithAction } from "@/lib/schemas/pointsSchema";
 import { cookies } from "next/headers";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { verifyAccess } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +41,8 @@ const Page = async () => {
     // Você pode redirecionar ou mostrar uma mensagem de erro aqui
     return <div className="p-8 text-white">Usuário não autenticado.</div>;
   }
-
+  const hasPermission = verifyAccess({ pathname: "/meus-pontos", user: authUser });
+  if (!hasPermission) return <DeniedAccess />;
   const initialData = await getMyPoints({ id: authUser.id });
 
   return (

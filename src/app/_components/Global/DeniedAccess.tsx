@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 import { Lock } from "lucide-react";
+import Link from "next/link";
 
 
 const DeniedAccess = () => {
@@ -10,7 +10,7 @@ const DeniedAccess = () => {
       <p className="text-xl text-white/70">
         Você não tem permissão para visualizar esta página.
       </p>
-      <a className="font-semibold underline mt-3 text-[#f5b719]" href="/">Volte para página inicial</a>
+      <Link className="font-semibold underline mt-3 text-[#f5b719]" href="/">Volte para página inicial</Link>
     </div>
   );
 };

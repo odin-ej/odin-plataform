@@ -1,6 +1,9 @@
 import PendenciesContent from "@/app/_components/Dashboard/PendenciesContent";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
 import { cookies } from "next/headers";
 
 // Tipagem para os dados da página
@@ -38,7 +41,9 @@ async function getPageData(): Promise<MyPendenciesPageData> {
 
 const Page = async () => {
   const initialData = await getPageData();
-
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({ pathname: "/minhas-pendencias", user: user! });
+  if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">
       <PendenciesContent initialData={initialData} />

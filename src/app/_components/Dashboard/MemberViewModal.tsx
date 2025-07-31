@@ -4,10 +4,11 @@ import {
   DialogContent,
   DialogOverlay,
   DialogPortal,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { getInitials } from "@/lib/utils";
-import { LinkIcon, } from "lucide-react";
+import { LinkIcon } from "lucide-react";
 
 interface MemberViewModalProps {
   user: MemberWithFullRoles | null;
@@ -31,10 +32,25 @@ const MemberViewModal = ({
       : user.name;
   const userImage = user.imageUrl || "";
 
+  const formatedInstagram = user.instagram
+    ? user.instagram.startsWith("http")
+      ? user.instagram
+      : `https://instagram.com/${user.instagram}`
+    : "";
+
+    const formatedlinkedin = user.linkedin
+    ? user.linkedin.startsWith("http")
+      ? user.linkedin
+      : `https://linkedin.com/${user.linkedin}`
+    : "";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+        <DialogTitle className="sr-only">
+          Visualizar Membro: {user.name}
+        </DialogTitle>
         <DialogContent className="bg-[#010d26] text-white rounded-2xl border-2 border-[#0126fb] p-0 max-w-md w-full max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           {/* Cabeçalho com informações principais */}
           <div className="relative pt-12 pb-8 px-8 flex flex-col items-center justify-center text-center">
@@ -106,7 +122,7 @@ const MemberViewModal = ({
                 {user.instagram ? (
                   <a
                     className="flex items-center gap-1.5 text-[#f5b719] hover:underline"
-                    href={user.instagram}
+                    href={formatedInstagram}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -124,7 +140,7 @@ const MemberViewModal = ({
                 {user.linkedin ? (
                   <a
                     className="flex items-center gap-1.5 text-[#f5b719] hover:underline"
-                    href={user.linkedin}
+                    href={formatedlinkedin}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

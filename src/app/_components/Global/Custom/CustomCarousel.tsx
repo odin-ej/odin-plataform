@@ -103,7 +103,7 @@ const CustomCarousel = ({
                 className={cn(
                   "flex mt-4 px-2",
                   slide.date
-                    ? "items-end justify-between"
+                    ? "items-center justify-center sm:items-end sm:justify-between"
                     : "items-center justify-center",
                   type === "title-in" && "text-center flex-1 w-full"
                 )}

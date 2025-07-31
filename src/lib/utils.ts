@@ -1,11 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Role, AreaRoles, User, LinkAreas } from "@prisma/client";
-import {UserProfileValues } from "./schemas/memberFormSchema";
+import { Role, AreaRoles, LinkAreas, User } from "@prisma/client";
+import { UserProfileValues } from "./schemas/memberFormSchema";
 import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
-
+import { ROUTE_PERMISSIONS } from "./permissions";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -69,7 +69,7 @@ export function orderRolesByHiearchy(roles: Role[]) {
 }
 
 export const getModalFields = <T extends UserProfileValues | ExMemberType>(
-  isExMember: boolean,
+  isExMember: boolean
 ): FieldConfig<T>[] => {
   const commonFields: FieldConfig<T>[] = [
     { accessorKey: "name" as Path<T>, header: "Nome Completo" },
@@ -193,7 +193,7 @@ export interface PermissionCheck {
  * @returns `true` se o utilizador tiver permissão, `false` caso contrário.
  */
 export const checkUserPermission = (
-  user: (User & { roles: Role[] }) | null,
+  user: (User & { roles: Role[]; currentRole?: Role }) | null,
   permissions: PermissionCheck
 ): boolean => {
   // Se não houver utilizador, não há permissão.
@@ -205,28 +205,54 @@ export const checkUserPermission = (
     return permissions.allowExMembers === true;
   }
 
-  // Verifica se alguma das áreas de atuação do utilizador está na lista de áreas permitidas.
-  if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
-    const hasAllowedArea = user.roles.some((role) =>
-      role.area.some((area) => permissions.allowedAreas!.includes(area))
-    );
-    if (hasAllowedArea) {
+  if (user.currentRole) {
+    // Se o utilizador tiver um cargo atual, verifica se ele está entre os cargos permitidos.
+    if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
+      if (permissions.allowedRoles.includes(user.currentRole.name)) {
+        return true;
+      }
+    }
+
+    if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
+      // Verifica se o cargo atual do utilizador está entre as áreas permitidas.
+      if (
+        user.currentRole.area.some((area) =>
+          permissions.allowedAreas!.includes(area)
+        )
+      ) {
+        return true;
+      }
+    }
+
+    if (permissions.allowExMembers === false || permissions.allowExMembers === true) {
       return true;
     }
-  }
 
-  // Verifica se algum dos nomes dos cargos do utilizador está na lista de cargos permitidos.
-  if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
-    const hasAllowedRole = user.roles.some((role) =>
-      permissions.allowedRoles!.includes(role.name)
-    );
-    if (hasAllowedRole) {
-      return true;
+    return false;
+  } else {
+    if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
+      const hasAllowedArea = user.roles.some((role) =>
+        role.area.some((area) => permissions.allowedAreas!.includes(area))
+      );
+      if (hasAllowedArea) {
+        return true;
+      }
     }
-  }
 
-  // Se nenhuma das condições for satisfeita, o utilizador não tem permissão.
-  return false;
+    // Verifica se algum dos nomes dos cargos do utilizador está na lista de cargos permitidos.
+    if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
+      const hasAllowedRole = user.roles.some((role) =>
+        permissions.allowedRoles!.includes(role.name)
+      );
+      if (hasAllowedRole) {
+        return true;
+      }
+    }
+
+    if(permissions.allowExMembers) return true;
+
+    return false;
+  }
 };
 
 export const getInitials = (name: string | undefined) => {
@@ -279,8 +305,7 @@ export const fileToBase64 = (
   });
 };
 
-export // Coloque esta função fora do seu componente, no mesmo arquivo ou em um arquivo de utils.
-const getLabelForLinkArea = (area: LinkAreas): string => {
+export const getLabelForLinkArea = (area: LinkAreas): string => {
   const labels: Record<LinkAreas, string> = {
     GERAL: "Geral",
     CONSULTORIA: "Consultoria",
@@ -293,4 +318,20 @@ const getLabelForLinkArea = (area: LinkAreas): string => {
     MERCADO: "Mercado",
   };
   return labels[area] || area;
+};
+
+export const verifyAccess = ({
+  pathname,
+  user,
+}: {
+  pathname: string;
+  user: User & { roles: Role[]; currentRole?: Role };
+}) => {
+  let hasPermission = true;
+  const requiredPermission = ROUTE_PERMISSIONS[pathname];
+  if (requiredPermission) {
+    console.log(requiredPermission, user.isExMember)
+    hasPermission = checkUserPermission(user, requiredPermission);
+  }
+  return hasPermission;
 };

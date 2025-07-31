@@ -4,6 +4,8 @@ import { ExtendedReservation } from "@/lib/schemas/roomSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { verifyAccess } from "@/lib/utils";
 
 export const metadata = constructMetadata({ title: "Reservas de Salinhas" });
 export const dynamic = "force-dynamic";
@@ -40,7 +42,8 @@ async function getPageData(): Promise<RoomsPageData> {
 const Page = async () => {
   const initialData = await getPageData();
   const authUser = await getAuthenticatedUser();
-
+  const hasPermission = verifyAccess({ pathname: "/reserva-salinhas", user: authUser! });
+  if (!hasPermission) return <DeniedAccess />;
   if (!authUser) {
     return <div>Usuário não autenticado.</div>;
   }

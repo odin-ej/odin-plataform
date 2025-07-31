@@ -4,10 +4,10 @@ import { Award, Clock, Loader2 } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../Global/Custom/CustomCarousel";
 import CustomCalendarOAuth from "../Global/Calendar/CalendarOAuth";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { checkUserPermission, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { CombinedUser, useAuth } from "@/lib/auth/AuthProvider";
 import Image from "next/image";
 import { formatReaisResumo } from "./GoalCard";
 import UsefulLinksSection from "./UsefulLinksSection";
@@ -80,8 +80,15 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
     date: new Date().toLocaleDateString("pt-BR"),
   }));
 
-  const isConsultant = checkUserPermission(user, {allowedAreas: [AreaRoles.CONSULTORIA]})
-
+  const isConsultant = useMemo(
+    () =>
+      user
+        ? checkUserPermission(user as CombinedUser, {
+            allowedAreas: [AreaRoles.CONSULTORIA],
+          })
+        : false, // If user is null, then permission is false
+    [user]
+  );
 const getSpecificLinks = () => {
   // Se não houver usuário ou cargo definido, não mostre links específicos.
   if (!user?.currentRole) {

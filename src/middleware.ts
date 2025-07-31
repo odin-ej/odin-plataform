@@ -38,23 +38,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // --- LÓGICA DE HEADER 'x-next-pathname' ---
-  
-  // 3. Se NENHUM redirecionamento ocorreu, a requisição irá prosseguir.
-  //    Este é o momento de adicionar o header para o Layout poder ler o pathname.
-  
-  // Clona os headers da requisição original para poder modificá-los
-  const requestHeaders = new Headers(request.headers);
-  
-  // Adiciona o novo header 'x-next-pathname'
-  requestHeaders.set('x-next-pathname', pathname);
-
   // Retorna a resposta para prosseguir, mas com os headers atualizados.
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  return NextResponse.next();
 }
 
 export const config = {

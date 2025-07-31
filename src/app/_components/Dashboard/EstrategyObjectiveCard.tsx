@@ -22,7 +22,7 @@ const EstrategyObjectiveCard = ({
           {estrategyObjective.description}
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {estrategyObjective.goals.map((goal) => (
           <GoalCard key={goal.id} goal={goal} />
         ))}

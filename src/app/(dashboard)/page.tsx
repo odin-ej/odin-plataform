@@ -4,6 +4,8 @@ import HomeContent from "../_components/Dashboard/HomeContent";
 import { Goal, UsefulLink } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
+import { verifyAccess } from "@/lib/utils";
+import DeniedAccess from "../_components/Global/DeniedAccess";
 
 // Tipagem para os dados que a página e o componente cliente esperam
 export interface HomeContentData {
@@ -27,7 +29,13 @@ async function getPageData(): Promise<HomeContentData> {
 
     // Para ex-membros, retorna dados vazios para evitar chamadas de API desnecessárias
     if (authUser.isExMember) {
-      return { goals: [], myPoints: 0, numberOfTasks: 0, usefulLinks: [], globalLinks: [] };
+      return {
+        goals: [],
+        myPoints: 0,
+        numberOfTasks: 0,
+        usefulLinks: [],
+        globalLinks: [],
+      };
     }
 
     const cookiesStore = await cookies();
@@ -79,12 +87,21 @@ async function getPageData(): Promise<HomeContentData> {
     };
   } catch (error) {
     console.error("Falha ao buscar dados do dashboard.", error);
-    return { goals: [], myPoints: 0, numberOfTasks: 0, usefulLinks: [], globalLinks: [] };
+    return {
+      goals: [],
+      myPoints: 0,
+      numberOfTasks: 0,
+      usefulLinks: [],
+      globalLinks: [],
+    };
   }
 }
 
 export default async function Home() {
   const initialData = await getPageData();
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({ pathname: "/", user: user! });
+  if(!hasPermission) return <DeniedAccess />
 
   return (
     <div className="md:p-8 p-4 h-full">

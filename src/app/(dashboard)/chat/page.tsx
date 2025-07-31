@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { Conversation } from "@prisma/client";
 import { cookies } from "next/headers";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +47,9 @@ async function createNewConversation(): Promise<Conversation | null> {
 
 const ChatRedirectPage = async () => {
   // 1. Tenta encontrar a conversa mais recente
+      const user = await getAuthenticatedUser();
+    const hasPermission = verifyAccess({ pathname: "/chat", user: user! });
+    if (!hasPermission) return <DeniedAccess />;
   const lastConversation = await getLastConversation();
 
   if (lastConversation) {

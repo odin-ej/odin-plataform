@@ -1,9 +1,11 @@
 import TarefasContent from "@/app/_components/Dashboard/TarefasContent";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAssignableUsers } from "@/lib/permissions";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { verifyAccess } from "@/lib/utils";
 import { cookies } from "next/headers";
 
 // Tipagem para os dados da página
@@ -46,14 +48,15 @@ const Page = async () => {
   const { tasks, users } = await getPagesData();
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <div>Não autenticado</div>;
-
+  const hasPermission = verifyAccess({ pathname: "/tarefas", user: authUser });
+  if (!hasPermission) return <DeniedAccess />;
   const verifiedUsers: MemberWithRoles[] = getAssignableUsers(authUser, users);
   const verifyIsMe = (user: MemberWithRoles) => user.id === authUser.id;
   const formatedUsers = verifiedUsers.map((user: MemberWithRoles) => ({
     value: user.id,
     label: verifyIsMe(user) ? "Eu" : user.name,
   }));
-  
+
   const initialData: TasksPageData = { tasks, formatedUsers };
 
   return (

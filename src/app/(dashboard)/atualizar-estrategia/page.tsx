@@ -2,6 +2,9 @@ import { EstrategyObjective, EstrategyPlan, Goal, Value } from "@prisma/client";
 import { constructMetadata } from "@/lib/metadata";
 import UpdateStrategyContent from "@/app/_components/Dashboard/atualizar-estrategia/UpdateStrategyContent";
 import { cookies } from "next/headers";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { verifyAccess } from "@/lib/utils";
 
 export const metadata = constructMetadata({ title: "Atualizar Estratégia" });
 
@@ -54,7 +57,9 @@ async function getPageData(): Promise<MetasPageProps> {
 
 const Page = async () => {
   const { estrategyObjectives, fullStrategy } = await getPageData();
-
+      const user = await getAuthenticatedUser();
+    const hasPermission = verifyAccess({ pathname: "/atualizar-estrategia", user: user! });
+    if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">
       <UpdateStrategyContent

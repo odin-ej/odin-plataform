@@ -12,7 +12,7 @@ import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, TaskStatus } from "@prisma/client";
+import { User, TaskStatus, AreaRoles } from "@prisma/client";
 import {
   FullTask,
   TaskFormValues, // Este é para o formulário de UPDATE (campos opcionais)

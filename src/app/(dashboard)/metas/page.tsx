@@ -2,6 +2,9 @@ import MetasContent from "@/app/_components/Dashboard/MetasContent";
 import { EstrategyObjective, Goal } from "@prisma/client";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
+import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { verifyAccess } from "@/lib/utils";
+import { getAuthenticatedUser } from "@/lib/server-utils";
 
 export const metadata = constructMetadata({ title: "Metas da Casinha" });
 export const dynamic = "force-dynamic";
@@ -39,7 +42,10 @@ async function getPageData(): Promise<MetasPageProps> {
 
 const Page = async () => {
   const initialData = await getPageData();
-
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({ pathname: "/metas", user: user! });
+  console.log(user, hasPermission);
+  if(!hasPermission) return <DeniedAccess />
   return (
     <div className="p-4 sm:p-8">
       {/* Passamos os dados dentro de um objeto 'initialData' */}

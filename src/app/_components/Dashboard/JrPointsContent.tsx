@@ -163,7 +163,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
           description="Acompanhe o ranking de pontos dos sócios e a pontuação geral da empresa."
           icon={JrPointIconBlue}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CustomCard
             type="link"
             title="Meus Pontos"
@@ -171,6 +171,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
             description="Veja o seu extrato detalhado de pontos."
             href="/meus-pontos"
             icon={Award}
+            className="col-span-1"
           />
           <CustomCard
             type="link"
@@ -179,6 +180,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
             value={enterprisePoints}
             description="Pontuação geral da empresa"
             icon={JrPointIconBlue}
+            className="col-span-1"
           />
         </div>
       </div>
