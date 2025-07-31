@@ -13,6 +13,7 @@ interface CalendarEvent {
     dateTime?: string; // Para eventos com hora
     date?: string; // Para eventos de dia inteiro
   };
+  _internalDate?: Date;
 }
 
 export interface CustomCalendarProps {
@@ -114,33 +115,25 @@ const CalendarView = ({
         });
         if (!response.ok)
           throw new Error(`Erro ao buscar eventos: ${response.statusText}`);
-        if (response.status === 401) {
-          handleLogout();
-        }
+
         const data = await response.json();
 
         // --- CORREÇÃO APLICADA AQUI ---
-        // Mapeamos os eventos para corrigir as datas de eventos de "dia inteiro".
+        // Mapeamos os eventos para criar uma propriedade de data interna e corrigida.
         const correctedEvents = (data.items || []).map((event: any) => {
-          // Eventos de dia inteiro não têm 'dateTime', apenas 'date' (ex: "2025-08-01")
+          let internalDate;
+          // Se for um evento de dia inteiro (ex: "2025-08-01")
           if (event.start.date) {
-            // Para evitar o problema de fuso horário, criamos um novo objeto Date
-            // tratando a data como UTC. Isto impede que o navegador a "puxe" para o dia anterior.
-            const [year, month, day] = event.start.date.split("-").map(Number);
-            return {
-              ...event,
-              // Substituímos a string por um objeto Date correto
-              start: {
-                ...event.start,
-                dateTime: new Date(Date.UTC(year, month - 1, day)),
-              },
-              end: {
-                ...event.end,
-                dateTime: new Date(Date.UTC(year, month - 1, day, 23, 59, 59)),
-              },
-            };
+            // Criamos a data adicionando um horário (meio-dia) para forçar a
+            // interpretação no fuso horário local e evitar o "shift" para o dia anterior.
+            internalDate = new Date(event.start.date + "T12:00:00");
           }
-          return event;
+          // Se for um evento com hora marcada
+          else if (event.start.dateTime) {
+            internalDate = new Date(event.start.dateTime);
+          }
+
+          return { ...event, _internalDate: internalDate };
         });
 
         setEvents(correctedEvents);
@@ -152,10 +145,10 @@ const CalendarView = ({
     };
 
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, calendarId]);
 
   const formatTime = (start: CalendarEvent["start"]) => {
+    // Esta lógica já estava correta: se não tem dateTime, é um evento de dia inteiro.
     if (!start.dateTime) return "Dia inteiro";
     return new Date(start.dateTime).toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -163,18 +156,16 @@ const CalendarView = ({
     });
   };
 
-  // Filtra os eventos para o dia selecionado
+  // CORREÇÃO: O filtro agora usa a propriedade _internalDate, que já está corrigida.
   const selectedDayEvents = events.filter((event) => {
-    const eventDate = new Date(
-      event.start.dateTime || event.start.date || ""
-    ).toDateString();
-    return eventDate === selectedDate?.toDateString();
+    if (!event._internalDate || !selectedDate) return false;
+    return event._internalDate.toDateString() === selectedDate.toDateString();
   });
 
-  // Cria um array de datas que têm eventos para destacar no calendário
-  const eventDays = events.map(
-    (event) => new Date(event.start.dateTime || event.start.date || "")
-  );
+  // CORREÇÃO: O mapeamento para os dias com eventos agora usa a propriedade _internalDate.
+  const eventDays = events
+    .map((event) => event._internalDate)
+    .filter(Boolean) as Date[];
 
   return (
     <div
