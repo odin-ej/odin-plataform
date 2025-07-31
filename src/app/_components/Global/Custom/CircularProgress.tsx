@@ -13,10 +13,14 @@ interface CircularProgressProps {
 
 const CircularProgress = ({ progress, valueText }: CircularProgressProps) => {
   // Configuração dos dados para o gráfico de rosca
+ const clampedProgress = Math.min(progress, 100);
+
+  // Configuração dos dados para o gráfico de rosca
   const data = {
     datasets: [
       {
-        data: [progress, 100 - progress], // O valor e o que falta para 100%
+        // Usa o valor corrigido para o gráfico, mas o texto continua a mostrar o progresso real.
+        data: [clampedProgress, 100 - clampedProgress], // O valor e o que falta para 100%
         backgroundColor: [
           '#0126fb', // Cor do progresso
           '#00205e', // Cor do fundo do progresso
