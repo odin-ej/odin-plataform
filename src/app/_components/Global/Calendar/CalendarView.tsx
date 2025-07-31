@@ -106,7 +106,7 @@ const CalendarView = ({
       setLoading(true);
       setError(null);
       const timeMin = new Date().toISOString();
-      const apiUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?timeMin=${timeMin}&orderBy=startTime&singleEvents=true&maxResults=250`; // Aumentado para buscar mais eventos
+      const apiUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?timeMin=${timeMin}&orderBy=startTime&singleEvents=true&maxResults=250`;
 
       try {
         const response = await fetch(apiUrl, {
@@ -118,7 +118,32 @@ const CalendarView = ({
           handleLogout();
         }
         const data = await response.json();
-        setEvents(data.items || []);
+
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Mapeamos os eventos para corrigir as datas de eventos de "dia inteiro".
+        const correctedEvents = (data.items || []).map((event: any) => {
+          // Eventos de dia inteiro não têm 'dateTime', apenas 'date' (ex: "2025-08-01")
+          if (event.start.date) {
+            // Para evitar o problema de fuso horário, criamos um novo objeto Date
+            // tratando a data como UTC. Isto impede que o navegador a "puxe" para o dia anterior.
+            const [year, month, day] = event.start.date.split("-").map(Number);
+            return {
+              ...event,
+              // Substituímos a string por um objeto Date correto
+              start: {
+                ...event.start,
+                dateTime: new Date(Date.UTC(year, month - 1, day)),
+              },
+              end: {
+                ...event.end,
+                dateTime: new Date(Date.UTC(year, month - 1, day, 23, 59, 59)),
+              },
+            };
+          }
+          return event;
+        });
+
+        setEvents(correctedEvents);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -127,7 +152,7 @@ const CalendarView = ({
     };
 
     fetchEvents();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, calendarId]);
 
   const formatTime = (start: CalendarEvent["start"]) => {
@@ -195,7 +220,8 @@ const CalendarView = ({
             day_button:
               "bg-transparent text-white focus:text-white hover:bg-[#f5b719] hover:text-white focus-visible:ring-0",
             months: "text-white",
-            month: "space-y-4 text-white flex flex-col items-center justify-center",
+            month:
+              "space-y-4 text-white flex flex-col items-center justify-center",
             caption:
               "flex justify-center pt-1 relative items-center text-white",
             caption_label: "text-xl font-bold text-[#0126fb]",
