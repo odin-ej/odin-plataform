@@ -1,5 +1,6 @@
 import PendenciesContent from "@/app/_components/Dashboard/PendenciesContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { constructMetadata } from "@/lib/metadata";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
@@ -11,6 +12,8 @@ export interface MyPendenciesPageData {
   myTasks: FullTask[];
   allUsers: MemberWithRoles[];
 }
+
+export const metadata = constructMetadata({ title: "Minhas Pendências" });
 
 export const dynamic = "force-dynamic";
 

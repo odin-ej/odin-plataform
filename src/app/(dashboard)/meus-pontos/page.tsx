@@ -5,8 +5,11 @@ import { TagWithAction } from "@/lib/schemas/pointsSchema";
 import { cookies } from "next/headers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { verifyAccess } from "@/lib/utils";
+import { constructMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = constructMetadata({ title: "Meus Pontos" });
 
 // Tipagem para os dados da página
 export interface MyPointsData {

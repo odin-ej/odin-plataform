@@ -305,6 +305,22 @@ const PendenciesContent = ({
       header: "Responsáveis",
       type: "checkbox",
       options: data.formatedUsers,
+      renderView(row) {
+        if (!row.responsibles || row.responsibles.length === 0)
+          return <span className="text-xs text-gray-500">Ninguém</span>;
+
+        const responsibles = data.formatedUsers.filter((user) =>
+          row.responsibles!.includes(user.value)
+        );
+
+        return (
+          <div className="flex items-center gap-2">
+            {responsibles.map((user) => (
+              <h3 key={user.value}>{user.label}</h3>
+            ))}
+          </div>
+        );
+      },
     },
   ];
 
