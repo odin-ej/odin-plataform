@@ -10,7 +10,7 @@ import {
 
 export const taskCreateSchema = z.object({
   title: z.string().min(3, "O título é obrigatório."),
-  description: z.string().min(10, "A descrição é obrigatória."),
+  description: z.string().min(10, "A descrição é obrigatória e deve possuir mais de 10 caracteres."),
   status: z.nativeEnum(TaskStatus, {
     required_error: "O status é obrigatório.",
   }),

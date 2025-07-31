@@ -191,68 +191,51 @@ export interface PermissionCheck {
  * @param user - O objeto do utilizador, que deve incluir a sua lista de cargos.
  * @param permissions - Um objeto que define as regras de permissão.
  * @returns `true` se o utilizador tiver permissão, `false` caso contrário.
+
  */
 export const checkUserPermission = (
   user: (User & { roles: Role[]; currentRole?: Role }) | null,
   permissions: PermissionCheck
 ): boolean => {
-  // Se não houver utilizador, não há permissão.
+  // 1. Se não houver utilizador, não há permissão.
   if (!user) {
     return false;
   }
-  // Se a regra permitir ex-membros e o utilizador for um, concede permissão.
+
+  // 2. Trata os ex-membros como um caso separado e exclusivo.
   if (user.isExMember) {
     return permissions.allowExMembers === true;
   }
 
-  if (user.currentRole) {
-    // Se o utilizador tiver um cargo atual, verifica se ele está entre os cargos permitidos.
-    if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
-      if (permissions.allowedRoles.includes(user.currentRole.name)) {
-        return true;
-      }
+  // 3. A partir daqui, estamos a lidar apenas com membros ATIVOS.
+
+  // Verifica a permissão com base nos cargos permitidos ('allowedRoles')
+  if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
+    // CORREÇÃO: Mapeia os nomes dos cargos permitidos para uma lista de strings
+    const allowedRoleNames = permissions.allowedRoles.map((r) => r);
+
+    // Prioriza a verificação do cargo atual do utilizador.
+    if (user.currentRole && allowedRoleNames.includes(user.currentRole.name)) {
+      return true; // Permissão concedida
     }
-
-    if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
-      // Verifica se o cargo atual do utilizador está entre as áreas permitidas.
-      if (
-        user.currentRole.area.some((area) =>
-          permissions.allowedAreas!.includes(area)
-        )
-      ) {
-        return true;
-      }
-    }
-
-    if (permissions.allowExMembers === false || permissions.allowExMembers === true) {
-      return true;
-    }
-
-    return false;
-  } else {
-    if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
-      const hasAllowedArea = user.roles.some((role) =>
-        role.area.some((area) => permissions.allowedAreas!.includes(area))
-      );
-      if (hasAllowedArea) {
-        return true;
-      }
-    }
-
-    // Verifica se algum dos nomes dos cargos do utilizador está na lista de cargos permitidos.
-    if (permissions.allowedRoles && permissions.allowedRoles.length > 0) {
-      const hasAllowedRole = user.roles.some((role) =>
-        permissions.allowedRoles!.includes(role.name)
-      );
-      if (hasAllowedRole) {
-        return true;
-      }
-    }
-
-    if(permissions.allowExMembers) return true;
-
-    return false;
+    // Como alternativa, verifica se algum dos cargos do histórico do utilizador corresponde.
   }
+
+  // Verifica a permissão com base nas áreas permitidas ('allowedAreas')
+  if (permissions.allowedAreas && permissions.allowedAreas.length > 0) {
+    // Prioriza a verificação das áreas do cargo atual.
+    if (
+      user.currentRole &&
+      user.currentRole.area.some((area) =>
+        permissions.allowedAreas!.includes(area)
+      )
+    ) {
+      return true; // Permissão concedida
+    }
+  }
+
+  // 4. Se nenhuma das condições acima for satisfeita, a permissão é negada.
+  return false;
 };
 
 export const getInitials = (name: string | undefined) => {
@@ -266,11 +249,11 @@ export const getInitials = (name: string | undefined) => {
 
 export const getPhrasePercentageByGoal = (value: number, goal: number) => {
   const phrases = [
-    "Tamo começando!", 
+    "Tamo começando!",
     "Vamo arder",
-    "Tamo ardendo!",      
-    "Tá quase lá!",     
-    "Meta ALCANÇADA", 
+    "Tamo ardendo!",
+    "Tá quase lá!",
+    "Meta ALCANÇADA",
   ];
 
   // Evita a divisão por zero se a meta for 0
@@ -348,10 +331,9 @@ export const verifyAccess = ({
   pathname: string;
   user: User & { roles: Role[]; currentRole?: Role };
 }) => {
-  let hasPermission = true;
+  let hasPermission = false;
   const requiredPermission = ROUTE_PERMISSIONS[pathname];
   if (requiredPermission) {
-    console.log(requiredPermission, user.isExMember)
     hasPermission = checkUserPermission(user, requiredPermission);
   }
   return hasPermission;

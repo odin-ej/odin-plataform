@@ -108,6 +108,7 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
+    areas: ['DIRETORIA'],
     exMemberCanAccess: false,
   },
   {
@@ -121,6 +122,7 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
+    areas: ['DIRETORIA'],
     exMemberCanAccess: false,
   },
   {
@@ -134,6 +136,7 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
+    areas: ['DIRETORIA'],
     exMemberCanAccess: false,
   },
   {
@@ -147,6 +150,7 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
+    areas: ['DIRETORIA'],
     exMemberCanAccess: false,
   },
 ];

@@ -335,6 +335,11 @@ const PendenciesContent = ({
   };
 
   const canDelete = (task: FullTask) => {
+    console.log(
+      task.authorId === user?.id ||
+        user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
+          .length > 0
+    );
     return (
       task.authorId === user?.id ||
       user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
