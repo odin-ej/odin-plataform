@@ -304,7 +304,7 @@ const EnterprisePageContent = ({
           onEdit={(item) => handleOpenEditModal(item, "tag")}
           onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
           onRowClick={(item) => handleOpenEditModal(item, "tag")}
-          type="noSelection"
+          type={isDirector ? "noSelection" : "onlyView"}
         />
         {isDirector && (
           <>
