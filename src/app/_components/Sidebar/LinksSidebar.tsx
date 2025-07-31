@@ -41,8 +41,6 @@ const LinksSidebar = () => {
     return restrictedLinks.filter((link) =>
     {
       if(user.isExMember && link.exMemberCanAccess === false) return false;
-      console.log(link.areas, user.currentRole.area)
-      console.log(link.roles, user.roles)
       return checkUserPermission(user, {
         allowedRoles: link.roles.map((role) => role.name), // Extrai os nomes dos cargos
         allowedAreas: link.areas,

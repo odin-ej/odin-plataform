@@ -41,11 +41,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const statusConfig = {
   [TaskStatus.PENDING]: {
     label: "Pendente",
-    className: "bg-yellow-500 hover:bg-yellow-600",
+    className: "bg-red-500 hover:bg-red-600",
   },
   [TaskStatus.IN_PROGRESS]: {
     label: "Em Progresso",
-    className: "bg-blue-500 hover:bg-blue-600",
+    className: "bg-[#0126fb] hover:bg-[#0126fb]/70",
   },
   [TaskStatus.COMPLETED]: {
     label: "Concluída",

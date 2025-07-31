@@ -75,7 +75,6 @@ const Page = async () => {
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <div>Não autenticado</div>;
   const hasPermission = verifyAccess({ pathname: "/usuarios", user: authUser });
-  console.log(hasPermission)
   if (!hasPermission) return <DeniedAccess />;
 
   return (

@@ -44,7 +44,6 @@ const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/metas", user: user! });
-  console.log(user, hasPermission);
   if(!hasPermission) return <DeniedAccess />
   return (
     <div className="p-4 sm:p-8">
