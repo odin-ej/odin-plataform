@@ -29,7 +29,7 @@ import axios from "axios";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { getAssignableUsers } from "@/lib/permissions";
 
-interface PendenciesContentQueryData{
+interface PendenciesContentQueryData {
   myTasks: FullTask[];
   formatedUsers: { value: string; label: string }[];
 }
@@ -257,7 +257,6 @@ const PendenciesContent = ({
     []
   );
 
-
   const taskFields: FieldConfig<TaskFormValues>[] = [
     { accessorKey: "title", header: "Título" },
     { accessorKey: "description", header: "Descrição", type: "text" },
@@ -270,6 +269,36 @@ const PendenciesContent = ({
         value: s,
         label: statusConfig[s].label,
       })),
+      renderView: (row) => {
+        switch (row.status) {
+          case TaskStatus.CANCELED:
+            return (
+              <Badge className="bg-gray-500/20 text-gray-400">Cancelada</Badge>
+            );
+          case TaskStatus.IN_PROGRESS:
+            return (
+              <Badge className="bg-yellow-500/20 text-yellow-400">
+                Em progresso
+              </Badge>
+            );
+          case TaskStatus.COMPLETED:
+            return (
+              <Badge className="bg-green-500/20 text-green-400">
+                Completada
+              </Badge>
+            );
+          case TaskStatus.PENDING:
+            return (
+              <Badge className="bg-red-500/20 text-red-400">Pendente</Badge>
+            );
+          default:
+            return (
+              <Badge className="bg-gray-500/20 text-gray-400">
+                Desconhecido
+              </Badge>
+            );
+        }
+      },
     },
     {
       accessorKey: "responsibles",
@@ -323,7 +352,7 @@ const PendenciesContent = ({
           onRowClick={(row) => openModal(row, false)}
           onEdit={(row) => openModal(row, true)}
           onDelete={(row) => setItemToDelete(row)}
-          type={'noSelection'}
+          type={"noSelection"}
           isRowDeletable={canDelete}
           itemsPerPage={10}
         />

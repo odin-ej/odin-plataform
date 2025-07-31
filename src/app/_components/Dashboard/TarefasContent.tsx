@@ -311,6 +311,36 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           value: s,
           label: statusConfig[s].label,
         })),
+        renderView: (row) => {
+          switch (row.status) {
+            case TaskStatus.CANCELED:
+              return (
+                <Badge className="bg-gray-500/20 text-gray-400">Cancelada</Badge>
+              );
+            case TaskStatus.IN_PROGRESS:
+              return (
+                <Badge className="bg-yellow-500/20 text-yellow-400">
+                  Em progresso
+                </Badge>
+              );
+            case TaskStatus.COMPLETED:
+              return (
+                <Badge className="bg-green-500/20 text-green-400">
+                  Completada
+                </Badge>
+              );
+            case TaskStatus.PENDING:
+              return (
+                <Badge className="bg-red-500/20 text-red-400">Pendente</Badge>
+              );
+            default:
+              return (
+                <Badge className="bg-gray-500/20 text-gray-400">
+                  Desconhecido
+                </Badge>
+              );
+          }
+        },
       },
       {
         accessorKey: "responsibles",
@@ -385,13 +415,13 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     );
   }
 
-    const canDelete = (task: FullTask) => {
-      return (
-        task.authorId === user?.id ||
-        user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
-          .length > 0
-      );
-    };
+  const canDelete = (task: FullTask) => {
+    return (
+      task.authorId === user?.id ||
+      user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
+        .length > 0
+    );
+  };
 
   return (
     <>
