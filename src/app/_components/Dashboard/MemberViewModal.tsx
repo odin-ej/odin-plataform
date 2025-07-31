@@ -35,6 +35,8 @@ const MemberViewModal = ({
   const formatedInstagram = user.instagram && user.instagram !== 'N/A'
     ? user.instagram.startsWith("http")
       ? user.instagram
+      : user.instagram.includes('@') 
+      ? `https://instagram.com/${user.instagram.split('@')[1]}`
       : `https://instagram.com/${user.instagram}`
     : "";
 

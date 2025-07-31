@@ -219,7 +219,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           <CustomInput
             form={form}
             field={"instagram" as Path<z.infer<T>>}
-            label="Instagram (URL)"
+            label="Instagram (URL) ou Nome do instagram. Ex.: empresajr"
           />
           <CustomInput
             form={form}

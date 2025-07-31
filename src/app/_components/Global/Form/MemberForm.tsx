@@ -175,11 +175,13 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
           <CustomInput
             label="Instagram"
             field={"instagram" as Path<z.infer<T>>}
+            placeholder='Link ou nome do instagram. Ex.: empresajr'
             form={form}
           />
           <CustomInput
             label="Linkedin"
             field={"linkedin" as Path<z.infer<T>>}
+            placeholder="Link do perfil"
             form={form}
           />
         </div>

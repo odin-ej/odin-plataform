@@ -224,7 +224,7 @@ export async function POST(request: Request) {
         }
       }
     }
-
+    revalidatePath('/cultural')
     revalidatePath("/aprovacao-cadastro");
     return NextResponse.json(results, { status: 200 });
   } catch (error) {
