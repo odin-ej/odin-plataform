@@ -1,3 +1,4 @@
+import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { NextResponse } from "next/server";
 import z from "zod";
