@@ -6,6 +6,8 @@ import { verifyAccess } from "@/lib/utils";
 
 export const metadata = constructMetadata({ title: "Conhecimento IA" });
 
+export const dynamic = "force-dynamic";
+
 const Page = async () => {
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/conhecimento-ia", user: user! });

@@ -41,7 +41,7 @@ const MemberViewModal = ({
     const formatedlinkedin = user.linkedin
     ? user.linkedin.startsWith("http")
       ? user.linkedin
-      : `https://linkedin.com/${user.linkedin}`
+      : `https://linkedin.com/in/${user.linkedin}`
     : "";
 
   return (
