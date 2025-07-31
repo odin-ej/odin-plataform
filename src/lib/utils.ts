@@ -266,15 +266,36 @@ export const getInitials = (name: string | undefined) => {
 
 export const getPhrasePercentageByGoal = (value: number, goal: number) => {
   const phrases = [
-    "Tamo começando!",
+    "Tamo começando!", 
     "Vamo arder",
-    "Tá quase lá!",
-    "Meta ALCANÇADA",
+    "Tamo ardendo!",      
+    "Tá quase lá!",     
+    "Meta ALCANÇADA", 
   ];
-  const percentage = value / goal;
 
-  const phraseIndex = Math.floor(percentage / (100 / phrases.length));
-  return phrases[phraseIndex];
+  // Evita a divisão por zero se a meta for 0
+  if (goal === 0) {
+    return value > 0 ? phrases[3] : phrases[0];
+  }
+
+  // Calcula a percentagem como um valor de 0 a 100
+  const percentage = (value / goal) * 100;
+
+  // Verifica a percentagem de cima para baixo para retornar a frase correta
+  if (percentage >= 100) {
+    return phrases[4];
+  }
+  if (percentage >= 75) {
+    return phrases[3];
+  }
+  if (percentage >= 50) {
+    return phrases[2];
+  }
+  if (percentage >= 25) {
+    return phrases[1];
+  }
+  // Se for menor que 25%, retorna a primeira frase
+  return phrases[0];
 };
 export const fileToBase64 = (
   file: File
