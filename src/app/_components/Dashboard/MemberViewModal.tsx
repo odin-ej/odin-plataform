@@ -32,13 +32,13 @@ const MemberViewModal = ({
       : user.name;
   const userImage = user.imageUrl || "";
 
-  const formatedInstagram = user.instagram
+  const formatedInstagram = user.instagram && user.instagram !== 'N/A'
     ? user.instagram.startsWith("http")
       ? user.instagram
       : `https://instagram.com/${user.instagram}`
     : "";
 
-    const formatedlinkedin = user.linkedin
+    const formatedlinkedin = user.linkedin && user.linkedin !== 'N/A'
     ? user.linkedin.startsWith("http")
       ? user.linkedin
       : `https://linkedin.com/in/${user.linkedin}`
@@ -119,7 +119,7 @@ const MemberViewModal = ({
                 Instagram
               </span>
               <div className="col-span-2">
-                {user.instagram ? (
+                {user.instagram && user.instagram !== 'N/A' ? (
                   <a
                     className="flex items-center gap-1.5 text-[#f5b719] hover:underline"
                     href={formatedInstagram}
@@ -137,7 +137,7 @@ const MemberViewModal = ({
                 LinkedIn
               </span>
               <div className="col-span-2">
-                {user.linkedin ? (
+                {user.linkedin && user.linkedin !== 'N/A' ? (
                   <a
                     className="flex items-center gap-1.5 text-[#f5b719] hover:underline"
                     href={formatedlinkedin}
