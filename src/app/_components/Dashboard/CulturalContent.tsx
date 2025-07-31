@@ -144,8 +144,8 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       header: "Nome",
       cell: (row) => (
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={row.imageUrl ?? undefined} />
+          <Avatar className="h-8 w-8 ">
+            <AvatarImage className='object-cover' src={row.imageUrl ?? undefined} />
             <AvatarFallback>{row.name.substring(0, 2)}</AvatarFallback>
           </Avatar>
           <span className="font-medium">{row.name}</span>

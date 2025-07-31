@@ -36,6 +36,7 @@ interface CustomTableProps<T> {
   onDelete?: (row: T) => void;
   handleActionClick?: () => void;
   isRowDeletable?: (row: T) => boolean;
+  isRowEditable?: (row: T) => boolean;
   disabled?: boolean;
 }
 
@@ -48,6 +49,7 @@ function CustomTable<T extends { id: string | number }>({
   filterColumns,
   itemsPerPage = 5,
   disabled,
+  isRowEditable,
   isRowDeletable,
   onEdit,
   onDelete,
@@ -207,6 +209,7 @@ function CustomTable<T extends { id: string | number }>({
             variant="ghost"
             size="icon"
             className="hover:bg-[#f5b719]/10"
+            disabled={isRowEditable ? !isRowEditable(row) : false}
             onClick={(e) => {
               e.stopPropagation();
               onEdit?.(row);
@@ -217,7 +220,7 @@ function CustomTable<T extends { id: string | number }>({
           <Button
             variant="ghost"
             size="icon"
-            disabled={isRowDeletable ? isRowDeletable(row): false}
+            disabled={isRowDeletable ? !isRowDeletable(row): false}
             className="hover:bg-red-500/10"
             onClick={(e) => {
               e.stopPropagation();

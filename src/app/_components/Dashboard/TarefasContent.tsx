@@ -315,7 +315,9 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           switch (row.status) {
             case TaskStatus.CANCELED:
               return (
-                <Badge className="bg-gray-500/20 text-gray-400">Cancelada</Badge>
+                <Badge className="bg-gray-500/20 text-gray-400">
+                  Cancelada
+                </Badge>
               );
             case TaskStatus.IN_PROGRESS:
               return (
@@ -431,12 +433,15 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
     );
   }
 
-  const canDelete = (task: FullTask) => {
+  const canDoAction = (task: FullTask) => {
     return (
       task.authorId === user?.id ||
-      user!.currentRole.area.map((area) => area === AreaRoles.DIRETORIA)
-        .length > 0
+      user!.currentRole.area.includes(AreaRoles.DIRETORIA)
     );
+  };
+
+  const onEdit = (task: FullTask) => {
+    return canDoAction(task) ? openEditModal(task, true) : false;
   };
 
   return (
@@ -456,14 +461,15 @@ const TarefasContent = ({ initialData }: { initialData: TasksPageData }) => {
           data={sortedTasks}
           handleActionClick={openCreateModal}
           filterColumns={["title", "status"]}
-          onEdit={(row) => openEditModal(row, true)}
+          onEdit={onEdit}
           onDelete={(row) => setItemToDelete(row)}
           onRowClick={(row) => openEditModal(row, false)}
           itemsPerPage={10}
           disabled={false}
           isActionLoading={isCreating}
-          isRowDeletable={canDelete}
-          type="noSelection"
+          isRowDeletable={canDoAction}
+          isRowEditable={canDoAction}
+          type={'noSelection'}
         />
       </div>
 

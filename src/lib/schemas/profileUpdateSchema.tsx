@@ -13,14 +13,10 @@ const rawBaseSchema = z.object({
     .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
   instagram: z
     .string()
-    .url("Insira um link válido do Instagram")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
   linkedin: z
     .string()
-    .url("Insira um link válido do LinkedIn")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
   about: z.string().min(10, "Descreva um pouco sobre você"),
   image: z.any().optional(),
 
