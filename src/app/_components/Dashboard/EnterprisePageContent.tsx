@@ -200,6 +200,8 @@ const EnterprisePageContent = ({
     dailyMessageCount: 0,
     lastMessageDate: null,
     currentRoleId: null,
+    isWorking: false,
+    workplace: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
