@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export async function generateMetadata({
   params,
 }: {
-  params: { conversationId: string };
+  params: Promise<{ conversationId: string }>;
 }) {
   const { conversationId } = await params;
   const title = await fetch(`${API_URL}/api/conversations/${conversationId}`).then((res) => res.json()).then((data) => data.title);
