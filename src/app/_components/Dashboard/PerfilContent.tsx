@@ -123,9 +123,13 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
         | "Não"
         | undefined,
       otherRole: user.otherRole ?? "",
+      isWorking: (user.isWorking ? "Sim" : "Não") as "Sim" | "Não",
+      workplace: user.workplace,
       isExMember: (user.isExMember ? "Sim" : "Não") as "Sim" | "Não",
     };
   }, [user]);
+
+  console.log(formInitialValues)
 
   if (isLoadingData || !formInitialValues || !user || !roles) {
     return (

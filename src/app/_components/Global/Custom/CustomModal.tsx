@@ -35,7 +35,8 @@ export interface FieldConfig<T> {
     | "dropzone"
     | "checkbox"
     | "date"
-    | "time";
+    | "time"
+    | "password";
   mask?: "phone" | "date" | null;
   header: string;
   accessorKey: Path<T>;
@@ -173,6 +174,15 @@ const CustomModal = <T extends FieldValues>({
                                   options={fieldInfo.options!}
                                 />
                               );
+                              case "password": 
+                              return (
+                                <CustomInput
+                                  form={form}
+                                  field={accessorKey}
+                                  label={fieldInfo.header}
+                                  type={fieldInfo.type}
+                                />
+                              )
                             case "checkbox":
                               return (
                                 <CustomCheckboxGroup
@@ -251,7 +261,7 @@ const CustomModal = <T extends FieldValues>({
                                 <label className="text-sm font-semibold text-[#0126fb] mb-2">
                                   {fieldInfo.header}
                                 </label>
-                              <Avatar className="h-24 w-24 border-2 border-[#0126fb]">
+                                <Avatar className="h-24 w-24 border-2 border-[#0126fb]">
                                   <AvatarImage
                                     src={data.imageUrl}
                                     className="object-cover"

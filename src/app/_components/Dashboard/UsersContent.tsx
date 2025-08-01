@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,6 +35,8 @@ interface UsersContentProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+const ROLE_ID_OUTRO = process.env.OTHER_ROLE_ID as string;
+
 // Tipagem para os dados gerenciados pela query
 interface QueryData {
   list: UniversalMember[];
@@ -62,6 +64,22 @@ const UsersContent = ({
     resolver: zodResolver(userProfileSchema),
   });
 
+  const roles = form.watch("roles");
+  const isWorking = form.watch("isWorking");
+
+  useEffect(() => {
+    const hasOutro = roles?.includes(ROLE_ID_OUTRO);
+
+    // Se a opção "Outro" NÃO estiver selecionada, limpa o campo otherRole.
+    if (!hasOutro && form.getValues("otherRole")) {
+      form.setValue("otherRole", "", { shouldValidate: true });
+    }
+
+    if (isWorking === "Não") {
+      form.setValue("workplace", "", { shouldValidate: true });
+    }
+  }, [roles, form, isWorking]);
+
   // --- QUERY DINÂMICA (A Correção Principal) ---
   const queryKey = ["userData", type]; // Chave dinâmica baseada no tipo de página
 
@@ -88,6 +106,7 @@ const UsersContent = ({
     },
   });
 
+  const isExMemberBoolean = form.watch("isExMember") === "Sim";
   // --- MUTAÇÕES (Com Invalidação de Query Dinâmica) ---
 
   // 1. ATUALIZAR UM USUÁRIO
@@ -168,8 +187,16 @@ const UsersContent = ({
   });
 
   // --- HANDLERS (Simplificados) ---
-  const handleModalSubmit = (formData: UserProfileValues) =>
+  const handleModalSubmit = (formData: UserProfileValues) => {
+    const outroSelecionado = formData.roles?.includes(ROLE_ID_OUTRO);
+    if (!outroSelecionado && formData.otherRole) {
+      toast.error(
+        "Selecione a opção 'Outro' para preencher o campo 'Outro Cargo'"
+      );
+      return;
+    }
     updateUser(formData);
+  };
 
   const handleDeleteConfirm = (item: UniversalMember) => {
     setItemToDelete(item); // 1. Guarda o item que será deletado
@@ -192,10 +219,17 @@ const UsersContent = ({
 
   const availableRoles = data?.roles || initialRoles;
 
-  const formatedRoles = availableRoles.map((role) => ({
-    value: role.id,
-    label: role.name,
-  }));
+  const formatedRoles = isExMemberBoolean
+    ? availableRoles.map((role) => ({
+        value: role.id,
+        label: role.name,
+      }))
+    : availableRoles
+        .map((role) => ({
+          value: role.id,
+          label: role.name,
+        }))
+        .filter((role) => role.label !== "Outro");
 
   const memberColumns: ColumnDef<UniversalMember>[] = [
     {
@@ -280,36 +314,63 @@ const UsersContent = ({
     { accessorKey: "semesterLeaveEj", header: "Semestre de saída" },
   ];
 
-  // Define quais campos aparecerão no modal de edição
-  const isExMemberBoolean = form.watch("isExMember") === "Sim";
-
-  // REMOVA COMPLETAMENTE a constante 'allowedFields'.
-
-  // Simplifique a criação dos campos:
+  const selectedRoles = form.watch("roles") || [];
   const fields = getModalFields<UserProfileValues>(
-    isExMemberBoolean // A função já usa este booleano para a lógica
+    isExMemberBoolean, // A função já usa este booleano para a lógica,
+    selectedRoles,
+    isWorking === "Sim"
   );
+
+  const currentRoleField: FieldConfig<UserProfileValues> = {
+    accessorKey: "roleId",
+    header: "Cargo Atual",
+    type: "select",
+    options: formatedRoles,
+    renderView(data) {
+      if (isExMemberBoolean) return "Ex-membro";
+      const role = formatedRoles.find(
+        (role) => role.value === (data as UserProfileValues).roleId
+      )?.label;
+      if (!role) return "Nenhum cargo selecionionado";
+      return (
+        <div className="bg-[#00205e] w-full min-h-11 rounded-lg flex items-center justify-start gap-2 p-3">
+          {role}
+        </div>
+      );
+    },
+  };
 
   const modalFields: FieldConfig<UserProfileValues>[] = [
     ...fields,
     {
-      accessorKey: "roleId",
-      header: "Cargo Atual",
-      type: "select",
-      options: formatedRoles,
-      renderView(data) {
-        if (isExMemberBoolean) return "Ex-membro";
-        const role = formatedRoles.find(
-          (role) => role.value === (data as UserProfileValues).roleId
-        )?.label;
-        if (!role) return "Nenhum cargo selecionionado";
+      accessorKey: "password",
+      header: "Senha",
+      type: "password",
+      renderView() {
         return (
           <div className="bg-[#00205e] w-full min-h-11 rounded-lg flex items-center justify-start gap-2 p-3">
-            {role}
+            <span className="text-sm">*********</span>
           </div>
         );
       },
     },
+    {
+      accessorKey: "confPassword",
+      header: "Confirmação da Senha",
+      type: "password",
+      renderView() {
+        return (
+          <div className="bg-[#00205e] w-full min-h-11 rounded-lg flex items-center justify-start gap-2 p-3">
+            <span className="text-sm">*********</span>
+          </div>
+        );
+      },
+    },
+  ];
+
+  if (!isExMemberBoolean) modalFields.push(currentRoleField);
+
+  const lastFields: FieldConfig<UserProfileValues>[] = [
     {
       accessorKey: "roles",
       header: "Cargos",
@@ -340,6 +401,8 @@ const UsersContent = ({
       type: "dropzone",
     },
   ];
+
+  modalFields.push(...lastFields);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onInvalid = (_errors: any) => {
     toast.error("Formulário Inválido", {
@@ -370,6 +433,8 @@ const UsersContent = ({
       linkedin: user.linkedin || "",
       instagram: user.instagram || "",
       otherRole: user.otherRole || "",
+      isWorking: user.isWorking ? "Sim" : "Não",
+      workplace: user.workplace || "",
       isExMember: user.isExMember ? "Sim" : "Não",
       alumniDreamer: (user.alumniDreamer ?? false) ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
       roles: user.roles.map((role) => role.id), // O schema da API espera um array de IDs
@@ -430,6 +495,9 @@ const UsersContent = ({
             "semesterEntryEj",
             "semesterLeaveEj",
             "course",
+            'otherRole',
+            'workplace',
+
           ]}
           data={exMembers}
           title="Ex-membros"
@@ -461,7 +529,7 @@ const UsersContent = ({
       {itemToDelete && (
         <ModalConfirm
           open={isDeleteModalOpen}
-          onCancel={() => setIsModalOpen(false)}
+          onCancel={() => setIsDeleteModalOpen(false)}
           onConfirm={() => deleteUser(itemToDelete)}
           isLoading={isDeletingUser}
         />

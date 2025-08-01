@@ -69,7 +69,9 @@ export function orderRolesByHiearchy(roles: Role[]) {
 }
 
 export const getModalFields = <T extends UserProfileValues | ExMemberType>(
-  isExMember: boolean
+  isExMember: boolean,
+  selectedRoles: string[],
+  isWorking: boolean
 ): FieldConfig<T>[] => {
   const commonFields: FieldConfig<T>[] = [
     { accessorKey: "name" as Path<T>, header: "Nome Completo" },
@@ -89,8 +91,6 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
     { accessorKey: "about" as Path<T>, header: "Sobre" },
     { accessorKey: "linkedin" as Path<T>, header: "Linkedin" },
     { accessorKey: "instagram" as Path<T>, header: "Instagram" },
-    { accessorKey: "password" as Path<T>, header: "Senha" },
-    { accessorKey: "confPassword" as Path<T>, header: "Confirmar Senha" },
     {
       accessorKey: "isExMember" as Path<T>,
       header: "Ex-Membro",
@@ -114,17 +114,37 @@ export const getModalFields = <T extends UserProfileValues | ExMemberType>(
   const exFields: FieldConfig<T>[] = [
     { accessorKey: "semesterLeaveEj" as Path<T>, header: "Semestre de Saída" },
     { accessorKey: "aboutEj" as Path<T>, header: "Experiência na EJ" },
-    { accessorKey: "otherRole" as Path<T>, header: "Outro Cargo" },
+
+    {
+      accessorKey: "isWorking" as Path<T>,
+      header: "Está trabalhando?",
+      type: "select",
+      options: [
+        { value: "Sim", label: "Sim" },
+        { value: "Não", label: "Não" },
+      ],
+    },
+
+    ...(isWorking
+      ? [
+          {
+            accessorKey: "workplace" as Path<T>,
+            header: "Local de Trabalho",
+          },
+        ]
+      : []),
+    ...(selectedRoles.includes(process.env.OTHER_ROLE_ID as string)
+      ? [{ accessorKey: "otherRole" as Path<T>, header: "Outro Cargo" }]
+      : []),
   ];
 
-  const imageField = commonFields.splice(commonFields.length - 1, 1); // remove image
   const filteredCommonFields = isExMember
     ? commonFields.filter((field) => field.accessorKey !== "roleId")
     : commonFields;
 
   return isExMember
-    ? [...filteredCommonFields, ...exFields, ...imageField]
-    : [...filteredCommonFields, ...imageField];
+    ? [...filteredCommonFields, ...exFields]
+    : [...filteredCommonFields];
 };
 
 export const handleFileAccepted = (
@@ -198,7 +218,6 @@ export const checkUserPermission = (
   permissions: PermissionCheck
 ): boolean => {
   // 1. Se não houver utilizador, não há permissão.
-  console.log(permissions.allowedRoles)
   if (!user) {
     return false;
   }

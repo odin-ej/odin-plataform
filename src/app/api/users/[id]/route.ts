@@ -163,13 +163,13 @@ export async function PATCH(
     // Atualiza a senha apenas se uma nova foi fornecida
     if (validatedData.password && validatedData.password.length > 0) {
       await cognitoClient.send(
-      new AdminSetUserPasswordCommand({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-        Username: userToUpdate.email, // O e-mail é o username no Cognito
-        Password: validatedData.password, // Envia a senha em texto plano
-        Permanent: true, // Define a senha como permanente (não expira)
-      })
-    );
+        new AdminSetUserPasswordCommand({
+          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+          Username: userToUpdate.email, // O e-mail é o username no Cognito
+          Password: validatedData.password, // Envia a senha em texto plano
+          Permanent: true, // Define a senha como permanente (não expira)
+        })
+      );
 
       updateData.password = await bcrypt.hash(validatedData.password, 10);
     }
@@ -184,6 +184,12 @@ export async function PATCH(
         Value: `+55${validatedData.phone.replace(/\D/g, "")}`,
       });
 
+    if (validatedData.email && validatedData.email !== userToUpdate.email) {
+      attributesToUpdate.push({ Name: "email", Value: validatedData.email });
+      // É uma boa prática definir o e-mail como não verificado após a alteração.
+      attributesToUpdate.push({ Name: "email_verified", Value: "true" });
+    }
+
     // 3. Implementa a lógica de cargos de forma coerente com o schema
     if (isExMember) {
       const exMemberData = validatedData as ExMemberUpdateType;
@@ -195,6 +201,10 @@ export async function PATCH(
         updateData.roles = { set: exMemberData.roles.map((id) => ({ id })) };
         // Ex-membros não têm um 'currentRole' ativo
         updateData.currentRole = { disconnect: true };
+      }
+
+      if (!exMemberData.roles.includes(process.env.OTHER_ROLE_ID as string)) {
+        updateData.otherRole = null;
       }
     } else {
       // Lógica para Membros Ativos
@@ -252,6 +262,8 @@ export async function PATCH(
 
     revalidatePath(`/perfil`);
     revalidatePath("/");
+    revalidatePath("/usuarios");
+    revalidatePath("/cultural");
     return NextResponse.json(userWithoutPassword);
   } catch (error: any) {
     if (error.code === "P2002") {

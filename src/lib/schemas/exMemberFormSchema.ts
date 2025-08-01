@@ -25,12 +25,10 @@ export const exMemberSchema = z
       .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
     instagram: z
       .string()
-      .url("Insira um link válido do Instagram")
       .optional()
       .or(z.literal("")),
     linkedin: z
       .string()
-      .url("Insira um link válido do LinkedIn")
       .optional()
       .or(z.literal("")),
     about: z.string().min(10, "Descreva um pouco sobre você"),
@@ -41,7 +39,10 @@ export const exMemberSchema = z
     alumniDreamer: z.enum(["Sim", "Não"], {
       errorMap: () => ({ message: "Selecione 'Sim' ou 'Não'" }),
     }),
-
+    isWorking: z.enum(["Sim", "Não"], {
+      errorMap: () => ({ message: "Selecione 'Sim' ou 'Não'" }),
+    }),
+    workplace: z.string().optional(),
     image: z.instanceof(File, { message: "É necessário enviar uma imagem" }),
   })
   .refine((data) => data.password === data.confPassword, {
@@ -57,6 +58,14 @@ export const exMemberSchema = z
         code: z.ZodIssueCode.custom,
         path: ["otherRole"],
         message: "Por favor, especifique o cargo.",
+      });
+    }
+
+    if (data.isWorking === "Sim" && !data.workplace) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["workplace"],
+        message: "Por favor, especifique o local de trabalho.",
       });
     }
   });

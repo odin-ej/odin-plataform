@@ -36,6 +36,7 @@ const CustomInput = <T extends FieldValues>({
   type = "text",
   className,
   labelClassName,
+  disabled,
   onBlur,
 }: CustomFieldProps<T>) => (
   <FormField
@@ -48,6 +49,7 @@ const CustomInput = <T extends FieldValues>({
         </FormLabel>
         <FormControl>
           <Input
+          disabled={disabled}
             placeholder={placeholder}
             className={cn(
               "text-xs sm:text-md text-white",

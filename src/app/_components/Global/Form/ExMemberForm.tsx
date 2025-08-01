@@ -61,16 +61,17 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
   };
 
   const defaultFormPerfilValues = {
-    ...(values as DefaultValues<z.infer<T>>),
     ...defaultValues,
+    ...(values as DefaultValues<z.infer<T>>),
     isExMember: "Sim",
     alumniDreamer: (values as any)?.alumniDreamer ? "Sim" : "Não",
   };
 
   const defaultFormRegisterValues = {
-    ...(values as DefaultValues<z.infer<T>>),
     ...defaultValues,
+    ...(values as DefaultValues<z.infer<T>>),
     isExMember: "Sim",
+    workplace: "",
   };
 
   const defaultFormValues = isPerfilPage
@@ -105,6 +106,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     otherRoleId &&
     watchedRoles.includes(otherRoleId);
 
+  const isWorking = form.watch("isWorking" as Path<z.infer<T>>) === 'Sim';
   const onInvalid = () => {
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
@@ -219,7 +221,8 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           <CustomInput
             form={form}
             field={"instagram" as Path<z.infer<T>>}
-            label="Instagram (URL) ou Nome do instagram. Ex.: empresajr"
+            label="Instagram"
+            placeholder={"Link ou Nome do instagram. Ex.: empresajr"}
           />
           <CustomInput
             form={form}
@@ -228,17 +231,31 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           />
         </div>
 
+        <div className="flex flex-wrap md:flex-nowrap items-start justify-between gap-4">
+          <CustomSelect
+            control={form.control}
+            name={"isWorking" as Path<z.infer<T>>}
+            label="Está trabalhando?"
+            placeholder="Selecione uma opção"
+            options={[
+              { value: "Sim", label: "Sim" },
+              { value: "Não", label: "Não" },
+            ]}
+          />  
+          <CustomInput form={form} field={"workplace" as Path<z.infer<T>>} label="Local de Trabalho" disabled={!isWorking} placeholder='Empresa. Ex.: Sanar' />
+        </div>
+
         <CustomCheckboxGroup
           control={form.control}
           name={"roles" as Path<z.infer<T>>}
-          label="Cargo na EJ"
+          label="Cargos na EJ"
           options={roles.map((role) => ({
             value: role.id,
             label: role.name,
           }))}
         />
 
-        {showOtherRoleInput && (
+        {showOtherRoleInput ? (
           <div className="pl-2 pt-2">
             <CustomInput
               label="Qual cargo?"
@@ -247,7 +264,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
               placeholder="Digite o cargo"
             />
           </div>
-        )}
+        ) : null}
 
         <CustomTextArea
           form={form}

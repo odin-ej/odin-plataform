@@ -67,6 +67,7 @@ export async function PATCH(request: Request) {
       isExMember,
       alumniDreamer,
       confPassword,
+      isWorking,
       ...dataToUpdate
     } = validation.data;
 
@@ -79,12 +80,17 @@ export async function PATCH(request: Request) {
         ? roles.map((id: string) => ({ id }))
         : undefined;
 
+    const realOtherRole = !roles?.includes(process.env.OTHER_ROLE_ID as string)
+      ? null
+      : otherRole;
+
     const updatedRequest = await prisma.registrationRequest.update({
       where: { id },
       data: {
         ...dataToUpdate,
+        ...(isWorking && { isWorking: isWorking === "Sim" ? true : false }),
         ...(imageUrl && { imageUrl }),
-        ...(otherRole && { otherRole }), // só atualiza se vier
+        ...(otherRole && { otherRole: realOtherRole }), // só atualiza se vier
         ...(singleRoleArray && {
           roles: { set: singleRoleArray },
         }),

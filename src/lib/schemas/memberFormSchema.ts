@@ -86,7 +86,10 @@ export const userProfileSchema = baseMemberSchema
     semesterLeaveEj: z.string().optional(),
     isExMember: z.enum(["Sim", "Não"]).optional(),
     alumniDreamer: z.enum(["Sim", "Não"]).optional(),
-  });
+    isWorking: z.enum(["Sim", "Não"]).optional(),
+    workplace: z.string().optional(),
+  })
+ 
 
 export type memberType = z.infer<typeof memberSchema>;
 export type UserProfileValues = z.infer<typeof userProfileSchema>;

@@ -11,12 +11,8 @@ const rawBaseSchema = z.object({
   phone: z
     .string()
     .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
-  instagram: z
-    .string()
-    .optional(),
-  linkedin: z
-    .string()
-    .optional(),
+  instagram: z.string().optional(),
+  linkedin: z.string().optional(),
   about: z.string().min(10, "Descreva um pouco sobre você"),
   image: z.any().optional(),
 
@@ -69,6 +65,10 @@ export const exMemberUpdateSchema = rawBaseSchema
     aboutEj: z.string().min(10, "Descreva um pouco da sua experiência na EJ"),
     roles: z.array(z.string()).nonempty("Selecione pelo menos um cargo"),
     otherRole: z.string().optional(),
+    isWorking: z.enum(["Sim", "Não"], {
+      errorMap: () => ({ message: "Selecione 'Sim' ou 'Não'" }),
+    }),
+    workplace: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (
@@ -83,6 +83,14 @@ export const exMemberUpdateSchema = rawBaseSchema
       });
     }
 
+    if (data.isWorking === "Sim" && !data.workplace) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["workplace"],
+        message: "Por favor, especifique o local de trabalho.",
+      });
+    }
+
     if (
       data.roles.includes("Outro") &&
       (!data.otherRole || data.otherRole.trim().length < 2)
@@ -94,21 +102,28 @@ export const exMemberUpdateSchema = rawBaseSchema
       });
     }
 
-    if (data.otherRole && !data.roles.includes("Outro")) {
-      // Assumindo que 'Outro' é o valor/ID
+    const hasOtherRole = data.roles?.includes(
+      process.env.OTHER_ROLE_ID as string
+    );
+    const otherRoleFilled = data.otherRole && data.otherRole.trim() !== "";
+
+    // CONDIÇÃO 1: Se "Outro" está selecionado, o campo `otherRole` DEVE ser preenchido.
+    if (hasOtherRole && !otherRoleFilled) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["otherRole"], // Campo que receberá o erro
+        message:
+          "O campo 'Outro Cargo' é obrigatório quando o cargo 'Outro' é selecionado.",
+      });
+    }
+
+    // CONDIÇÃO 2: Se o campo `otherRole` está preenchido, o cargo "Outro" DEVE estar selecionado.
+    if (otherRoleFilled && !hasOtherRole) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["otherRole"],
         message:
           "O campo 'Outro Cargo' só pode ser preenchido se a opção 'Outro' estiver selecionada nos cargos.",
-      });
-    }
-
-    if ("roleId" in data) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["roleId"],
-        message: "Ex-membros não devem conter roleId.",
       });
     }
   });

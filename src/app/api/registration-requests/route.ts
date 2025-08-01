@@ -20,6 +20,8 @@ export async function POST(request: Request) {
       instagram,
       linkedin,
       about,
+      isWorking,
+      workplace,
       aboutEj,
       alumniDreamer,
       roles,
@@ -36,7 +38,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verifica se já existe um pedido ou um utilizador com este e-mail
     const existingRequest = await prisma.registrationRequest.findFirst({
       where: {
         OR: [{ email: email }, { emailEJ: emailEJ }],
@@ -149,6 +150,8 @@ export async function POST(request: Request) {
         roleId,
         about,
         aboutEj,
+        workplace,
+        isWorking: isWorking === 'Sim' ? true : false,
         alumniDreamer: alumniDreamer === "Sim" ? true : false,
         otherRole,
         isExMember: "aboutEj" in body,
