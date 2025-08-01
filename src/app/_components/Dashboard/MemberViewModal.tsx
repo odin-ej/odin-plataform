@@ -123,8 +123,17 @@ const MemberViewModal = ({
               </span>
               <span className="col-span-2">{user.course || "-"}</span>
 
+              <span className="text-zinc-400 font-medium col-span-1">
+                Semestre de Entrada
+              </span>
+              <span className="col-span-2">{user.semesterEntryEj || "-"}</span>
+
               {user.isExMember && (
                 <>
+                <span className="text-zinc-400 font-medium col-span-1">
+                    Semestre da Saída
+                  </span>
+                  <span className="col-span-2">{user.semesterLeaveEj || "-"}</span>
                   <span className="text-zinc-400 font-medium col-span-1">
                     Local de Trabalho
                   </span>
