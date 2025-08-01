@@ -356,6 +356,23 @@ export const getLabelForLinkArea = (area: LinkAreas): string => {
   return labels[area] || area;
 };
 
+export const getPermissionForRoute = (
+  path: string,
+  permissions: Record<string, PermissionCheck>
+): PermissionCheck | null => {
+  let currentPath = path;
+  while (currentPath !== "/") {
+    if (permissions[currentPath]) {
+      return permissions[currentPath];
+    }
+    currentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
+    if (currentPath === "") {
+      currentPath = "/";
+    }
+  }
+  return permissions["/"] || null;
+};
+
 export const verifyAccess = ({
   pathname,
   user,
@@ -363,10 +380,9 @@ export const verifyAccess = ({
   pathname: string;
   user: User & { roles: Role[]; currentRole?: Role };
 }) => {
-  let hasPermission = false;
-  const requiredPermission = ROUTE_PERMISSIONS[pathname];
+  const requiredPermission = getPermissionForRoute(pathname, ROUTE_PERMISSIONS);
   if (requiredPermission) {
-    hasPermission = checkUserPermission(user, requiredPermission);
+    return checkUserPermission(user, requiredPermission);
   }
-  return hasPermission;
+  return false;
 };

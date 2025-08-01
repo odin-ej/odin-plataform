@@ -1,55 +1,74 @@
+"use client";
 import { Conversation, Message } from "@prisma/client";
 import ChatContent from "@/app/_components/Dashboard/ChatContent";
-import { constructMetadata } from "@/lib/metadata";
-import { cookies } from "next/headers";
-import { getAuthenticatedUser } from "@/lib/server-utils";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { verifyAccess } from "@/lib/utils";
+import ChatSkeleton from "@/app/_components/Dashboard/ChatSkeleton";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useQuery } from "@tanstack/react-query";
+import ConversationNotFound from "@/app/_components/Dashboard/ConversationNotFound";
+import axios from "axios";
+import { useParams } from "next/navigation";
 
-export const metadata = constructMetadata({ title: "Chat IA" });
-
-export const dynamic = "force-dynamic";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 // CORREÇÃO: A função agora busca os dados da sua API local.
 async function getConversation(
   conversationId: string
 ): Promise<(Conversation & { messages: Message[] }) | null> {
   try {
-    const cookiesStore = await cookies();
-    const headers = { Cookie: cookiesStore.toString() };
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-    const response = await fetch(
-      `${baseUrl}/api/conversations/${conversationId}`,
-      {
-        next: { revalidate: 45 },
-        headers,
-      }
+    const { data } = await axios.get(
+      `${API_URL}/api/conversations/${conversationId}`
     );
-    if (!response.ok) return null;
-    return response.json();
+    return data;
   } catch (error) {
+    // Axios joga um erro em status 4xx/5xx, então o catch vai pegar o "Não Encontrado"
     console.error("Falha ao buscar conversa:", error);
     return null;
   }
 }
 
-const ConversationPage = async ({
-  params,
-}: {
-  params: Promise<{ conversationId: string }>;
-}) => {
+const ConversationPage = () => {
+  const params = useParams();
 
+  const conversationId = Array.isArray(params.conversationId)
+    ? params.conversationId[0]
+    : params.conversationId;
 
-  const { conversationId } = await params;
-    const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: `chat/${conversationId}`, user: user! });
-  if (!hasPermission) return <DeniedAccess />;
-  const conversation = await getConversation(conversationId);
+  const { user } = useAuth(); // A verificação de permissão seria feita aqui
 
-  // Se a conversa não for encontrada, pode mostrar uma mensagem ou redirecionar.
-  if (!conversation) {
-    return <div className="p-8 text-white">Conversa não encontrada.</div>;
+  const {
+    data: conversation,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["conversation", conversationId],
+    queryFn: () => getConversation(conversationId!),
+    retry: 1, // Tenta buscar apenas uma vez antes de falhar
+  });
+
+  const hasAccess = verifyAccess({
+    pathname: `/chat/${conversationId}`,
+    user: user!,
+  });
+  if (!hasAccess) return <DeniedAccess />;
+  if (isLoading) {
+    return (
+      <div className="sm:p-8 p-4">
+        <ChatSkeleton />
+      </div>
+    );
   }
 
+  // Se a busca falhou (isError é true) ou não retornou dados, mostre a tela de "Não Encontrado".
+  if (isError || !conversation) {
+    return (
+      <div className="sm:p-8 p-4">
+        <ConversationNotFound />
+      </div>
+    );
+  }
+
+  // Se a busca foi bem-sucedida, mostre o conteúdo real.
   return (
     <div className="sm:p-8 p-4">
       <ChatContent initialConversation={conversation} />
