@@ -6,6 +6,7 @@ import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
 import { ROUTE_PERMISSIONS } from "./permissions";
+import * as XLSX from 'xlsx';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -386,3 +387,14 @@ export const verifyAccess = ({
   }
   return false;
 };
+
+export function exportToExcel<T>(data: T[], fileName: string) {
+  // Converte o array de objetos para uma planilha do Excel
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  // Cria um novo "livro" de planilhas
+  const workbook = XLSX.utils.book_new();
+  // Adiciona a planilha ao livro
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Dados");
+  // Gera o arquivo e aciona o download no navegador
+  XLSX.writeFile(workbook, `${fileName}.xlsx`);
+}

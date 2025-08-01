@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       data: {
         title,
         content,
-        status: "SUBMITTED", // O status inicial é sempre 'DRAFT'
+        status: "SUBMITTED", // Inicia com o status "SUBMITTED"
         referentId: user.id!, // O remetente é o utilizador logado
         recipientUserId: recipientUserId,
         recipientNotes: "",

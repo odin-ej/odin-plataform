@@ -280,7 +280,7 @@ const AdminActionsModal = ({
                           </PopoverTrigger>
                           <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] border-2 border-[#0126fb] bg-[#00205e] text-white">
                             <Command className="bg-[#00205e] w-full scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent ">
-                              <CommandInput placeholder="Procurar tag..." />
+                              <CommandInput className="text-white" placeholder="Procurar tag..." />
                               <CommandList>
                                 <CommandEmpty>
                                   Nenhuma tag encontrada.

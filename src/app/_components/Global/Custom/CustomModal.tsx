@@ -27,6 +27,7 @@ import { useCallback, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomCheckboxGroup from "./CustomCheckboxGroup";
 
+
 export interface FieldConfig<T> {
   type?:
     | "text"
@@ -36,7 +37,8 @@ export interface FieldConfig<T> {
     | "checkbox"
     | "date"
     | "time"
-    | "password";
+    | "password"
+    | "command";
   mask?: "phone" | "date" | null;
   header: string;
   accessorKey: Path<T>;
@@ -56,7 +58,7 @@ interface CustomModalProps<T extends FieldValues> {
   setIsEditing: (isEditing: boolean) => void;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
-  onlyView?: boolean;
+  onlyView?: boolean; 
 }
 
 const CustomModal = <T extends FieldValues>({
@@ -74,6 +76,7 @@ const CustomModal = <T extends FieldValues>({
 }: CustomModalProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const data = form.getValues();
 
   // CORREÇÃO: Função wrapper que controla o estado de submissão.
@@ -174,7 +177,7 @@ const CustomModal = <T extends FieldValues>({
                                   options={fieldInfo.options!}
                                 />
                               );
-                              case "password": 
+                            case "password":
                               return (
                                 <CustomInput
                                   form={form}
@@ -182,7 +185,7 @@ const CustomModal = <T extends FieldValues>({
                                   label={fieldInfo.header}
                                   type={fieldInfo.type}
                                 />
-                              )
+                              );
                             case "checkbox":
                               return (
                                 <CustomCheckboxGroup

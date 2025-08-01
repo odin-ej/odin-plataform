@@ -2,7 +2,7 @@
 import { Handshake, Loader2 } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../Global/Custom/CustomCarousel";
-import { User, Role } from "@prisma/client";
+import { User, Role, AreaRoles } from "@prisma/client";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import ValueCarousel, { ValueSlide } from "./ValueCarousel";
 import { useMemo, useState } from "react";
@@ -13,6 +13,8 @@ import AccountCard from "./AccountCard";
 import { fullStrategy } from "@/app/(dashboard)/atualizar-estrategia/page";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { checkUserPermission, exportToExcel } from "@/lib/utils";
 
 interface MondayStats {
   totalProjects: number;
@@ -49,12 +51,17 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
   const [selectedUser, setSelectedUser] = useState<MemberWithFullRoles | null>(
     null
   );
+  const { user } = useAuth();
+
+  const isDirector = useMemo(() => {
+    if (!user) return false;
+    return checkUserPermission(user, { allowedAreas: [AreaRoles.DIRETORIA] });
+  }, [user]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["culturalPageData"],
     queryFn: fetchCulturalData,
     initialData: initialData, // "Hidrata" com os dados do servidor
-    // staleTime: 5 * 60 * 1000, // Opcional: considera os dados "frescos" por 5 minutos
   });
   const titles = ["Propósito", "Missão", "Visão"];
 
@@ -109,7 +116,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
         name: "ALFA",
         description:
           "A Alfa conjura a perfeição. Somos a essência do poder bruxo, e nossa grandeza é inquestionável! Alfa!",
-        imageUrl: "/alfa.png",
+        imageUrl: "/alfa-2.png",
         totalProjects: alfaTotalProjects!,
         color: "text-orange-500",
       },
@@ -125,7 +132,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
         name: "DELTA",
         description:
           "O palco é nosso, e a Delta é a estrela. Ninguém nos iguala. Somos a própria obra-prima. Open the Delta!",
-        imageUrl: "/delta.png",
+        imageUrl: "/delta-2.png",
         totalProjects: deltaTotalProjects!,
         color: "text-rose-500",
       },
@@ -138,6 +145,33 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
     setIsOpenModal(true);
   };
 
+  const handleExport = () => {
+    // Você pode querer formatar os dados antes de exportar
+    const dataToExport = data.allUsers.map((u) => ({
+      Nome: u.name,
+      Email: u.email,
+      EmailEj: u.emailEJ,
+      Nascimento: u.birthDate,
+      Telefone: u.phone,
+      Curso: u.course || "N/A",
+      Semestre_Entrada: u.semesterEntryEj || "N/A",
+      Semestre_Saida: u.semesterLeaveEj || "N/A",
+      Cargo: u.currentRole?.name || "Ex Membro",
+      Cargos: u.roles.map((role) => role.name).join(", "),
+      ExMembro: u.isExMember ? "Sim" : "Não",
+      Trabalha: u.isWorking ? "Sim" : "Não",
+      Local_Trabalho: u.workplace || "N/A",
+      Linkedin: u.linkedin || "N/A",
+      Instagram: u.instagram || "N/A",
+      Outro_Cargo: u.otherRole || "N/A",
+      Sobre: u.about || "N/A",
+      Experiencia: u.aboutEj || "N/A",
+      Imagem: u.imageUrl || "N/A",
+      Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
+    }));
+    exportToExcel(dataToExport, "banco_de_socios");
+  };
+
   const usersColumns: ColumnDef<MemberWithFullRoles>[] = [
     {
       accessorKey: "name",
@@ -145,7 +179,10 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       cell: (row) => (
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 ">
-            <AvatarImage className='object-cover' src={row.imageUrl ?? undefined} />
+            <AvatarImage
+              className="object-cover"
+              src={row.imageUrl ?? undefined}
+            />
             <AvatarFallback>{row.name.substring(0, 2)}</AvatarFallback>
           </Avatar>
           <span className="font-medium">{row.name}</span>
@@ -229,6 +266,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
           ]}
           type="onlyView"
           onRowClick={(row) => openModal(row)}
+          onExportClick={isDirector ? handleExport : undefined}
         />
       </div>
 

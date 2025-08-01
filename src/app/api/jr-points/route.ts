@@ -27,6 +27,7 @@ export async function GET() {
           _count: {
             select: { tags: true },
           },
+          tags: { include: { actionType: true } },
         },
       }),
       // 2. Busca as configurações do ranking (se está oculto)
@@ -70,6 +71,7 @@ export async function GET() {
       imageUrl: item.user.imageUrl,
       totalPoints: item.totalPoints,
       tagsCount: item._count.tags,
+      tags: item.tags,
     }));
 
     // Monta o objeto de resposta final com todos os dados

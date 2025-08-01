@@ -20,6 +20,11 @@ export async function PATCH(
   }
   try {
     const body = await request.json();
+
+    if(body.recipientNotes.length <= 2) {
+      return NextResponse.json({ message: "Preencha o campo de notas com mais detalhes." }, { status: 400 });
+    }
+
     const validation = reportUpdateSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(

@@ -12,7 +12,7 @@ import TableFilter from "./TableFilter";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { FileDown, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 export interface ColumnDef<T> {
   accessorKey: keyof T | "select" | "actions";
@@ -38,12 +38,13 @@ interface CustomTableProps<T> {
   isRowDeletable?: (row: T) => boolean;
   isRowEditable?: (row: T) => boolean;
   disabled?: boolean;
+  onExportClick?: () => void;
 }
 
 function CustomTable<T extends { id: string | number }>({
   title,
   type,
-  message = 'Nenhum resultado encontrado.',
+  message = "Nenhum resultado encontrado.",
   data = [],
   columns = [],
   filterColumns,
@@ -57,6 +58,7 @@ function CustomTable<T extends { id: string | number }>({
   onRowClick,
   onSelectionChange,
   handleActionClick,
+  onExportClick,
 }: CustomTableProps<T>) {
   const [filter, setFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,7 +121,6 @@ function CustomTable<T extends { id: string | number }>({
   const isAllOnPageSelected =
     paginatedData.length > 0 && selectedRows.length === paginatedData.length;
 
-
   let finalColumns: ColumnDef<T>[] = [
     {
       accessorKey: "select",
@@ -176,84 +177,93 @@ function CustomTable<T extends { id: string | number }>({
   if (type === "onlyView") {
     finalColumns = [...columns];
   }
-  if(type === 'onlyDelete'){
-    finalColumns = [...columns, {
-      accessorKey: "actions",
-      header: "Ações",
-      className: "text-right",
-      cell: (row) => (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-red-500/10"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete?.(row);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      ),
-    }]
+  if (type === "onlyDelete") {
+    finalColumns = [
+      ...columns,
+      {
+        accessorKey: "actions",
+        header: "Ações",
+        className: "text-right",
+        cell: (row) => (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-red-500/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(row);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          </div>
+        ),
+      },
+    ];
   }
-  if (type === 'noSelection'){
-    finalColumns = [...columns, {
-      accessorKey: "actions",
-      header: "Ações",
-      className: "text-right",
-      cell: (row) => (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-[#f5b719]/10"
-            disabled={isRowEditable ? !isRowEditable(row) : false}
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.(row);
-            }}
-          >
-            <Pencil className="h-4 w-4 " color="#f5b719" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={isRowDeletable ? !isRowDeletable(row): false}
-            className="hover:bg-red-500/10"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete?.(row);
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
-      ),
-    },]
+  if (type === "noSelection") {
+    finalColumns = [
+      ...columns,
+      {
+        accessorKey: "actions",
+        header: "Ações",
+        className: "text-right",
+        cell: (row) => (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-[#f5b719]/10"
+              disabled={isRowEditable ? !isRowEditable(row) : false}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(row);
+              }}
+            >
+              <Pencil className="h-4 w-4 " color="#f5b719" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={isRowDeletable ? !isRowDeletable(row) : false}
+              className="hover:bg-red-500/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(row);
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          </div>
+        ),
+      },
+    ];
   }
   if (type === "onlyEdit") {
-    finalColumns = [...columns, {
-      accessorKey: "actions",
-      header: "Ações",
-      className: "text-right",
-      cell: (row) => (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-[#f5b719]/10"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.(row);
-            }}
-          >
-            <Pencil className="h-4 w-4 " color="#f5b719" />
-          </Button>
-        </div>
-      ),
-    }];
+    finalColumns = [
+      ...columns,
+      {
+        accessorKey: "actions",
+        header: "Ações",
+        className: "text-right",
+        cell: (row) => (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-[#f5b719]/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(row);
+              }}
+            >
+              <Pencil className="h-4 w-4 " color="#f5b719" />
+            </Button>
+          </div>
+        ),
+      },
+    ];
   }
   return (
     <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-6 text-white shadow-lg">
@@ -264,6 +274,18 @@ function CustomTable<T extends { id: string | number }>({
             onFilterChange={setFilter}
             placeholder="Pesquisar na tabela..."
           />
+
+          {onExportClick && (
+            <Button
+              variant="outline"
+              className="bg-transparent border-green-500 text-green-500 hover:!bg-green-500/10 hover:border-green-400 hover:!text-green-400"
+              onClick={onExportClick}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar
+            </Button>
+          )}
+
           {handleActionClick && (
             <Button
               disabled={disabled}
@@ -321,9 +343,9 @@ function CustomTable<T extends { id: string | number }>({
                         {column.cell
                           ? column.cell(row)
                           : column.accessorKey !== "select" &&
-                            column.accessorKey !== "actions"
-                          ? String(row[column.accessorKey])
-                          : null}
+                              column.accessorKey !== "actions"
+                            ? String(row[column.accessorKey])
+                            : null}
                       </TableCell>
                     ))}
                   </TableRow>

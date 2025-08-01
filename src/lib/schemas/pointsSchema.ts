@@ -20,6 +20,6 @@ export const addTagToUsersSchema = z.object({
   datePerformed: z.string().min(5, "A data de realização é obrigatória."),
   tagId: z.string({ required_error: "É necessário selecionar uma tag." }),
 });
-export type UserRankingInfo = User & { totalPoints: number; tagsCount: number };
+export type UserRankingInfo = User & { totalPoints: number; tagsCount: number, tags: Tag[] };
 export type TagWithAction = Tag & { actionType: { name: string } | null };
 export type ActionTypeWithCount = ActionType & { _count: { tags: number } };

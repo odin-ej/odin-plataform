@@ -25,8 +25,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { JrEnterprisePointsPageData } from "@/app/(dashboard)/jr-points/nossa-empresa/page";
 import axios from "axios";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { checkUserPermission } from "@/lib/utils";
+import { checkUserPermission, exportToExcel } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { format } from "date-fns";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -109,7 +110,9 @@ const EnterprisePageContent = ({
       const tagItem = item as TagWithAction;
       const formattedData = {
         ...tagItem,
-        datePerformed: new Date(tagItem.datePerformed).toLocaleDateString().split('T')[0],
+        datePerformed: new Date(tagItem.datePerformed)
+          .toLocaleDateString()
+          .split("T")[0],
       };
       // Usa o formulário de tag
       tagForm.reset(formattedData as any);
@@ -248,8 +251,83 @@ const EnterprisePageContent = ({
       },
     },
     { accessorKey: "value", header: "Valor" },
-    {accessorKey: "areas", header: "Áreas", type: "checkbox", options: areasOptions},
+    {
+      accessorKey: "areas",
+      header: "Áreas",
+      type: "checkbox",
+      options: areasOptions,
+    },
   ];
+
+  const handleTagsExport = () => {
+    // Você pode querer formatar os dados antes de exportar
+    if (allTags.length === 0) return alert("Nenhum dado para exportar");
+    const dataToExport = data.allTags.map((u) => ({
+      Descricao: u.description,
+      Valor: u.value.toString(),
+      Tipo_Acao: u.actionType?.name,
+      Areas: u.areas.join(", "),
+      Data_Criacao: new Date(u.createdAt).toLocaleDateString().split("T")[0],
+      Data_Realizacao: new Date(u.datePerformed)
+        .toLocaleDateString()
+        .split("T")[0],
+      Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
+    }));
+    exportToExcel(dataToExport, "tags_modelo_jr_points");
+  };
+
+  const handleActionExport = () => {
+    if (allActionTypes.length === 0) return alert("Nenhum dado para exportar");
+    const dataToExport = data.allActionTypes.map((u) => ({
+      Nome: u.name,
+      Descricao: u.description,
+      Total_Tags_Associadas: u._count,
+      Tags_Associadas: allTags
+        .filter((tag) => tag.actionType?.name === u.name)
+        .map((tag) => tag.description)
+        .join(", "),
+      Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
+    }));
+    exportToExcel(dataToExport, "acoes_modelo_jr_points");
+  };
+
+  const handleEnterpriseTagsExport = () => {
+    if (enterpriseTags.length === 0) return alert("Nenhum dado para exportar");
+    const dataToExport = data.enterpriseTags.map((u) => ({
+      Descricao: u.description,
+      Valor: u.value,
+      Total_Pontos_Empresa: enterprisePoints,
+      Data_Realizacao: new Date(u.datePerformed)
+        .toLocaleDateString()
+        .split("T")[0],
+      Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
+    }));
+    exportToExcel(dataToExport, "tags_empresa_jr_points");
+  };
+
+  const handleUserTagsExport = () => {
+    if (usersRanking.length === 0) return alert("Nenhum dado para exportar");
+    const dataToExport = data.usersRanking.map((u, index) => ({
+      Ranking: index + 1,
+      Nome: u.name,
+      Total_Pontos: u.totalPoints,
+      Total_Tags: u.tagsCount,
+      Tags_Recebidas: u.tags
+        .map(
+          (tag) =>
+            tag.description +
+            " (" +
+            "Pontos:" +
+            tag.value +
+            " | " +
+            format(tag.datePerformed, "dd/MM/yyyy") +
+            ")"
+        )
+        .join(", "),
+      Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
+    }));
+    exportToExcel(dataToExport, "tags_socios_jr_points");
+  };
 
   return (
     <>
@@ -293,6 +371,7 @@ const EnterprisePageContent = ({
               setSelectedUser(user);
               setIsUserTagsModalOpen(true);
             }}
+            onExportClick={handleUserTagsExport}
             itemsPerPage={15}
             type="onlyView"
           />
@@ -307,6 +386,7 @@ const EnterprisePageContent = ({
           onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
           onRowClick={(item) => handleOpenEditModal(item, "tag")}
           type={isDirector ? "noSelection" : "onlyView"}
+          onExportClick={isDirector ? handleEnterpriseTagsExport : undefined}
         />
         {isDirector && (
           <>
@@ -319,6 +399,7 @@ const EnterprisePageContent = ({
               onEdit={(item) => handleOpenEditModal(item, "tag")}
               onDelete={(item) => setItemToDelete({ type: "tag", id: item.id })}
               onRowClick={(item) => handleOpenEditModal(item, "tag")}
+              onExportClick={handleTagsExport}
               type="noSelection"
             />
             <CustomTable<ActionTypeWithCount>
@@ -328,8 +409,11 @@ const EnterprisePageContent = ({
               filterColumns={["name", "description"]}
               itemsPerPage={6}
               onEdit={(item) => handleOpenEditModal(item, "action-type")}
-              onDelete={(item) => setItemToDelete({ type: "action-type", id: item.id })}
+              onDelete={(item) =>
+                setItemToDelete({ type: "action-type", id: item.id })
+              }
               onRowClick={(item) => handleOpenEditModal(item, "action-type")}
+              onExportClick={handleActionExport}
               type="noSelection"
             />
           </>

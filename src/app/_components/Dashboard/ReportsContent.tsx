@@ -43,7 +43,6 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
       title: "",
       content: "",
       recipientUserId: "",
-     
     },
   });
 
@@ -138,6 +137,16 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
       header: "Título",
     },
     {
+      accessorKey: "referentId",
+      header: "Remetente",
+      cell: (row) => {
+        const referent = data?.allUsers.find(
+          (user) => user.id === row.referentId
+        );
+        return referent?.name ?? "Não especificado";
+      },
+    },
+    {
       accessorKey: "recipientUser",
       header: "Destinatário",
       cell: (row) => {
@@ -227,7 +236,11 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
     {
       header: "Destinatário",
       accessorKey: "recipientUserId",
-      type: "text",
+      type: "command",
+      options: data.allUsers.map((user) => ({
+        value: user.id,
+        label: user.name,
+      })),
       renderView: (row) => {
         const typedRow = row as ExtendedReport;
         // Usa os objetos aninhados se estiverem disponíveis
