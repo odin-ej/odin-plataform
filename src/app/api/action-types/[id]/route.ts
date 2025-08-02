@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { checkUserPermission } from "@/lib/utils";
 
 export async function PATCH(
   request: Request,
@@ -10,10 +12,17 @@ export async function PATCH(
 ) {
   try {
     const authUser = await getAuthenticatedUser();
-    const {id} = await params
+    const { id } = await params;
     if (!authUser) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
     const body = await request.json();
     const validation = actionTypeSchema.partial().safeParse(body);
     if (!validation.success) {
@@ -39,8 +48,14 @@ export async function DELETE(
 ) {
   try {
     const authUser = await getAuthenticatedUser();
-    const {id} = await params
+    const { id } = await params;
     if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
     await prisma.actionType.delete({ where: { id } });

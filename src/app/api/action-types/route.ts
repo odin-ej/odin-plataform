@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/db";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { checkUserPermission } from "@/lib/utils";
 
 const actionTypeSchema = z.object({
   name: z.string().min(3, "O nome da ação é obrigatório."),
@@ -14,6 +16,12 @@ export async function POST(request: Request) {
     const authUser = await getAuthenticatedUser();
 
     if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
     const body = await request.json();

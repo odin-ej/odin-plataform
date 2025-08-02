@@ -54,6 +54,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
         const presignedUrlRes = await axios.post("/api/s3-upload", {
           fileType: file.type,
           fileSize: file.size,
+          olderFile: imageUrl,
         });
         const { url, key } = presignedUrlRes.data;
         await axios.put(url, file, { headers: { "Content-Type": file.type } });

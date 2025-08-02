@@ -12,6 +12,8 @@ import bcrypt from "bcrypt";
 import { exMemberWelcomeEmailCommand, welcomeEmailCommand } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { checkUserPermission } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 
 // Configuração dos clientes da AWS
 const cognitoClient = new CognitoIdentityProviderClient({
@@ -74,6 +76,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Não autorizado." }, { status: 401 });
     }
 
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
     if (!validation.success) {
       return NextResponse.json(
         {
@@ -124,7 +131,10 @@ export async function POST(request: Request) {
               },
               {
                 Name: "custom:role",
-                Value: req.roleId ? req.roles.find((role) => role.id === req.roleId)?.name ?? req.roles[req.roles.length - 1]?.name : req.roles[req.roles.length - 1]?.name || "Outro",
+                Value: req.roleId
+                  ? (req.roles.find((role) => role.id === req.roleId)?.name ??
+                    req.roles[req.roles.length - 1]?.name)
+                  : req.roles[req.roles.length - 1]?.name || "Outro",
               },
               {
                 Name: "custom:isExMember",
@@ -152,7 +162,6 @@ export async function POST(request: Request) {
             ?.filter((role) => role.name !== "Outro")
             .map((role) => ({ id: role.id })) || [];
 
-
         const userData = {
           id: cognitoUser.User?.Attributes?.find((attr) => attr.Name === "sub")
             ?.Value as string,
@@ -169,7 +178,7 @@ export async function POST(request: Request) {
           linkedin: req.linkedin,
           about: req.about,
           roles: { connect: rolesToConnect },
-          ...(req.roleId && {currentRoleId: req.roleId}),
+          ...(req.roleId && { currentRoleId: req.roleId }),
           ...(req.semesterLeaveEj && { semesterLeaveEj: req.semesterLeaveEj }),
           ...(req.aboutEj && { aboutEj: req.aboutEj }),
           ...(req.isExMember && { isExMember: req.isExMember }),
@@ -224,7 +233,7 @@ export async function POST(request: Request) {
         }
       }
     }
-    revalidatePath('/cultural')
+    revalidatePath("/cultural");
     revalidatePath("/aprovacao-cadastro");
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

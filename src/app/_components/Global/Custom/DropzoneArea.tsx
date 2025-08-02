@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/lib/utils";
 import { UploadCloud, LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import React from "react";
@@ -11,10 +12,11 @@ interface DropzoneAreaProps {
   progress: number;
   defaultImageUrl?: string;
   error?: boolean;
+  page?: string,
 }
 
 const DropzoneArea = React.forwardRef<HTMLDivElement, DropzoneAreaProps>(
-  ({ onChange, onFileAccepted, value, progress, defaultImageUrl, error }, ref) => {
+  ({ onChange, onFileAccepted, value, progress, defaultImageUrl, error, page }, ref) => {
     
     // O hook é chamado aqui, no nível superior do componente funcional.
     const { getRootProps, getInputProps } = useDropzone({
@@ -50,7 +52,7 @@ const DropzoneArea = React.forwardRef<HTMLDivElement, DropzoneAreaProps>(
           </div>
         ) : previewUrl ? (
           <div className="flex items-center space-x-4 text-white">
-            <Image width={100} height={100} src={previewUrl} alt="Pré-visualização" className="rounded-full object-cover h-20 w-20" />
+            <Image width={100} height={page === 'link-posters' ? 50 : 100} src={previewUrl} alt="Pré-visualização" className={cn("rounded-full object-cover h-20 w-20", page === 'link-posters' && '!w-20 !h-10 !rounded-lg' )}/>
             <span className="text-sm text-gray-300"><span className='font-semibold text-[#f5b719] underline'>Clique ou arraste</span> para alterar</span>
           </div>
         ) : (

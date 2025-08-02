@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { constructMetadata } from "@/lib/metadata";
 import HomeContent from "../_components/Dashboard/HomeContent";
-import { Goal, UsefulLink } from "@prisma/client";
+import { Goal, LinkPoster, LinkPosterArea, UsefulLink } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 import { verifyAccess } from "@/lib/utils";
@@ -13,7 +13,8 @@ export interface HomeContentData {
   myPoints: number;
   numberOfTasks: number;
   usefulLinks: UsefulLink[];
-  globalLinks: UsefulLink[]; // Links globais, se necessário
+  globalLinks: UsefulLink[];
+  linkPosters: LinkPoster[];
 }
 
 export const metadata = constructMetadata({
@@ -26,6 +27,17 @@ async function getPageData(): Promise<HomeContentData> {
   try {
     const authUser = await getAuthenticatedUser();
     if (!authUser) throw new Error("Usuário não autenticado");
+    const cookiesStore = await cookies();
+    const headers = { Cookie: cookiesStore.toString() };
+
+    const linkPostersResponse = await fetch(`${baseUrl}/api/link-posters`, {
+      cache: "no-store",
+      headers,
+    });
+
+    const linkPostersData = linkPostersResponse.ok
+      ? await linkPostersResponse.json()
+      : [];
 
     // Para ex-membros, retorna dados vazios para evitar chamadas de API desnecessárias
     if (authUser.isExMember) {
@@ -35,11 +47,9 @@ async function getPageData(): Promise<HomeContentData> {
         numberOfTasks: 0,
         usefulLinks: [],
         globalLinks: [],
+        linkPosters: linkPostersData,
       };
     }
-
-    const cookiesStore = await cookies();
-    const headers = { Cookie: cookiesStore.toString() };
 
     const [
       strategyResponse,
@@ -84,6 +94,7 @@ async function getPageData(): Promise<HomeContentData> {
       numberOfTasks: numberOfTasksData.length || 0,
       usefulLinks: usefulLinksData.links || [],
       globalLinks: globalLinksData.links || [],
+      linkPosters: linkPostersData,
     };
   } catch (error) {
     console.error("Falha ao buscar dados do dashboard.", error);
@@ -93,6 +104,7 @@ async function getPageData(): Promise<HomeContentData> {
       numberOfTasks: 0,
       usefulLinks: [],
       globalLinks: [],
+      linkPosters: [],
     };
   }
 }
@@ -101,11 +113,39 @@ export default async function Home() {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/", user: user! });
-  if(!hasPermission) return <DeniedAccess />
+  if (!hasPermission) return <DeniedAccess />;
+
+ const prioridade: Record<LinkPosterArea, number> = {
+    GERAL: 0,
+    HOME: 1,
+    YGGDRASIL: 1,
+    DIRETORIA: 1,
+    MEMBROS: 2,
+    CONSULTORIA: 2,
+    TATICO: 2,
+    EXMEMBROS: 2,
+  };
+
+  // Função para encontrar a maior prioridade (menor número) num array de áreas
+  function getPrioridade(areas: LinkPosterArea[]) {
+    if (!areas || areas.length === 0) return 999; // Prioridade baixa se não houver áreas
+    return Math.min(...areas.map((area) => prioridade[area] ?? 999));
+  }
+
+  // CORREÇÃO: A lógica de ordenação agora acede diretamente ao array de enums.
+  // Usamos .slice() para criar uma cópia e não modificar o array original.
+  const linkPostersOrdenados = initialData.linkPosters.slice().sort((a, b) => {
+    const prioridadeA = getPrioridade(a.areas);
+    const prioridadeB = getPrioridade(b.areas);
+    return prioridadeA - prioridadeB;
+  });
+  console.log("linkPostersOrdenados", linkPostersOrdenados);
+  // Passa os posters já ordenados para o componente cliente
+  const finalData = { ...initialData, linkPosters: linkPostersOrdenados };
 
   return (
     <div className="md:p-8 p-4 h-full">
-      <HomeContent initialData={initialData} />
+      <HomeContent initialData={finalData} />
     </div>
   );
 }

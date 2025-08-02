@@ -3,7 +3,8 @@ import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { parseBrazilianDate } from "@/lib/utils";
+import { checkUserPermission, parseBrazilianDate } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 
 const addTagToUsersSchema = z.object({
   userIds: z.array(z.string()).min(1, "Selecione pelo menos um utilizador."),
@@ -17,6 +18,11 @@ export async function POST(request: Request) {
   if (!authUser) {
     return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
   }
+
+  const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+  if (!hasPermission)
+    return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
   try {
     const body = await request.json();
@@ -58,7 +64,6 @@ export async function POST(request: Request) {
           create: {
             userId,
             totalPoints: templateTag.value,
-            
           },
         });
 

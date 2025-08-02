@@ -43,14 +43,14 @@ const UsefulLinksSection = ({
       const screenWidth = window.innerWidth;
       
       if (screenWidth < 640) {
-        setItemsPerPage(3);
+        setItemsPerPage(6);
       }
       if (screenWidth < 768) {
         // Telas pequenas (mobile)
-        setItemsPerPage(6);
+        setItemsPerPage(8);
       } else if (screenWidth < 1280) {
         // Telas médias (tablet)
-        setItemsPerPage(9);
+        setItemsPerPage(10);
       } else {
         // Telas grandes (desktop)
         setItemsPerPage(12);
@@ -295,7 +295,7 @@ const UsefulLinksSection = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {paginatedLinks.map((link) => (
           <div
             key={link.id}

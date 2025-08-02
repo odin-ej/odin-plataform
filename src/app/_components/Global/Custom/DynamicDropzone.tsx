@@ -11,6 +11,7 @@ interface DynamicDropzoneProps<T extends FieldValues> {
   progress: number;
   onFileAccepted: () => void;
   defaultImageUrl?: string;
+  page?: string,
 }
 
 const DynamicDropzone = <T extends FieldValues>({
@@ -20,6 +21,7 @@ const DynamicDropzone = <T extends FieldValues>({
   progress,
   onFileAccepted,
   defaultImageUrl,
+  page,
 }: DynamicDropzoneProps<T>) => {
   return (
     <FormField
@@ -30,6 +32,7 @@ const DynamicDropzone = <T extends FieldValues>({
           <FormLabel className="text-white font-semibold">{label}</FormLabel>
           <FormControl>
             <DropzoneArea
+            page={page}
               onChange={field.onChange}
               onFileAccepted={onFileAccepted}
               value={field.value}

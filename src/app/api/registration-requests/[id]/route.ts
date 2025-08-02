@@ -4,6 +4,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/db"; // Supondo que o seu singleton do Prisma está aqui
 import { userProfileSchema } from "@/lib/schemas/memberFormSchema";
 import { revalidatePath } from "next/cache";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { checkUserPermission } from "@/lib/utils";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client } from "@/lib/aws";
 
 // --- FUNÇÃO GET: Obter um pedido de registo específico ---
 export async function GET(
@@ -11,6 +16,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authUser = await getAuthenticatedUser();
+    if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
     const { id } = await params;
     const registrationRequest = await prisma.registrationRequest.findUnique({
       where: { id },
@@ -39,6 +55,17 @@ export async function GET(
 // --- FUNÇÃO PATCH: Atualizar o status de um pedido (ex: para REJECTED) ---
 export async function PATCH(request: Request) {
   try {
+    const authUser = await getAuthenticatedUser();
+    if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
     const body = await request.json();
 
     if (!body.image || typeof body.image !== "object" || "path" in body.image) {
@@ -120,7 +147,16 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const authUser = await getAuthenticatedUser();
+    if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
 
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
     // Verifica se o pedido existe antes de tentar apagar
     const existingRequest = await prisma.registrationRequest.findUnique({
       where: { id },
@@ -130,6 +166,14 @@ export async function DELETE(
         { message: "Pedido de registo não encontrado." },
         { status: 404 }
       );
+    }
+
+    if (existingRequest.imageUrl) {
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: existingRequest.imageUrl,
+      });
+      await s3Client.send(command);
     }
 
     await prisma.registrationRequest.delete({

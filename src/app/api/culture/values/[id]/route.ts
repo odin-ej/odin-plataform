@@ -1,6 +1,8 @@
 import { prisma } from "@/db";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { valueUpdateSchema } from "@/lib/schemas/strategyUpdateSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { checkUserPermission } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
@@ -11,6 +13,12 @@ export async function PATCH(
   try {
     const authUser = await getAuthenticatedUser();
     if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
@@ -33,7 +41,7 @@ export async function PATCH(
     });
     if (!updatedValue) {
       return NextResponse.json({
-        message: `Esse valor não existe, ${id}`
+        message: `Esse valor não existe, ${id}`,
       });
     }
     revalidatePath("/atualizar-estrategia");

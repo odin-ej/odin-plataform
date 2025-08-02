@@ -72,7 +72,7 @@ export const userProfileSchema = baseMemberSchema
         (file) => {
           if (!file || typeof file === "string") return true;
           if (!(file instanceof File)) return false;
-          return ["image/jpeg", "image/png"].includes(file.type);
+          return ["image/jpeg", "image/jpg", "image/png"].includes(file.type);
         },
         { message: "Apenas JPG ou PNG" }
       ),

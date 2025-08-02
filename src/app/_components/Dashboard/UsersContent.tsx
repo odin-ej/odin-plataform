@@ -112,7 +112,6 @@ const UsersContent = ({
   // 1. ATUALIZAR UM USUÁRIO
   const { mutate: updateUser, isPending: isUpdatingUser } = useMutation({
     mutationFn: async (formData: UserProfileValues) => {
-      // ... sua lógica de upload S3 ...
       let imageUrl = formData.imageUrl;
       // Lógica de Upload S3 agora vive aqui dentro
       if (formData.image instanceof File) {
@@ -120,6 +119,7 @@ const UsersContent = ({
         const presignedUrlRes = await axios.post("/api/s3-upload", {
           fileType: file.type,
           fileSize: file.size,
+          olderFile: imageUrl,
         });
         const { url, key } = presignedUrlRes.data;
         await axios.put(url, file, { headers: { "Content-Type": file.type } });
@@ -495,9 +495,8 @@ const UsersContent = ({
             "semesterEntryEj",
             "semesterLeaveEj",
             "course",
-            'otherRole',
-            'workplace',
-
+            "otherRole",
+            "workplace",
           ]}
           data={exMembers}
           title="Ex-membros"

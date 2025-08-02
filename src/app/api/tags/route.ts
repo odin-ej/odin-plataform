@@ -3,6 +3,8 @@ import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { TagAreas } from "@prisma/client";
+import { checkUserPermission } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 
 const tagSchema = z.object({
   description: z.string().min(5, "A descrição é obrigatória."),
@@ -22,7 +24,11 @@ export async function POST(request: Request) {
   if (!authUser) {
     return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
   }
+  const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
 
+  if (!hasPermission) {
+    return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const validation = tagSchema.safeParse(body);
@@ -49,7 +55,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-   
+
     const newTag = await prisma.tag.create({
       data: {
         ...validation.data,

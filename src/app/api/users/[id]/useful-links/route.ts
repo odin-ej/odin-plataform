@@ -13,6 +13,8 @@ export async function GET(
     if (!authUser)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
+    if(authUser.isExMember) return NextResponse.json({ links: [] });
+
     const links = await prisma.usefulLink.findMany({
       where: {
         userId: id,

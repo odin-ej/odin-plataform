@@ -158,6 +158,11 @@ export async function PATCH(
 
     if (validatedData.imageUrl) {
       updateData.imageUrl = validatedData.imageUrl;
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: validatedData.imageUrl,
+      });
+      await s3Client.send(command);
     }
 
     // Atualiza a senha apenas se uma nova foi fornecida
@@ -300,6 +305,14 @@ export async function DELETE(
         { message: "Utilizador não encontrado." },
         { status: 404 }
       );
+    }
+
+    if (user.imageUrl) {
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: user.imageUrl,
+      });
+      await s3Client.send(command);
     }
 
     // 2. Apaga o utilizador do AWS Cognito

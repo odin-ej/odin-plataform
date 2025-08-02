@@ -26,7 +26,7 @@ import { cn, handleFileAccepted } from "@/lib/utils";
 import { useCallback, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomCheckboxGroup from "./CustomCheckboxGroup";
-
+import Image from "next/image";
 
 export interface FieldConfig<T> {
   type?:
@@ -58,7 +58,8 @@ interface CustomModalProps<T extends FieldValues> {
   setIsEditing: (isEditing: boolean) => void;
   isLoading?: boolean;
   setIsLoading?: (isLoading: boolean) => void;
-  onlyView?: boolean; 
+  onlyView?: boolean;
+  page?: string;
 }
 
 const CustomModal = <T extends FieldValues>({
@@ -73,6 +74,7 @@ const CustomModal = <T extends FieldValues>({
   isLoading,
   setIsEditing,
   onlyView,
+  page,
 }: CustomModalProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -228,6 +230,7 @@ const CustomModal = <T extends FieldValues>({
                                       handleFileAccepted(setUploadProgress)
                                     }
                                     defaultImageUrl={data.imageUrl}
+                                    page={page}
                                   />
                                 </div>
                               );
@@ -264,19 +267,33 @@ const CustomModal = <T extends FieldValues>({
                                 <label className="text-sm font-semibold text-[#0126fb] mb-2">
                                   {fieldInfo.header}
                                 </label>
-                                <Avatar className="h-24 w-24 border-2 border-[#0126fb]">
-                                  <AvatarImage
-                                    src={data.imageUrl}
-                                    className="object-cover"
-                                  />
-                                  <AvatarFallback className="bg-[#0126fb]">
-                                    {data.name
-                                      ?.split(" ")[0][0]
-                                      ?.concat(
-                                        data.name?.split(" ")[1]?.[0] || ""
-                                      )}
-                                  </AvatarFallback>
-                                </Avatar>
+                                {page === "link-posters" ? (
+                                  fieldInfo.renderView ? (
+                                    fieldInfo.renderView(data)
+                                  ) : (
+                                    <Image
+                                      width={300}
+                                      height={150}
+                                      src={data.imageUrl as string}
+                                      alt={data.title}
+                                      className="object-cover rounded-md aspect-[2/1]"
+                                    />
+                                  )
+                                ) : (
+                                  <Avatar className="h-24 w-24 border-2 border-[#0126fb]">
+                                    <AvatarImage
+                                      src={data.imageUrl}
+                                      className="object-cover"
+                                    />
+                                    <AvatarFallback className="bg-[#0126fb]">
+                                      {data.name
+                                        ?.split(" ")[0][0]
+                                        ?.concat(
+                                          data.name?.split(" ")[1]?.[0] || ""
+                                        )}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
                               </div>
                             );
                           }

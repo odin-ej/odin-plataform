@@ -7,6 +7,11 @@ export const DIRECTORS_ONLY: PermissionCheck = {
   allowExMembers: false,
 };
 
+export const TATICOS_ONLY:PermissionCheck = {
+  allowedAreas: [AreaRoles.TATICO],
+  allowExMembers: false
+}
+
 /**
  * Permissão apenas para membros ativos da empresa.
  * Ex-membros não são permitidos.
@@ -42,6 +47,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/atualizar-estrategia": DIRECTORS_ONLY,
   "/aprovacao-cadastro": DIRECTORS_ONLY,
   '/conhecimento-ia': DIRECTORS_ONLY,
+  '/gerenciar-link-posters': DIRECTORS_ONLY,
   "/tarefas": MEMBERS_ONLY,
   "/chat": MEMBERS_ONLY,
   "/jr-points": MEMBERS_ONLY,

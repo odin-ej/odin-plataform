@@ -171,6 +171,7 @@ const ReportFormModal = ({
                 </Button>
                 <Button
                   type="submit"
+                  disabled={isLoading}
                   className="bg-[#0126fb] hover:bg-[#0126fb]/80"
                 >
                   {isLoading ? "Aguarde..." : "Criar Report"}

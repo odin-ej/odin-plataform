@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import { s3Client } from "@/lib/aws";
@@ -10,7 +10,7 @@ const generateFileName = (bytes = 32) =>
 
 export async function POST(request: Request) {
   try {
-    const { fileType, fileSize } = await request.json();
+    const { fileType, fileSize, olderFile } = await request.json();
 
     // Validações de segurança
     if (!fileType || !fileSize) {
@@ -25,6 +25,20 @@ export async function POST(request: Request) {
         { message: "O ficheiro é demasiado grande (máx 5MB)." },
         { status: 400 }
       );
+    }
+
+    if(olderFile){
+      //Preciso deletar o ficheiro
+      //olderFile é o imageUrl dele
+      const url = new URL(olderFile);
+      const key = decodeURIComponent(url.pathname.slice(1)); // Remove a "/" do início
+
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME!,
+        Key: key,
+      });
+      await s3Client.send(deleteCommand);
+
     }
 
     const fileName = generateFileName();

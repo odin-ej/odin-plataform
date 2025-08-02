@@ -8,13 +8,20 @@ import { useMemo, useState } from "react";
 import { checkUserPermission, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CombinedUser, useAuth } from "@/lib/auth/AuthProvider";
-import Image from "next/image";
 import { formatReaisResumo } from "./GoalCard";
 import UsefulLinksSection from "./UsefulLinksSection";
 import axios from "axios";
 import { HomeContentData } from "@/app/(dashboard)/page";
 import { useQuery } from "@tanstack/react-query";
-import { AreaRoles, LinkAreas } from "@prisma/client";
+import {
+  AreaRoles,
+  LinkAreas,
+  LinkPoster,
+  LinkPosterArea,
+} from "@prisma/client";
+import ExMemberHomeContent from "./ExMemberHomeContent";
+import LinkPosterCarousel from "./LinkPosterCarousel";
+import { DIRECTORS_ONLY, TATICOS_ONLY } from "@/lib/permissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -32,36 +39,53 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
       );
     }
 
-    const [strategyRes, myPointsRes, myTasksRes, usefulLinksRes, globalLinksRes] =
-      await Promise.all([
-        axios.get(`${API_URL}/api/house-goals`),
-        // Use user.id diretamente
-        axios.get(`${API_URL}/api/my-points/${user.id}`),
-        // Para my-tasks, axios precisa estar configurado para enviar cookies/headers de autenticação
-        axios.get(`${API_URL}/api/my-tasks`),
-        // Use user.id diretamente
-        axios.get(`${API_URL}/api/users/${user.id}/useful-links`),
-        axios.get(`${API_URL}/api/useful-links`),
-      ]);
+    const [
+      strategyRes,
+      myPointsRes,
+      myTasksRes,
+      usefulLinksRes,
+      globalLinksRes,
+      linkPostersRes,
+    ] = await Promise.all([
+      axios.get(`${API_URL}/api/house-goals`),
+      // Use user.id diretamente
+      axios.get(`${API_URL}/api/my-points/${user.id}`),
+      // Para my-tasks, axios precisa estar configurado para enviar cookies/headers de autenticação
+      axios.get(`${API_URL}/api/my-tasks`),
+      // Use user.id diretamente
+      axios.get(`${API_URL}/api/users/${user.id}/useful-links`),
+      axios.get(`${API_URL}/api/useful-links`),
+      axios.get(`${API_URL}/api/link-posters`),
+    ]);
 
     const goals = strategyRes.data?.flatMap((obj: any) => obj.goals) || [];
     const myPoints = myPointsRes.data?.myPoints?.totalPoints ?? 0;
     const numberOfTasks = myTasksRes.data?.length || 0;
     const usefulLinks = usefulLinksRes.data?.links || [];
     const globalLinks = globalLinksRes.data?.links || [];
+    const linkPosters =
+      linkPostersRes.data.filter((poster: LinkPoster) => poster.isActive) || [];
 
-    return { goals, myPoints, numberOfTasks, usefulLinks, globalLinks };
+    return {
+      goals,
+      myPoints,
+      numberOfTasks,
+      usefulLinks,
+      globalLinks,
+      linkPosters,
+    };
   };
 
   const { data, isLoading } = useQuery({
     queryKey: ["homeDashboardData"],
     queryFn: fetchHomeData,
     initialData: initialData,
-    // Desabilita a query para ex-membros, pois não há dados para buscar
-    enabled: !user?.isExMember,
+    enabled: !!user,
   });
 
-  const { goals, myPoints, numberOfTasks, usefulLinks, globalLinks } = data || initialData;
+  const { goals, myPoints, numberOfTasks, usefulLinks, globalLinks } =
+    data || initialData;
+
   const slidesData: SlideData[] = goals.map((goal) => ({
     progress: Math.floor(Number(Number(goal.value) / Number(goal.goal)) * 100),
     valueText: `${goal.value} de ${goal.goal}`,
@@ -89,41 +113,96 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
         : false, // If user is null, then permission is false
     [user]
   );
-const getSpecificLinks = () => {
-  // Se não houver usuário ou cargo definido, não mostre links específicos.
-  if (!user?.currentRole) {
-    // Retorna apenas os links GERAIS para usuários sem cargo definido (caso de segurança)
-    // CORREÇÃO: Usa o enum LinkAreas.GERAL em vez da string 'GERAL'
-    return globalLinks.filter((link) => link.area === LinkAreas.GERAL);
-  }
-
-  const userRoleAreas = user.currentRole.area;
-  
-  return globalLinks.filter((link) => {
-    // Regra 1: Link da área GERAL é sempre visível.
-    // CORREÇÃO: Usa o enum LinkAreas.GERAL
-    if (link.area === LinkAreas.GERAL) {
-      return true;
+  const getSpecificLinks = () => {
+    // Se não houver usuário ou cargo definido, não mostre links específicos.
+    if (!user?.currentRole) {
+      // Retorna apenas os links GERAIS para usuários sem cargo definido (caso de segurança)
+      // CORREÇÃO: Usa o enum LinkAreas.GERAL em vez da string 'GERAL'
+      return globalLinks.filter((link) => link.area === LinkAreas.GERAL);
     }
 
-    // Regra 2: Você sempre vê os links que você mesmo criou.
-    if (link.userId === user.id) {
-      return true;
-    }
-    // Regra 5: Todos podem ver links que pertencem diretamente às suas áreas.
-    // A tipagem 'as AreaRoles' é necessária aqui porque estamos comparando
-    // um valor de `LinkAreas` com um array de `AreaRoles`.
-    // Isso funciona desde que os nomes das áreas correspondentes sejam iguais nos dois enums.
-    if (userRoleAreas.includes(link.area as AreaRoles)) {
-      return true;
-    }
+    const userRoleAreas = user.currentRole.area;
 
-    // Se nenhuma das regras acima for atendida, o link não é visível.
-    return false;
-  });
-};
+    return globalLinks.filter((link) => {
+      // Regra 1: Link da área GERAL é sempre visível.
+      // CORREÇÃO: Usa o enum LinkAreas.GERAL
+      if (link.area === LinkAreas.GERAL) {
+        return true;
+      }
+
+      // Regra 2: Você sempre vê os links que você mesmo criou.
+      if (link.userId === user.id) {
+        return true;
+      }
+      // Regra 5: Todos podem ver links que pertencem diretamente às suas áreas.
+      // A tipagem 'as AreaRoles' é necessária aqui porque estamos comparando
+      // um valor de `LinkAreas` com um array de `AreaRoles`.
+      // Isso funciona desde que os nomes das áreas correspondentes sejam iguais nos dois enums.
+      if (userRoleAreas.includes(link.area as AreaRoles)) {
+        return true;
+      }
+
+      // Se nenhuma das regras acima for atendida, o link não é visível.
+      return false;
+    });
+  };
 
   const specificLinks = getSpecificLinks();
+
+  const { memberLinkPosters, exMemberLinkPosters } = useMemo(() => {
+    const memberLinkPostersAllRoles = data.linkPosters.filter((poster) =>
+      poster.areas.every(
+        (area) =>
+          area !== LinkPosterArea.EXMEMBROS && area !== LinkPosterArea.YGGDRASIL
+      )
+    );
+
+    const exMemberLinkPosters = data.linkPosters.filter((poster) =>
+      poster.areas.every(
+        (area) =>
+          area !== LinkPosterArea.MEMBROS &&
+          area !== LinkPosterArea.YGGDRASIL &&
+          area !== LinkPosterArea.CONSULTORIA &&
+          area !== LinkPosterArea.TATICO &&
+          area !== LinkPosterArea.DIRETORIA
+      )
+    );
+
+    const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+
+    const isTatico = checkUserPermission(user, TATICOS_ONLY);
+
+    if (isDirector) {
+      return {
+        memberLinkPosters: memberLinkPostersAllRoles,
+        exMemberLinkPosters: exMemberLinkPosters,
+      };
+    }
+    const finalPosters = memberLinkPostersAllRoles.filter((poster) => {
+      // Regra 1: Todos veem os posters da área "GERAL"
+      if (poster.areas.includes(LinkPosterArea.GERAL)) {
+        return true;
+      }
+      // Regra 2: Todos veem os posters da área "HOME"
+      if (poster.areas.includes(LinkPosterArea.HOME)) {
+        return true;
+      }
+      // Regra 3: Utilizadores do Tático veem os posters da área "TATICO"
+      if (isTatico && poster.areas.includes(LinkPosterArea.TATICO)) {
+        return true;
+      }
+      // Regra 4: Consultores veem os posters da área "CONSULTORIA"
+      if (isConsultant && poster.areas.includes(LinkPosterArea.CONSULTORIA)) {
+        return true;
+      }
+
+      // Se nenhuma regra for cumprida, o poster é escondido.
+      return false;
+    });
+
+    return { memberLinkPosters: finalPosters, exMemberLinkPosters };
+  }, [data.linkPosters, user, isConsultant]);
+
   if (isLoading)
     return (
       <div className="flex justify-center items-center mt-20">
@@ -135,7 +214,11 @@ const getSpecificLinks = () => {
     <>
       {!user?.isExMember ? (
         <>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="w-full">
+            <LinkPosterCarousel slides={memberLinkPosters} />
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <CustomCard
               type="link"
               title="Minhas pendências"
@@ -152,9 +235,15 @@ const getSpecificLinks = () => {
             />
           </div>
 
-        <UsefulLinksSection links={specificLinks} isGlobal={true} isConsultant={isConsultant} />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <UsefulLinksSection
+              links={specificLinks}
+              isGlobal={true}
+              isConsultant={isConsultant}
+            />
 
-          <UsefulLinksSection links={usefulLinks} isGlobal={false} />
+            <UsefulLinksSection links={usefulLinks} isGlobal={false} />
+          </div>
 
           <div className="grid grid-cols-1 w-full mt-8">
             <CustomCarousel title="Metas da Casinha" slides={slidesData} />
@@ -205,40 +294,7 @@ const getSpecificLinks = () => {
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-full items-center gap-12">
-          {/* Coluna de Texto */}
-          <div className="text-center lg:text-left">
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-tight">
-              Olá,{" "}
-              <span className="text-[#f5b719] italic">
-                {user!.name.split(" ")[0]}
-              </span>
-              !
-            </h2>
-            <h3 className="mt-4 text-xl md:text-2xl font-medium text-white/80">
-              Bem-vindo(a) à plataforma da Casinha dos Sonhos.
-            </h3>
-            <p className="mt-2 text-base md:text-lg text-white/60 max-w-prose mx-auto lg:mx-0">
-              Aqui você poderá se conectar com membros e se manter por dentro da
-              cultura da empresa.
-            </p>
-            <p className="mt-2 text-base md:text-lg text-white/60 max-w-prose mx-auto lg:mx-0">
-              Sinta-se a vontade para explorar suas funcionalidades especiais.
-            </p>
-          </div>
-
-          {/* Coluna da Imagem */}
-          <div className="relative w-full max-w-md mx-auto aspect-square">
-            <Image
-              src="/casinha.png"
-              alt="Ilustração da Casinha dos Sonhos"
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 80vw, (max-width: 1024px) 50vw, 400px"
-              priority
-            />
-          </div>
-        </div>
+        <ExMemberHomeContent linkPosters={exMemberLinkPosters} />
       )}
     </>
   );

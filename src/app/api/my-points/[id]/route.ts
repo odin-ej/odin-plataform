@@ -12,6 +12,8 @@ export async function GET(
     return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
   }
 
+  if(authUser.isExMember) return NextResponse.json({ myPoints: [] });
+
   const { id } = await params;
   try {
     const points = await prisma.userPoints.findUnique({

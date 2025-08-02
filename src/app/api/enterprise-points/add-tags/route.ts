@@ -3,7 +3,8 @@ import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { parseBrazilianDate } from "@/lib/utils";
+import { checkUserPermission, parseBrazilianDate } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 
 // Schema para validar os dados recebidos (uma lista de IDs de tags)
 const addTagsToEnterpriseSchema = z.object({
@@ -16,6 +17,12 @@ export async function POST(request: Request) {
     const authUser = await getAuthenticatedUser();
 
     if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
@@ -70,7 +77,7 @@ export async function POST(request: Request) {
             assignerId: authUser.id,
           },
         });
-        
+
         await tx.enterprisePoints.update({
           where: { id: enterprisePointsId },
           data: {

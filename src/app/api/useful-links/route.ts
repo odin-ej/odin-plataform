@@ -10,6 +10,8 @@ export async function POST(request: Request) {
     if (!authUser)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
+    if (authUser.isExMember) return NextResponse.json({ links: [] });
+
     const {isGlobal, ...body } = await request.json();
 
     const validation = linkSchema.safeParse(body);

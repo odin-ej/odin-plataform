@@ -8,6 +8,7 @@ import {
   Goal,
   HomeIcon,
   LayoutDashboard,
+  Link,
   Megaphone,
   MessageCircle,
   MessageSquare,
@@ -149,4 +150,17 @@ export const restrictedLinks: RestrictedLinks[] = [
     ],
     exMemberCanAccess: false,
   },
+  {
+    name: 'Gerenciar Link Posters',
+    href: '/gerenciar-link-posters',
+    icon: Link,
+    roles: [
+      { name: "Diretor(a) Presidente" },
+      { name: "Diretor(a) de Gestão de Pessoas" },
+      { name: "Diretor(a) de Mercado" },
+      { name: "Diretor(a) de Operações" },
+      { name: "Diretor(a) de Projetos" },
+    ],
+    exMemberCanAccess: false,
+  }
 ];

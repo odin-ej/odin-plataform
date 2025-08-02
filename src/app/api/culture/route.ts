@@ -1,6 +1,8 @@
 import { prisma } from "@/db";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { cultureUpdateSchema } from "@/lib/schemas/strategyUpdateSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { checkUserPermission } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
@@ -34,7 +36,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
   }
   // Adicione aqui a lógica para verificar se o usuário tem permissão para editar a cultura
+  const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
 
+  if (!hasPermission) {
+    return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const validation = cultureUpdateSchema.safeParse(body);
