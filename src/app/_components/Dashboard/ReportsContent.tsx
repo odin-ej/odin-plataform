@@ -283,6 +283,18 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
 
   const editReportFields: FieldConfig<ReportFormValues>[] = [
     {
+      header: "Título",
+      accessorKey: "title",
+      type: "text",
+      disabled: true,
+    },
+    {
+      header: 'Descrição do Report',
+      accessorKey: 'content',
+      type: 'text',
+      disabled: true,
+    },
+    {
       header: 'Notas do "Destinatário"',
       accessorKey: "recipientNotes",
       type: "text",

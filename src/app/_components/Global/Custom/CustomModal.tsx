@@ -43,6 +43,7 @@ export interface FieldConfig<T> {
   header: string;
   accessorKey: Path<T>;
   options?: { value: string; label: string }[];
+  disabled?: boolean;
   renderView?: (data: T) => React.ReactNode;
 }
 
@@ -249,6 +250,7 @@ const CustomModal = <T extends FieldValues>({
                                 <CustomInput
                                   form={form}
                                   field={accessorKey}
+                                  disabled={fieldInfo.disabled}
                                   label={fieldInfo.header}
                                   mask={fieldInfo.mask}
                                   type="text"
