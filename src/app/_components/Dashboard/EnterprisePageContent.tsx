@@ -382,9 +382,9 @@ const EnterprisePageContent = ({
           data={enterpriseTags}
           filterColumns={["description", "actionType"]}
           itemsPerPage={6}
-          onEdit={isDirector ? (item) => handleOpenEditModal(item, "tag") : null}
-          onDelete={isDirector ? (item) => setItemToDelete({ type: "tag", id: item.id }) : null }
-          onRowClick={isDirector ? (item) => handleOpenEditModal(item, "tag") : null}
+          onEdit={isDirector ? (item) => handleOpenEditModal(item, "tag") : undefined}
+          onDelete={isDirector ? (item) => setItemToDelete({ type: "tag", id: item.id }) : undefined }
+          onRowClick={isDirector ? (item) => handleOpenEditModal(item, "tag") : undefined}
           type={isDirector ? "noSelection" : "onlyView"}
           onExportClick={isDirector ? handleEnterpriseTagsExport : undefined}
         />
