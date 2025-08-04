@@ -1,47 +1,40 @@
+// ForgotPassswordContent.tsx
+
 "use client";
-import { CardHeader, Card, CardTitle, CardContent } from "@/components/ui/card";
-import { ShieldBan } from "lucide-react";
-import Link from "next/link";
+
+import React, { useState } from "react";
+import SuccessStep from "./SuccessStep";
+import ConfirmStep from "./ConfirmStep";
+import RequestStep from "./RequestStep";
+
+
+
+// 2. COMPONENTE PRINCIPAL (ForgotPassswordContent)
+// ===================================================================
 const ForgotPassswordContent = () => {
+  const [step, setStep] = useState<"request" | "confirm" | "success">(
+    "request"
+  );
+  const [email, setEmail] = useState("");
+
+
+  if (step === "success") {
+    return <SuccessStep />;
+  }
+
+  if (step === "confirm") {
+    return (
+      <ConfirmStep email={email} onConfirmSuccess={() => setStep("success")} />
+    );
+  }
+
   return (
-    <Card className="max-w-lg w-full bg-[#010d26] border border-[#0126fb] rounded-2xl shadow-lg">
-      {/* Cabeçalho do card com a ilustração e o título */}
-      <CardHeader className="flex flex-col items-center gap-4">
-        {/* Altere o src se preferir outro arquivo/imagem */}
-        <ShieldBan className="h-16 w-16 text-[#f5b719]" />
-        <CardTitle className="text-4xl font-bold text-[#f5b719] text-center">
-          Você esqueceu sua senha?
-        </CardTitle>
-      </CardHeader>
-
-      {/* Conteúdo do card */}
-      <CardContent className="space-y-4 text-center">
-        <p className="text-muted-foreground text-xs">
-          {" "}
-          Até agora não temos um sistema para recuperação de senha automática,
-          então
-        </p>
-        <p className="text-white text-sm leading-relaxed">
-          Para recuperar sua senha é necessário que você{" "}
-          <b>entre em contato com algum Diretor atual(a)</b> da nossa Casinha
-          dos Sonhos.
-        </p>
-
-        <p className="text-[#f5b719] text-sm italic">
-          Toma cuidado para não esquecer de novo! Deixa anotado no celular,
-          computador, papel, caderno, mas não esquece!
-        </p>
-
-        <div>
-          <Link
-            href="/login"
-            className="text-[#f5b719] text-sm font-semibold hover:underline"
-          >
-            Voltar
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+    <RequestStep
+      onRequestSuccess={(email) => {
+        setStep("confirm");
+        setEmail(email);
+      }}
+    />
   );
 };
 

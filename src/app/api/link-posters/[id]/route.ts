@@ -21,11 +21,9 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
     const body = await request.json();
-    console.log(body);
     const validation = linkPostersUpdateSchema.safeParse(body);
 
     if (!validation.success) {
-      console.log(validation.error.flatten().fieldErrors);
       return NextResponse.json(
         { message: "Dados inválidos." },
         { status: 400 }
@@ -42,8 +40,8 @@ export async function PATCH(request: Request) {
         isActive: isActive === "Sim",
       },
     });
-    revalidatePath('/gerenciar-link-posters');
-    revalidatePath('/');
+    revalidatePath("/gerenciar-link-posters");
+    revalidatePath("/");
     return NextResponse.json(updatedPoster);
   } catch (error) {
     console.error("Erro ao atualizar poster com link:", error);
@@ -90,8 +88,8 @@ export async function DELETE(request: Request) {
     const deletedPoster = await prisma.linkPoster.delete({
       where: { id: validatedData.id },
     });
-    revalidatePath('/gerenciar-link-posters');
-    revalidatePath('/');
+    revalidatePath("/gerenciar-link-posters");
+    revalidatePath("/");
     return NextResponse.json(deletedPoster);
   } catch (error) {
     console.error("Erro ao deletar poster com link:", error);

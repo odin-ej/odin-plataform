@@ -139,7 +139,6 @@ export default async function Home() {
     const prioridadeB = getPrioridade(b.areas);
     return prioridadeA - prioridadeB;
   });
-  console.log("linkPostersOrdenados", linkPostersOrdenados);
   // Passa os posters já ordenados para o componente cliente
   const finalData = { ...initialData, linkPosters: linkPostersOrdenados };
 

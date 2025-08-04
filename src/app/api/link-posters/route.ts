@@ -47,7 +47,6 @@ export async function POST(request: Request) {
     const validation = apiCreateLinkPosterSchema.safeParse(body);
 
     if (!validation.success) {
-      console.log(validation.error.flatten().fieldErrors);
       return NextResponse.json(
         { message: "Dados inválidos." },
         { status: 400 }

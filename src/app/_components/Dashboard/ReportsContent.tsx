@@ -313,7 +313,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
         value={0}
         type="introduction"
         title="Reports"
-        description="Aqui você pode registrar e comunicar possíveis problemas no ambiente de trabalho."
+        description="Aqui você pode registrar e comunicar com os membros da Casinha."
       />
       {/* Botão de Ação para abrir o modal de criação */}
       <div className="grid grid-cols-2 gap-4 place-items-center pt-8">
@@ -325,17 +325,16 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
           <p className="text-white font-semibold text-justify mb-4">
             Esta seção possui o objetivo de facilitar{" "}
             <span className="font-bold text-[#f5b719]">
-              o registro e a comunicação de possíveis problemas
+              o registro e a comunicação 
             </span>{" "}
-            que podem estar ocorrendo no ambiente de trabalho da nossa
-            casinhaonhos. Por isso, esteja ciente destas{" "}
+            com outros membros da nossa Casinha dos Sonhos. Contudo, existem algumas {' '}
             <span className="font-bold text-[#f5b719]">restrições</span>:
           </p>
 
           <ol className="list-decimal list-inside max-w-[80%] mx-auto text-white font-sm space-y-2">
             <li>
               Enviar uma vez é o suficiente, com paciência, seu problema será
-              resolvido!
+              respondido!
             </li>
 
             <li>
@@ -360,7 +359,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
 
               <li>
                 Preencha as informações com cuidado, e certifique-se de escolher
-                o responsável certo.
+                o usuário certo.
               </li>
 
               <li>

@@ -130,8 +130,6 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     };
   }, [user]);
 
-  console.log(formInitialValues)
-
   if (isLoadingData || !formInitialValues || !user || !roles) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">

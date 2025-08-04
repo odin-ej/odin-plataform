@@ -46,19 +46,32 @@ const LoginForm = () => {
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      if (
-        err.name === "UserNotFoundException" ||
-        err.name === "NotAuthorizedException"
-      ) {
-        setError("E-mail ou senha inválidos.");
-      } else if (err.name === "UserNotConfirmedException") {
-        setError(
-          "A sua conta ainda não foi confirmada. Verifique o seu e-mail ou aguarde a aprovação."
-        );
-      } else {
-        setError(err.message || "Ocorreu um erro desconhecido.");
+      let message = "Ocorreu um erro ao fazer login.";
+     switch (err.name) {
+        case "UserNotFoundException":
+        case "NotAuthorizedException":
+          message = "E-mail ou senha incorretos.";
+          break;
+
+        case "UserNotConfirmedException":
+          message =
+            "A sua conta ainda não foi confirmada. Verifique seu e-mail ou aguarde a aprovação.";
+          break;
+
+        case "TooManyRequestsException":
+          message =
+            "Muitas tentativas em um curto período. Aguarde um momento antes de tentar novamente.";
+          break;
+
+        case "NetworkError":
+          message = "Erro de conexão. Verifique sua internet e tente novamente.";
+          break;
+
+        default:
+          message = err.message || message;
       }
-      toast.error(err.message);
+      setError(message)
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

@@ -43,18 +43,14 @@ const UsefulLinksSection = ({
       const screenWidth = window.innerWidth;
       
       if (screenWidth < 640) {
-        setItemsPerPage(6);
-      }
-      if (screenWidth < 768) {
+        setItemsPerPage(4);
+      }else if (screenWidth < 768) {
         // Telas pequenas (mobile)
-        setItemsPerPage(8);
-      } else if (screenWidth < 1280) {
-        // Telas médias (tablet)
-        setItemsPerPage(10);
+        setItemsPerPage(6);
       } else {
-        // Telas grandes (desktop)
-        setItemsPerPage(12);
-      }
+        // Telas médias (tablet)
+        setItemsPerPage(8);
+      } 
     };
 
     // Define o valor inicial ao carregar o componente

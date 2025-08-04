@@ -50,6 +50,7 @@ const CustomInput = <T extends FieldValues>({
         <FormControl>
           <Input
           disabled={disabled}
+          
             placeholder={placeholder}
             className={cn(
               "text-xs sm:text-md text-white",
