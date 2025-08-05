@@ -14,25 +14,40 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const KnowledgeContent = () => {
   const [file, setFile] = useState<File | null>(null);
+
   const { mutate: uploadFile, isPending: isLoading } = useMutation({
     mutationFn: async (fileToUpload: File) => {
-      const formData = new FormData();
-      formData.append("file", fileToUpload);
-
-      // Usamos axios para consistência e melhor tratamento de erros
-      const { data } = await axios.post(
-        `${API_URL}/api/knowledge/upload`,
-        formData
+      // --- ETAPA 1: Obter a URL pré-assinada ---
+      const presignedUrlRes = await axios.post(
+        `${API_URL}/api/knowledge/s3-upload`,
+        {
+          fileType: fileToUpload.type,
+          fileSize: fileToUpload.size,
+        }
       );
+
+      const { url, key } = presignedUrlRes.data;
+
+      // --- ETAPA 2: Fazer o upload do arquivo diretamente para o S3 ---
+      await axios.put(url, fileToUpload, {
+        headers: { "Content-Type": fileToUpload.type },
+      });
+
+      // --- ETAPA 3: Enviar a chave do arquivo para processamento no backend ---
+      const { data } = await axios.post(`${API_URL}/api/knowledge/upload`, {
+        s3Key: key,
+        fileName: fileToUpload.name,
+      });
+
       return data;
     },
     onSuccess: (data) => {
       toast.success("Sucesso!", { description: data.message });
-      setFile(null); // Limpa o input após o sucesso
+      setFile(null);
     },
     onError: (error: any) => {
       const errorMessage =
-        error.response?.data?.message || "Falha no upload do ficheiro.";
+        error.response?.data?.message || "Falha no upload do arquivo.";
       toast.error("Erro no Upload", { description: errorMessage });
     },
   });
@@ -46,7 +61,7 @@ const KnowledgeContent = () => {
   // O handler de upload agora é muito mais simples
   const handleUpload = () => {
     if (!file) {
-      toast.error("Nenhum ficheiro selecionado.");
+      toast.error("Nenhum arquivo selecionado.");
       return;
     }
     // Apenas chama a função 'mutate' do TanStack Query
@@ -66,7 +81,7 @@ const KnowledgeContent = () => {
           Base de Conhecimento da IA
         </h1>
         <p className="text-gray-300 mb-6">
-          Faça o upload de ficheiros (PDF, TXT) para &quot;treinar&quot; a IA. O
+          Faça o upload de arquivos (PDF, TXT) para &quot;treinar&quot; a IA. O
           conteúdo destes documentos será usado para fornecer respostas mais
           precisas sobre a empresa.
         </p>
@@ -80,8 +95,8 @@ const KnowledgeContent = () => {
                 className="font-semibold cursor-pointer hover:underline"
               >
                 {file
-                  ? `Ficheiro selecionado: ${file.name}`
-                  : "Selecionar um ficheiro..."}
+                  ? `arquivo selecionado: ${file.name}`
+                  : "Selecionar um arquivo..."}
               </label>
               <Input
                 id="knowledge-file"

@@ -4,7 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import { s3Client } from "@/lib/aws";
 
-// Função para gerar um nome de ficheiro aleatório e seguro
+// Função para gerar um nome de arquivo aleatório e seguro
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
@@ -15,20 +15,20 @@ export async function POST(request: Request) {
     // Validações de segurança
     if (!fileType || !fileSize) {
       return NextResponse.json(
-        { message: "Tipo ou tamanho do ficheiro em falta." },
+        { message: "Tipo ou tamanho do arquivo em falta." },
         { status: 400 }
       );
     }
     if (fileSize > 1024 * 1024 * 5) {
       // Limite de 5MB
       return NextResponse.json(
-        { message: "O ficheiro é demasiado grande (máx 5MB)." },
+        { message: "O arquivo é demasiado grande (máx 5MB)." },
         { status: 400 }
       );
     }
 
-    if(olderFile){
-      //Preciso deletar o ficheiro
+    if (olderFile) {
+      //Preciso deletar o arquivo
       //olderFile é o imageUrl dele
       const url = new URL(olderFile);
       const key = decodeURIComponent(url.pathname.slice(1)); // Remove a "/" do início
@@ -38,7 +38,6 @@ export async function POST(request: Request) {
         Key: key,
       });
       await s3Client.send(deleteCommand);
-
     }
 
     const fileName = generateFileName();

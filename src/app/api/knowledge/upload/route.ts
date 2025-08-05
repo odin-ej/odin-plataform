@@ -1,62 +1,67 @@
 import { prisma } from "@/db";
+import { s3Client } from "@/lib/aws";
 import { embeddingModel } from "@/lib/gemini";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import pdf from "pdf-parse";
+import { Readable } from "stream";
 
 export const runtime = "nodejs";
 
-async function streamToBuffer(
-  stream: ReadableStream<Uint8Array>
-): Promise<Buffer> {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-  }
-  return Buffer.concat(chunks);
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+async function streamToBuffer(stream: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  return new Promise((resolve, reject) => {
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("error", (err) => reject(err));
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
+  });
 }
 
 export async function POST(request: Request) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser) {
-      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-    }
 
     const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
 
-    if (!hasPermission)
+    if (!authUser || !hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
+    const { s3Key, fileName } = await request.json();
+    if (!s3Key || !fileName) {
       return NextResponse.json(
-        { message: "Nenhum ficheiro enviado." },
+        { message: "Chave S3 ou nome do arquivo em falta." },
+        { status: 400 }
+      );
+    }
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_CHAT_BUCKET_NAME!,
+      Key: s3Key,
+    });
+    const s3Response = await s3Client.send(command);
+
+    if (!s3Response.Body) {
+      return NextResponse.json(
+        { message: "Arquivo em falta." },
         { status: 400 }
       );
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-      return NextResponse.json(
-        { message: "Arquivo muito grande (máx. 100MB)." },
-        { status: 400 }
-      );
-    }
-
-    // CORREÇÃO: Lê o conteúdo do ficheiro para um Buffer do Node.js
-    // usando a função auxiliar, que é mais fiável do que file.arrayBuffer() neste contexto.
-    const fileBuffer = await streamToBuffer(file.stream());
+    const fileBuffer = await streamToBuffer(s3Response.Body as Readable);
+    const fileType = s3Response.ContentType;
 
     let textContent = "";
 
-    if (file.type === "application/pdf") {
+    if (fileType === "application/pdf") {
       const data = await pdf(fileBuffer);
       textContent = data.text;
     } else {
@@ -65,7 +70,7 @@ export async function POST(request: Request) {
 
     if (!textContent.trim()) {
       return NextResponse.json(
-        { message: "O ficheiro está vazio ou ilegível." },
+        { message: "O arquivo está vazio ou ilegível." },
         { status: 400 }
       );
     }
@@ -74,7 +79,7 @@ export async function POST(request: Request) {
     const chunks = textContent.match(/.{1,1500}/gs) || [];
     if (chunks.length === 0) {
       return NextResponse.json(
-        { message: "Não foi possível extrair conteúdo do ficheiro." },
+        { message: "Não foi possível extrair conteúdo do arquivo." },
         { status: 400 }
       );
     }
@@ -112,13 +117,13 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({
-      message: `✅ Ficheiro processado com sucesso! ${chunks.length} pedaços foram adicionados.`,
+      message: `✅ arquivo processado com sucesso! ${chunks.length} pedaços foram adicionados.`,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.error("❌ Erro ao processar ficheiro de conhecimento:", error);
+    console.error("❌ Erro ao processar arquivo de conhecimento:", error);
     return NextResponse.json(
-      { message: "Erro ao processar o ficheiro.", error: error.message },
+      { message: "Erro ao processar o arquivo.", error: error.message },
       { status: 500 }
     );
   }

@@ -47,9 +47,9 @@ export const config = {
     /*
      * Faz o match de todos os caminhos de pedido, exceto os que começam com:
      * - api (rotas de API)
-     * - _next/static (ficheiros estáticos)
-     * - _next/image (ficheiros de otimização de imagem)
-     * - favicon.ico (o ficheiro do favicon)
+     * - _next/static (arquivos estáticos)
+     * - _next/image (arquivos de otimização de imagem)
+     * - favicon.ico (o arquivo do favicon)
      * - qualquer caminho que contenha um ponto (ex: sitemap.xml), o que é uma boa prática.
      */
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",

@@ -6,7 +6,7 @@ import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
 import { ROUTE_PERMISSIONS } from "./permissions";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -316,12 +316,12 @@ export const getPhrasePercentageByGoal = (value: number, goal: number) => {
 export const fileToBase64 = (
   file: File
 ): Promise<{ mimeType: string; base64: string }> => {
-  // Usamos uma Promise porque a leitura de um ficheiro é uma operação assíncrona.
+  // Usamos uma Promise porque a leitura de um arquivo é uma operação assíncrona.
   return new Promise((resolve, reject) => {
-    // 1. Cria uma instância do FileReader, a API do navegador para ler ficheiros.
+    // 1. Cria uma instância do FileReader, a API do navegador para ler arquivos.
     const reader = new FileReader();
 
-    // 2. Inicia a leitura do ficheiro. O resultado será um "Data URL".
+    // 2. Inicia a leitura do arquivo. O resultado será um "Data URL".
     reader.readAsDataURL(file);
 
     // 3. Define o que acontece quando a leitura for concluída com sucesso.
