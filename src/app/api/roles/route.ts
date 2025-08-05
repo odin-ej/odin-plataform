@@ -2,6 +2,7 @@ import { roleCreateSchema } from "@/lib/schemas/roleSchema";
 import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
       },
     });
 
+    revalidatePath("/gerenciar-cargos");
     return NextResponse.json(newRole, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar cargo:", error);

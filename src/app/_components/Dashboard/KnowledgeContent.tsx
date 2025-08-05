@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, Loader2, MessageCircle } from "lucide-react";
+import { UploadCloud, Loader2, BrainCog } from "lucide-react";
 import CustomCard from "@/app/_components/Global/Custom/CustomCard";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
@@ -72,7 +72,7 @@ const KnowledgeContent = () => {
       <CustomCard
         type="introduction"
         title="Conhecimento da IA"
-        icon={MessageCircle}
+        icon={BrainCog}
         description='Faça upload de arquivos (pdf, txt, jpeg, jpg, png) de até 200MB para "treinar" a IA'
         value={0}
       />

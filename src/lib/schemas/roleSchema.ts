@@ -7,8 +7,13 @@ export const roleCreateSchema = z.object({
   area: z.array(z.nativeEnum(AreaRoles)).min(1, "Selecione pelo menos uma área."),
 });
 
+export type RolesFormValues = z.infer<typeof roleCreateSchema>
+
 export const roleUpdateSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(3).optional(),
   description: z.string().min(10).optional(),
   area: z.array(z.nativeEnum(AreaRoles)).min(1).optional(),
 });
+
+export type RolesUpdateFormValues = z.infer<typeof roleUpdateSchema>

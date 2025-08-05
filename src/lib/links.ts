@@ -1,6 +1,8 @@
 import { Role, AreaRoles } from "@prisma/client";
 import {
   Award,
+  BookUser,
+  BrainCog,
   CalendarClock,
   CircleUser,
   ClipboardList,
@@ -10,7 +12,6 @@ import {
   LayoutDashboard,
   Link,
   Megaphone,
-  MessageCircle,
   MessageSquare,
   TicketCheck,
   Users,
@@ -140,7 +141,7 @@ export const restrictedLinks: RestrictedLinks[] = [
   {
     name: "Conhecimento da IA",
     href: "/conhecimento-ia",
-    icon: MessageCircle,
+    icon: BrainCog,
     roles: [
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
@@ -154,6 +155,19 @@ export const restrictedLinks: RestrictedLinks[] = [
     name: 'Gerenciar Link Posters',
     href: '/gerenciar-link-posters',
     icon: Link,
+    roles: [
+      { name: "Diretor(a) Presidente" },
+      { name: "Diretor(a) de Gestão de Pessoas" },
+      { name: "Diretor(a) de Mercado" },
+      { name: "Diretor(a) de Operações" },
+      { name: "Diretor(a) de Projetos" },
+    ],
+    exMemberCanAccess: false,
+  },
+    {
+    name: 'Gerenciar Cargos',
+    href: '/gerenciar-cargos',
+    icon: BookUser,
     roles: [
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },

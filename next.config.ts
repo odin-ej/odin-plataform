@@ -22,8 +22,9 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "i.pravatar.cc",
       },
-  ],
+    ],
   },
+
 
   serverExternalPackages: ["pdf-parse"],
   webpack: (config, { isServer }) => {
