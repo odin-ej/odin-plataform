@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({
-      message: `✅ arquivo processado com sucesso! ${chunks.length} pedaços foram adicionados.`,
+      message: `✅ Arquivo processado com sucesso! ${chunks.length} pedaços foram adicionados.`,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
