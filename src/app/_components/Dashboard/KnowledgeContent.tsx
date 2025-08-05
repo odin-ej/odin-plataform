@@ -58,7 +58,7 @@ const KnowledgeContent = () => {
         type="introduction"
         title="Conhecimento da IA"
         icon={MessageCircle}
-        description='Faça upload de arquivos de até 20MB para "treinar" a IA'
+        description='Faça upload de arquivos (pdf, txt, jpeg, jpg, png) de até 100MB para "treinar" a IA'
         value={0}
       />
       <div className="p-6 flex items-center justify-center flex-col">

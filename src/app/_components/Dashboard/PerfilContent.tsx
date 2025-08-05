@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { CircleUser, Loader2 } from "lucide-react";
 import MemberForm from "../Global/Form/MemberForm";
 import ExMemberForm from "../Global/Form/ExMemberForm";
 import { PerfilPageData } from "@/app/(dashboard)/perfil/page";
+import ImageCropModal from "../Global/ImageCropModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -27,6 +28,10 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
   const { user: authUser, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const userId = authUser?.id;
+
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  // Estado para armazenar a referência do formulário para poder usar o setValue
+  const [formRef, setFormRef] = useState<any>(null);
 
   // --- QUERY PARA GERENCIAR OS DADOS DO PERFIL ---
   const { data, isLoading: isLoadingData } = useQuery({
@@ -89,6 +94,32 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     updateProfile(formData);
   };
 
+  const handleFileSelect = (file: File, form: any) => {
+    if (file) {
+      setFormRef(form); // Salva a referência do formulário
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+      };
+    }
+  };
+
+  // ✅ PASSO 3: Função de callback para quando o corte for concluído
+  const handleCropComplete = (croppedImageBlob: Blob) => {
+    if (formRef) {
+      const croppedFile = new File([croppedImageBlob], "profile_image.jpeg", {
+        type: "image/jpeg",
+      });
+      // Atualiza o valor no react-hook-form com a imagem CORTADA
+      formRef.setValue("image", croppedFile, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+    setImageToCrop(null); // Fecha o modal
+  };
+
   // --- DADOS E LÓGICA DERIVADA ---
   const { user, roles } = data || {};
   const canChangeRole = useMemo(
@@ -101,6 +132,11 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
 
   const formInitialValues = useMemo(() => {
     if (!user) return null;
+
+    const hasOtherRole = user.roles.some(
+      (role) => role.id === process.env.NEXT_PUBLIC_OTHER_ROLE_ID
+    );
+
     return {
       name: user.name,
       email: user.email,
@@ -123,9 +159,9 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
         | "Sim"
         | "Não"
         | undefined,
-      otherRole: user.otherRole ?? "",
+      otherRole: hasOtherRole ? (user.otherRole ?? "") : "",
       isWorking: (user.isWorking ? "Sim" : "Não") as "Sim" | "Não",
-      workplace: user.workplace,
+      workplace: user.workplace ?? "",
       isExMember: (user.isExMember ? "Sim" : "Não") as "Sim" | "Não",
     };
   }, [user]);
@@ -159,6 +195,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
             roles={roles}
             title="Salvar alterações"
             values={formInitialValues as any}
+            onFileSelect={handleFileSelect}
           />
         ) : (
           <MemberForm
@@ -169,6 +206,16 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
             title="Salvar alterações"
             values={formInitialValues}
             canChangeRole={canChangeRole}
+            onFileSelect={handleFileSelect}
+          />
+        )}
+        {imageToCrop && (
+          <ImageCropModal
+            imageSrc={imageToCrop}
+            onClose={() => setImageToCrop(null)}
+            onCropComplete={handleCropComplete}
+            cropShape="round"
+            aspect={1}
           />
         )}
       </div>

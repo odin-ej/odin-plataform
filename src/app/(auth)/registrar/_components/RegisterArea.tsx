@@ -11,6 +11,7 @@ import Link from "next/link";
 import RegistrationSentStep from "@/app/_components/Global/Form/RegistrationSentStep";
 import { Role } from "@prisma/client";
 import { orderRolesByHiearchy } from "@/lib/utils";
+import ImageCropModal from "@/app/_components/Global/ImageCropModal";
 
 interface RegisterAreaProps {
   roles: Role[];
@@ -19,7 +20,9 @@ interface RegisterAreaProps {
 const RegisterArea = ({ roles }: RegisterAreaProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  // Estado para armazenar a referência do formulário para poder usar o setValue
+  const [formRef, setFormRef] = useState<any>(null);
   // Função genérica para submeter o pedido de registo para a nossa API
   const handleSubmitRegistration = async (
     data: memberType | (ExMemberType & { image?: File })
@@ -38,7 +41,7 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
         });
-        
+
         if (!presignedUrlResponse.ok) {
           throw new Error("Não foi possível preparar o upload da imagem.");
         }
@@ -82,6 +85,32 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
     } finally {
       setIsLoading(false); // Reseta o progresso após o fim da operação
     }
+  };
+
+  const handleFileSelect = (file: File, form: any) => {
+    if (file) {
+      setFormRef(form); // Salva a referência do formulário
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+      };
+    }
+  };
+
+  // ✅ PASSO 3: Função de callback para quando o corte for concluído
+  const handleCropComplete = (croppedImageBlob: Blob) => {
+    if (formRef) {
+      const croppedFile = new File([croppedImageBlob], "profile_image.jpeg", {
+        type: "image/jpeg",
+      });
+      // Atualiza o valor no react-hook-form com a imagem CORTADA
+      formRef.setValue("image", croppedFile, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+    setImageToCrop(null); // Fecha o modal
   };
 
   const orderedRoles = orderRolesByHiearchy(roles);
@@ -133,6 +162,7 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           isLoading={isLoading}
           schema={memberSchema}
           canChangeRole={true}
+          onFileSelect={handleFileSelect}
         />
       </TabsContent>
 
@@ -158,8 +188,18 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           isLoading={isLoading}
           roles={orderedRoles}
           schema={exMemberSchema}
+          onFileSelect={handleFileSelect}
         />
       </TabsContent>
+      {imageToCrop && (
+        <ImageCropModal
+          imageSrc={imageToCrop}
+          onClose={() => setImageToCrop(null)}
+          onCropComplete={handleCropComplete}
+          cropShape="round"
+          aspect={1}
+        />
+      )}
     </Tabs>
   );
 };

@@ -26,13 +26,13 @@ const tools: Tool[] = [
 ];
 
 const systemPrompt = `
-Você é Hórus IA, um assistente de inteligência artificial para a Empresa Junior ADM UFBA. 
+Você é Hórus IA, um assistente de inteligência artificial exclusivamente para a Empresa Junior ADM UFBA. 
 O seu propósito é ajudar os membros da Empresa Junior ADM UFBA a encontrar informações, analisar dados e impulsionar os sonhos da empresa.
-Responda sempre de forma prestativa, profissional e alinhada com os valores da empresa: Ser sốcio, Inquietação, Só faça, Envolvimento, Sintonia, Só faça.
-Quando um utilizador fizer uma pergunta, responda como se fosse Hórus IA.
+Responda sempre de forma prestativa, profissional e alinhada com os valores da empresa: Ser sốcio, Inquietação, Só faça, Envolvimento, Sintonia, Só faça e Donos de Sonhos.
+Quando um utilizador fizer uma pergunta, responda como se fosse Hórus IA. Não repita sua identidade mais de uma vez, sem que o usuário peça. Se apresente inicialmente, mas depois não repita, a não ser que o usuário peça isso.
 `;
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 * 2; // 20MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024 * 5; // 50MB
 
 const getModelForPrompt = (prompt: string, forcePro = false) => {
   if (forcePro) return geminiPro;

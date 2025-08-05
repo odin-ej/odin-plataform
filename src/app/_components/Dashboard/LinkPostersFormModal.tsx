@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 // Componentes UI e Tipos
 import CustomInput from "../Global/Custom/CustomInput"; // Supondo a existência destes componentes
@@ -22,6 +23,7 @@ import CustomSelect from "../Global/Custom/CustomSelect";
 import DynamicDropzone from "../Global/Custom/DynamicDropzone";
 import { useState } from "react";
 import CustomCheckboxGroup from "../Global/Custom/CustomCheckboxGroup";
+import ImageCropModal from "../Global/ImageCropModal";
 
 interface LinksPostersFormModalProps {
   isOpen: boolean;
@@ -39,12 +41,44 @@ const LinkPostersFormModal = ({
   isLoading,
 }: LinksPostersFormModalProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  // Estado para armazenar a referência do formulário para poder usar o setValue
+  const [formRef, setFormRef] = useState<any>(null);
+
+  const handleFileSelect = (file: File, form: any) => {
+    if (file) {
+      setFormRef(form); // Salva a referência do formulário
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+      };
+    }
+  };
+
+  const handleCropComplete = (croppedImageBlob: Blob) => {
+    if (formRef) {
+      const croppedFile = new File([croppedImageBlob], "profile_image.jpeg", {
+        type: "image/jpeg",
+      });
+      // Atualiza o valor no react-hook-form com a imagem CORTADA
+      formRef.setValue("image", croppedFile, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+    setImageToCrop(null); // Fecha o modal
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
-        <DialogContent className="max-w-lg w-full bg-[#010d26] border-2 border-[#0126fb] text-white">
+        <DialogContent onPointerDownOutside={(e) => {
+              if (imageToCrop) {
+                e.preventDefault();
+              }
+            }} className="max-w-lg w-full bg-[#010d26] border-2 border-[#0126fb] text-white">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
               Criar Novo Link Poster
@@ -107,6 +141,7 @@ const LinkPostersFormModal = ({
                 }}
                 defaultImageUrl=""
                 page="link-posters"
+                onFileSelect={(file) => handleFileSelect(file, form)}
               />
 
               <DialogFooter className="pt-4">
@@ -125,6 +160,17 @@ const LinkPostersFormModal = ({
           </Form>
         </DialogContent>
       </DialogPortal>
+            {imageToCrop && (
+              <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <ImageCropModal
+                  imageSrc={imageToCrop}
+                  onClose={() => setImageToCrop(null)}
+                  onCropComplete={handleCropComplete}
+                  cropShape="rect"
+                  aspect={16/9}
+                />
+              </div>
+            )}
     </Dialog>
   );
 };

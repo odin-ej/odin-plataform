@@ -438,6 +438,8 @@ const LinkPostersPageContent = ({
           onClose={() => setIsModalOpen(false)}
           onSubmit={updateLinkPoster}
           isLoading={isUpdating}
+          cropShape='rect'
+          aspect={16/9}
           page="link-posters"
         />
       </div>

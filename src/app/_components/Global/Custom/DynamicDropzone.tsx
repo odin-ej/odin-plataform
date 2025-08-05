@@ -1,7 +1,13 @@
 "use client";
 
 import { FieldValues, Path, Control } from "react-hook-form";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import DropzoneArea from "./DropzoneArea";
 
 interface DynamicDropzoneProps<T extends FieldValues> {
@@ -10,8 +16,9 @@ interface DynamicDropzoneProps<T extends FieldValues> {
   label: string;
   progress: number;
   onFileAccepted: () => void;
+  onFileSelect?: (file: File) => void;
   defaultImageUrl?: string;
-  page?: string,
+  page?: string;
 }
 
 const DynamicDropzone = <T extends FieldValues>({
@@ -20,6 +27,7 @@ const DynamicDropzone = <T extends FieldValues>({
   label,
   progress,
   onFileAccepted,
+  onFileSelect,
   defaultImageUrl,
   page,
 }: DynamicDropzoneProps<T>) => {
@@ -32,8 +40,14 @@ const DynamicDropzone = <T extends FieldValues>({
           <FormLabel className="text-white font-semibold">{label}</FormLabel>
           <FormControl>
             <DropzoneArea
-            page={page}
-              onChange={field.onChange}
+              page={page}
+              onChange={(file) => {
+                if (onFileSelect) {
+                  onFileSelect(file); // Chama a função do modal se ela existir
+                } else {
+                  field.onChange(file); // Comportamento padrão se não houver interceptação
+                }
+              }}
               onFileAccepted={onFileAccepted}
               value={field.value}
               error={!!fieldState.error}
@@ -47,6 +61,5 @@ const DynamicDropzone = <T extends FieldValues>({
     />
   );
 };
-
 
 export default DynamicDropzone;

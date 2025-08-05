@@ -27,6 +27,7 @@ import { useCallback, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomCheckboxGroup from "./CustomCheckboxGroup";
 import Image from "next/image";
+import ImageCropModal from "../ImageCropModal";
 
 export interface FieldConfig<T> {
   type?:
@@ -61,6 +62,8 @@ interface CustomModalProps<T extends FieldValues> {
   setIsLoading?: (isLoading: boolean) => void;
   onlyView?: boolean;
   page?: string;
+  cropShape?: "rect" | "round";
+  aspect?: number;
 }
 
 const CustomModal = <T extends FieldValues>({
@@ -76,10 +79,14 @@ const CustomModal = <T extends FieldValues>({
   setIsEditing,
   onlyView,
   page,
+  cropShape,
+  aspect
 }: CustomModalProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  // Estado para armazenar a referência do formulário para poder usar o setValue
+  const [formRef, setFormRef] = useState<any>(null);
   const data = form.getValues();
 
   // CORREÇÃO: Função wrapper que controla o estado de submissão.
@@ -99,12 +106,43 @@ const CustomModal = <T extends FieldValues>({
     },
     [onSubmit]
   );
+
+  const handleFileSelect = (file: File, form: any) => {
+    if (file) {
+      setFormRef(form); // Salva a referência do formulário
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setImageToCrop(reader.result as string);
+      };
+    }
+  };
+
+  const handleCropComplete = (croppedImageBlob: Blob) => {
+    if (formRef) {
+      const croppedFile = new File([croppedImageBlob], "profile_image.jpeg", {
+        type: "image/jpeg",
+      });
+      // Atualiza o valor no react-hook-form com a imagem CORTADA
+      formRef.setValue("image", croppedFile, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+    setImageToCrop(null); // Fecha o modal
+  };
+
   if (!data) return null;
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
         <DialogContent
+          onPointerDownOutside={(e) => {
+            if (imageToCrop) {
+              e.preventDefault();
+            }
+          }}
           className={cn(
             "w-full max-w-sm sm:max-w-md md:max-w-3xl bg-[#010d26] text-white border-2 border-[#0126fb]/80 p-6 rounded-md",
             "max-h-[70vh] overflow-y-auto",
@@ -226,6 +264,9 @@ const CustomModal = <T extends FieldValues>({
                                     control={form.control}
                                     name={accessorKey}
                                     label={fieldInfo.header}
+                                    onFileSelect={(file) =>
+                                      handleFileSelect(file, form)
+                                    }
                                     progress={uploadProgress}
                                     onFileAccepted={() =>
                                       handleFileAccepted(setUploadProgress)
@@ -352,6 +393,17 @@ const CustomModal = <T extends FieldValues>({
           </FormProvider>
         </DialogContent>
       </DialogPortal>
+      {imageToCrop && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <ImageCropModal
+            imageSrc={imageToCrop}
+            onClose={() => setImageToCrop(null)}
+            onCropComplete={handleCropComplete}
+            cropShape={cropShape ? cropShape : "round"}
+            aspect={aspect ? aspect : 1}
+          />
+        </div>
+      )}
     </Dialog>
   );
 };

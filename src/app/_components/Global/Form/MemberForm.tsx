@@ -25,6 +25,8 @@ interface MemberFormProps<T extends z.ZodType<any, any, any>> {
   roles: Role[];
   schema: T; // O schema é passado como prop.
   // O `onSubmit` agora é fortemente tipado com base no schema.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onFileSelect?: (file: File, form: any) => void;
   onSubmit: (data: z.infer<T>) => void | Promise<void>;
 }
 
@@ -35,6 +37,7 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
   roles,
   canChangeRole,
   onSubmit,
+  onFileSelect,
   schema,
   isLoading,
 }: MemberFormProps<T>) => {
@@ -208,6 +211,7 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
           progress={uploadProgress}
           label="Imagem de Perfil"
           onFileAccepted={() => handleFileAccepted(setUploadProgress)}
+          onFileSelect={onFileSelect ? (file) => onFileSelect(file, form) : undefined}
           defaultImageUrl={values?.image}
         />
 

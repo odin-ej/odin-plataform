@@ -170,7 +170,7 @@ export async function DELETE(
 
     if (existingRequest.imageUrl) {
       const command = new DeleteObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: existingRequest.imageUrl,
       });
       await s3Client.send(command);

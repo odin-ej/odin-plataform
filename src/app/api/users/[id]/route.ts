@@ -132,6 +132,8 @@ export async function PATCH(
       }
     }
 
+
+
     // CORREÇÃO: A desestruturação foi removida para tratar os tipos de união corretamente.
     const validatedData = validation.data;
 
@@ -156,13 +158,8 @@ export async function PATCH(
       alumniDreamer: validatedData.alumniDreamer === "Sim",
     };
 
-    if (validatedData.imageUrl) {
-      updateData.imageUrl = validatedData.imageUrl;
-      const command = new DeleteObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: validatedData.imageUrl,
-      });
-      await s3Client.send(command);
+    if (body.imageUrl) {
+      updateData.imageUrl = body.imageUrl;
     }
 
     // Atualiza a senha apenas se uma nova foi fornecida
@@ -265,7 +262,7 @@ export async function PATCH(
 
     const { password: _, ...userWithoutPassword } = updatedUser;
 
-    revalidatePath(`/perfil`);
+    if (updatedUser.id === authUser.id) revalidatePath(`/perfil`);
     revalidatePath("/");
     revalidatePath("/usuarios");
     revalidatePath("/cultural");
@@ -309,7 +306,7 @@ export async function DELETE(
 
     if (user.imageUrl) {
       const command = new DeleteObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: user.imageUrl,
       });
       await s3Client.send(command);
@@ -328,7 +325,9 @@ export async function DELETE(
     await prisma.user.delete({
       where: { id },
     });
-
+    revalidatePath("/usuarios");
+    revalidatePath("/cultural");
+    revalidatePath("/");
     return new NextResponse(null, { status: 204 }); // 204 No Content
   } catch (error) {
     console.error("Erro ao apagar utilizador:", error);

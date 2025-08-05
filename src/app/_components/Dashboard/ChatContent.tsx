@@ -35,6 +35,7 @@ const ChatContent = ({
 }: {
   initialConversation: ConversationType;
 }) => {
+    const { user, incrementMessageCount } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,6 +155,7 @@ const ChatContent = ({
         conversationId: conversationId,
         createdAt: new Date(),
       };
+      incrementMessageCount();
 
       queryClient.setQueryData<ConversationType>(
         ["conversation", conversationId],
@@ -218,7 +220,7 @@ const ChatContent = ({
     }
   };
 
-  const { user } = useAuth();
+
 
   const isDirector = checkUserPermission(user, {
     allowedAreas: [AreaRoles.DIRETORIA],

@@ -43,9 +43,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (file.size > 30 * 1024 * 1024) {
+    if (file.size > 100 * 1024 * 1024) {
       return NextResponse.json(
-        { message: "Arquivo muito grande (máx. 30MB)." },
+        { message: "Arquivo muito grande (máx. 100MB)." },
         { status: 400 }
       );
     }

@@ -23,6 +23,7 @@ interface ExMemberFormProps<T extends z.ZodType<any, any, any>> {
   values?: Partial<z.infer<T>>;
   schema: T;
   canChangeRole?: boolean;
+    onFileSelect?: (file: File, form: any) => void;
   isPerfilPage?: boolean;
 }
 
@@ -30,6 +31,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
   title = "Cadastrar",
   values,
   onSubmit,
+  onFileSelect,
   schema,
   isLoading,
   roles,
@@ -44,6 +46,8 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     emailEJ: "",
     semesterEntryEj: "",
     course: "",
+    workplace: "",
+    isWorking: "Não",
     phone: "",
     instagram: "",
     linkedin: "",
@@ -57,7 +61,6 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     semesterLeaveEj: "",
     aboutEj: "",
     roles: [],
-    otherRole: "",
   };
 
   const defaultFormPerfilValues = {
@@ -107,7 +110,8 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     watchedRoles.includes(otherRoleId);
 
   const isWorking = form.watch("isWorking" as Path<z.infer<T>>) === 'Sim';
-  const onInvalid = () => {
+  const onInvalid = (error: any) => {
+    console.log(error)
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
     });
@@ -283,6 +287,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           control={form.control}
           name={"image" as Path<z.infer<T>>}
           onFileAccepted={handleFileAccepted}
+          onFileSelect={onFileSelect ? (file) => onFileSelect(file, form) : undefined}
           defaultImageUrl={values?.image}
           progress={uploadProgress}
           label="Imagem de Perfil"

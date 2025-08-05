@@ -45,6 +45,7 @@ interface AuthContextType {
   user: CombinedUser | null;
   isLoading: boolean;
   checkAuth: () => Promise<void>;
+  incrementMessageCount: () => void;
   logout: () => Promise<void>;
 }
 
@@ -104,6 +105,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const incrementMessageCount = () => {
+    setUser(currentUser => {
+      if (!currentUser) return null;
+      return {
+        ...currentUser,
+        dailyMessageCount: currentUser.dailyMessageCount + 1,
+      };
+    });
+  };
+
   // Executa a verificação de autenticação uma vez, indicando que é o carregamento inicial.
   useEffect(() => {
     checkAuth(true);
@@ -111,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, isLoading, checkAuth, logout }}
+      value={{ isAuthenticated, user, isLoading, checkAuth, logout, incrementMessageCount }}
     >
       {/* O ecrã de carregamento agora só aparece no início. */}
       {!isLoading && children}
