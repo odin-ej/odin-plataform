@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { RolesFormValues } from "@/lib/schemas/roleSchema";
+import CustomCheckboxGroup from "../Global/Custom/CustomCheckboxGroup";
 
 interface CreateRoleModalProps{
   isOpen: boolean;
@@ -27,9 +28,10 @@ interface CreateRoleModalProps{
   onSubmit: (values: RolesFormValues) => void;
   onInvalid?: () => void;
   isLoading: boolean;
+  areaOptions: { value: string; label: string }[]
 }
 
-const CreateRoleModal = ({isOpen, onClose, form, onSubmit, onInvalid, isLoading}: CreateRoleModalProps) => {
+const CreateRoleModal = ({isOpen, onClose, form, onSubmit, onInvalid, isLoading, areaOptions}: CreateRoleModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
@@ -54,6 +56,13 @@ const CreateRoleModal = ({isOpen, onClose, form, onSubmit, onInvalid, isLoading}
                 field="description"
                 label="Descrição Detalhada"
                 placeholder="Descreva o problema ou a situação..."
+              />
+
+              <CustomCheckboxGroup
+                control={form.control}
+                label="Áreas"
+                name="area"
+                options={areaOptions}
               />
 
               <DialogFooter className="pt-4">

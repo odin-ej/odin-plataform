@@ -342,6 +342,7 @@ const RolesContent = ({ initialData }: RolesContentProps) => {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={(data) => createRole(data)}
+          areaOptions={areaOptions}
         />
       )}
     </>
