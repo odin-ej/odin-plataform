@@ -192,12 +192,12 @@ const RolesContent = ({ initialData }: RolesContentProps) => {
   };
 
     const handleRolesExport = () => {
-      if (data.roles.length === 0) return alert("Nenhum dado para exportar");
+      if (data.roles.length === 0 || data.users.length === 0) return alert("Nenhum dado para exportar");
       const dataToExport = data.roles.map((u) => ({
         Nome: u.name,
         Descricao: u.description,
         Areas: u.area.join(", "),
-        Membros_Atuais: filteredUsers.filter((user) => user.currentRole?.id === u.id).map((user) => user.name).join(', '),
+        Membros_Atuais: data.users.filter((user) => user.currentRole?.id === u.id).map((user) => user.name).join(', '),
         Data_Criacao: new Date(u.createdAt).toLocaleDateString().split("T")[0],
         Data_Atualizacao: new Date(u.updatedAt).toLocaleDateString().split("T")[0],
         Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
