@@ -100,10 +100,10 @@ const RoleMemberCard = ({ user }: { user: UserWithRole }) => {
                 .join("")}
             </AvatarFallback>
           </Avatar>
-          <CardTitle className="text-lg font-bold text-gray-100 truncate">
+          <CardTitle className="text-lg font-bold text-gray-100 leading-tight line-clamp-2">
             {user.name}
           </CardTitle>
-          <p className="text-sm text-[#f5b719]">
+          <p className="text-sm text-[#f5b719] leading-tight line-clamp-2">
             {user.currentRole?.name || "Cargo não definido"}
           </p>
         </div>
