@@ -97,7 +97,7 @@ enum LinkPosterArea {
   CONSULTORIA
   DIRETORIA
   TATICO
-} 
+}
 
 // --- MODELS ---
 
@@ -123,8 +123,8 @@ model RegistrationRequest {
   otherRole       String?
   isExMember      Boolean       @default(false) @map("ex_member")
   alumniDreamer   Boolean       @default(false) @map("alumni_dreamer")
-  isWorking         Boolean?
-  workplace         String?
+  isWorking       Boolean?
+  workplace       String?
   adminNotes      String?       @db.Text
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -159,18 +159,20 @@ model User {
   workplace         String?
 
   conversations          Conversation[]
-  roles                  Role[]            @relation("UserRoles")
-  points                 UserPoints?        
-  tasksResponsibleFor    Task[]            @relation("TaskResponsibles")
-  projectsResponsibleFor Project[]         @relation("ProjectResponsibles")
-  reportsSent            Report[]          @relation("ReportReferent")
-  reportsReceived        Report[]          @relation("ReportRecipientUser")
-  squadsLed              Squad[]           @relation("SquadLeader")
-  squadsAsMember         Squad[]           @relation("SquadMembers")
+  roles                  Role[]                       @relation("UserRoles")
+  points                 UserPoints?
+  tasksResponsibleFor    Task[]                       @relation("TaskResponsibles")
+  projectsResponsibleFor Project[]                    @relation("ProjectResponsibles")
+  reportsSent            Report[]                     @relation("ReportReferent")
+  reportsReceived        Report[]                     @relation("ReportRecipientUser")
+  squadsLed              Squad[]                      @relation("SquadLeader")
+  squadsAsMember         Squad[]                      @relation("SquadMembers")
   roomReservation        RoomReservation[]
   tasksAuthor            Task[]
   usefulLinks            UsefulLink[]
-  assignedTags           Tag[]             @relation("AssignedTags")
+  assignedTags           Tag[]                        @relation("AssignedTags")
+  madeConnectionRequests ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
+  notifications          Notification[] 
 }
 
 model UsefulLink {
@@ -181,10 +183,10 @@ model UsefulLink {
   updatedAt DateTime @updatedAt
 
   // Relação: Cada link pertence a um usuário
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Relação: Cada link pode ser global ou específico de uma área
-  isGlobal Boolean @default(false)
+  isGlobal Boolean   @default(false)
   area     LinkAreas @default(GERAL) // Define a área do link, padrão é GERAL
 }
 
@@ -197,10 +199,11 @@ model Role {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users                User[]                @relation("UserRoles")
-  reportsReceived      Report[]              @relation("ReportRecipientRole")
-  registrationRequests RegistrationRequest[] @relation("RegistrationRequestRoles")
-  currentRoleUsers     User[]                @relation("UserCurrentRole")
+  users                User[]                       @relation("UserRoles")
+  reportsReceived      Report[]                     @relation("ReportRecipientRole")
+  registrationRequests RegistrationRequest[]        @relation("RegistrationRequestRoles")
+  currentRoleUsers     User[]                       @relation("UserCurrentRole")
+  connectionRequests   ReserveRequestToConections[] @relation("ConnectionRequestRole")
 }
 
 model UserPoints {
@@ -225,27 +228,27 @@ model EnterprisePoints {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tags Tag[]
+  tags      Tag[]
 }
 
 model Tag {
-  id            String   @id @default(uuid())
+  id            String     @id @default(uuid())
   value         Int
   description   String
-  datePerformed DateTime @map("date_performed")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  areas          TagAreas[] @default([GERAL])
+  datePerformed DateTime   @map("date_performed")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  areas         TagAreas[] @default([GERAL])
   //Preciso adicionar um assigner. Ou seja, quem atribuiu a tag a um usuario.
-  actionTypeId String
+  actionTypeId  String
   // CORREÇÃO: Adicionado onDelete: Cascade. Se um ActionType for excluído, todas as tags associadas serão excluídas.
-  actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+  actionType    ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
 
-  userPointsId String?
+  userPointsId       String?
   // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos de um usuário forem excluídos, suas tags também serão.
-  userPoints   UserPoints? @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
-assignerId         String?  // ID de quem atribuiu a tag
-  assigner           User?    @relation("AssignedTags", fields: [assignerId], references: [id])
+  userPoints         UserPoints?       @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
+  assignerId         String? // ID de quem atribuiu a tag
+  assigner           User?             @relation("AssignedTags", fields: [assignerId], references: [id])
   enterprisePointsId Int?
   // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos da empresa forem excluídos, suas tags também serão.
   enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)
@@ -272,7 +275,7 @@ model Task {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author       User?     @relation(fields: [userId], references: [id])
+  author       User?    @relation(fields: [userId], references: [id])
   authorId     String?
   responsibles User[]   @relation("TaskResponsibles")
   projectId    String?
@@ -303,7 +306,7 @@ model Report {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   referentId      String?
-  referent        User?         @relation("ReportReferent", fields: [referentId], references: [id])
+  referent        User?        @relation("ReportReferent", fields: [referentId], references: [id])
   recipientUserId String?
   recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id])
   recipientRoleId String?
@@ -393,7 +396,7 @@ model RoomReservation {
 
   // Relação com o usuário que fez a reserva
   userId                String?
-  user                  User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   googleCalendarEventId String?
 }
 
@@ -430,14 +433,35 @@ model KnowledgeChunk {
 }
 
 model LinkPoster {
-  id String @id @default(uuid())
-  title String
-  imageUrl String
-  link String
-  areas LinkPosterArea[]
-  isActive Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String           @id @default(uuid())
+  title     String
+  imageUrl  String
+  link      String
+  areas     LinkPosterArea[]
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ReserveRequestToConections {
+  id          String   @id @default(uuid())
+  date        DateTime
+  description String
+  applicantId String
+  applicant   User     @relation("ConnectionRequestApplicant", fields: [applicantId], references: [id])
+  roleId      String
+  role        Role     @relation("ConnectionRequestRole", fields: [roleId], references: [id])
+}
+
+model Notification {
+  id           String   @id @default(uuid())
+  notification String
+  userId       String
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // model Post {

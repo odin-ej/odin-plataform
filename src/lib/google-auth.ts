@@ -1,41 +1,45 @@
-// lib/google-auth.ts
-import { OAuth2Client } from "google-auth-library";
+import { GoogleAuth } from "google-auth-library";
 
-// Variável para guardar o cliente OAuth e evitar recriá-lo a cada chamada
-let oauth2Client: OAuth2Client | null = null;
+// Variável para guardar a instância de autenticação e evitar recriá-la
+let auth: GoogleAuth | null = null;
 
-function getOAuthClient(): OAuth2Client {
-  if (!oauth2Client) {
-    // Cria o cliente OAuth com as credenciais do seu app
-    oauth2Client = new OAuth2Client(
-      process.env.GOOGLE_CALENDAR_RESERVATION_CLIENT_ID,
-      process.env.GOOGLE_CALENDAR_RESERVATION_SECRET,
-      "https://developers.google.com/oauthplayground" // O mesmo redirect URI usado no Playground
-    );
+function getGoogleAuth(): GoogleAuth {
+  if (!auth) {
+    // Verifica se a variável de ambiente com as credenciais JSON existe
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      throw new Error(
+        "A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não está definida."
+      );
+    }
+
+    // Parse do JSON que está na variável de ambiente
+    const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+
+    // Cria a instância de autenticação usando as credenciais da Conta de Serviço
+    auth = new GoogleAuth({
+      credentials,
+      scopes: ["https://www.googleapis.com/auth/calendar"],
+    });
   }
-
-  // Define a "chave mestra" (refresh token) no cliente
-  oauth2Client.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-  });
-
-  return oauth2Client;
+  return auth;
 }
 
 export async function getGoogleAuthToken(): Promise<string> {
-  const client = getOAuthClient();
+  const authClient = getGoogleAuth();
 
   try {
-    // Pede um novo token de acesso usando a "chave mestra"
-    const accessToken = await client.getAccessToken();
+    // Pede um novo token de acesso. Com uma Conta de Serviço, isto não depende
+    // de um refresh token de utilizador e é muito mais estável.
+    const token = await authClient.getAccessToken();
 
-    if (!accessToken.token) {
-      throw new Error("Falha ao obter o token de acesso do Google com o refresh token.");
+    if (!token) {
+      throw new Error("Falha ao obter o token de acesso da Conta de Serviço do Google.");
     }
 
-    return accessToken.token;
-  } catch (error) {
-    console.error("Erro ao renovar o token de acesso:", error);
-    throw new Error("Não foi possível autenticar com o Google. Verifique as credenciais e o refresh token.");
+    return token;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error("Erro ao obter o token de acesso da Conta de Serviço:", error);
+    throw new Error("Não foi possível autenticar com a Google usando a Conta de Serviço.");
   }
 }
