@@ -20,7 +20,7 @@ export async function GET(request: Request) {
         if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
           return NextResponse.json({ message: 'Acesso não autorizado.' }, { status: 401 });
         }
-
+        await prisma.$connect();
         // 2. Atualiza o campo 'dailyMessageCount' para 0 para todos os usuários.
         const updateResult = await prisma.user.updateMany({
             data: {
@@ -37,8 +37,5 @@ export async function GET(request: Request) {
     } catch (error) {
         console.error("Erro na API Route de reset de limite de mensagens:", error);
         return NextResponse.json({ message: "Erro interno do servidor ao resetar limite de mensagens." }, { status: 500 });
-    } finally {
-        // Garante que a conexão do Prisma seja desconectada após a execução da Lambda.
-        await prisma.$disconnect();
-    }
+    } 
 }

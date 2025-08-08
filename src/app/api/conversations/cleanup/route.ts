@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
+    await prisma.$connect();
     const result = await prisma.conversation.deleteMany({
       where: { createdAt: { lt: thirtyDaysAgo } },
     });
@@ -26,7 +26,5 @@ export async function GET(request: Request) {
       { message: "Erro ao apagar conversas antigas." },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect(); // Adicione esta linha
-  }
+  } 
 }

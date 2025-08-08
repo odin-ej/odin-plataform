@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     }
 
     const overdueTaskIds = overdueTasks.map((task) => task.id);
-
+    await prisma.$connect();
     // 3. Atualiza todas as tarefas encontradas para "PENDENTE" em uma única operação.
     const updateResult = await prisma.task.updateMany({
       where: {
@@ -68,7 +68,5 @@ export async function GET(request: Request) {
       { message: "Erro interno do servidor." },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect(); // Adicione esta linha
-  }
+  } 
 }
