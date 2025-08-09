@@ -225,14 +225,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const messageCount = await prisma.message.count({
-      where: { conversationId, role: "user" },
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { title: true },
     });
 
     let updatedTitle: string | null = null;
-    if (messageCount === 0) {
+    if (!conversation?.title || conversation.title === "Nova Conversa") {
       updatedTitle = await generateTitle(prompt);
     }
+    console.log(updatedTitle);
 
     await prisma.$transaction(async (tx) => {
       await tx.message.createMany({
