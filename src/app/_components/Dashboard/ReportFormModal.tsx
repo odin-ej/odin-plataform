@@ -128,13 +128,13 @@ const ReportFormModal = ({
                           />
                           <CommandList>
                             <CommandEmpty>
-                              Nenhuma resultado encontrado.
+                              <span className='text-white'>Nenhuma resultado encontrado.</span>
                             </CommandEmpty>
                             <CommandGroup>
                               {users.map((user) => (
                                 <CommandItem
                                   className="cursor-pointer bg-transparent px-4 py-3 text-white/80 transition-colors duration-200 data-[selected=true]:bg-[#0126fb] data-[selected=true]:text-white hover:!bg-white/10 hover:!text-[#f5b719]"
-                                  value={user.value}
+                                  value={user.label}
                                   key={user.value}
                                   onSelect={() => {
                                     form.setValue(
