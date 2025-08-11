@@ -79,23 +79,6 @@ const ExMemberHomeContent = ({
         </div>
       </div>
 
-      <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CustomCard
-          type="link"
-          href="/cultural"
-          icon={CircleUser}
-          title="Membros cadastrados"
-          value={data?.membersCount}
-        />
-        <CustomCard
-          type="link"
-          href="/cultural"
-          icon={CircleUser}
-          title="Ex-Membros cadastrados"
-          value={data?.exMembersCount}
-        />
-      </div>
-
       <div className="bg-[#010d26] p-6 rounded-lg">
         <h2 className="text-xl my-4 px-2 sm:text-2xl md:text-4xl lg:text-6xl font-extrabold text-white">
           Mural da Casinha:
@@ -110,6 +93,23 @@ const ExMemberHomeContent = ({
           {linkPosters.map((linkPoster) => (
             <LinkPosterCard key={linkPoster.id} linkPoster={linkPoster} />
           ))}
+        </div>
+
+        <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CustomCard
+            type="link"
+            href="/cultural"
+            icon={CircleUser}
+            title="Membros cadastrados"
+            value={data?.membersCount}
+          />
+          <CustomCard
+            type="link"
+            href="/cultural"
+            icon={CircleUser}
+            title="Ex-Membros cadastrados"
+            value={data?.exMembersCount}
+          />
         </div>
       </div>
     </>

@@ -45,11 +45,15 @@ const MemberViewModal = ({
           : `https://instagram.com/${user.instagram}`
       : "";
 
-  const formatedlinkedin =
+  const formatedLinkedin =
     user.linkedin && user.linkedin !== "N/A"
-      ? user.linkedin.startsWith("http") 
-        ? user.linkedin.startsWith('www') ? `https://${user.linkedin}` : user.linkedin
-        : `https://linkedin.com/in/${user.linkedin}`
+      ? user.linkedin.startsWith("http")
+        ? user.linkedin
+        : user.linkedin.startsWith("www.")
+          ? `https://${user.linkedin}`
+          : user.linkedin.startsWith("linkedin.com")
+            ? `https://${user.linkedin}`
+            : `https://linkedin.com/in/${user.linkedin}`
       : "";
 
   return (
@@ -130,10 +134,12 @@ const MemberViewModal = ({
 
               {user.isExMember && (
                 <>
-                <span className="text-zinc-400 font-medium col-span-1">
+                  <span className="text-zinc-400 font-medium col-span-1">
                     Semestre da Saída
                   </span>
-                  <span className="col-span-2">{user.semesterLeaveEj || "-"}</span>
+                  <span className="col-span-2">
+                    {user.semesterLeaveEj || "-"}
+                  </span>
                   <span className="text-zinc-400 font-medium col-span-1">
                     Local de Trabalho
                   </span>
@@ -166,7 +172,7 @@ const MemberViewModal = ({
                 {user.linkedin && user.linkedin !== "N/A" ? (
                   <a
                     className="flex items-center gap-1.5 text-[#f5b719] hover:underline"
-                    href={formatedlinkedin}
+                    href={formatedLinkedin}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

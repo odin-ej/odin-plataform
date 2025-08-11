@@ -13,6 +13,7 @@ import {
   Link,
   Megaphone,
   MessageSquare,
+  School,
   TicketCheck,
   Users,
 } from "lucide-react";
@@ -76,6 +77,12 @@ export const generalLinks: Links[] = [
     icon: CalendarClock,
     exMemberCanAccess: false,
   },
+  {
+    name: 'Reserva Salas EAUFBA',
+    href: '/salas-eaufba',
+    icon: School,
+    exMemberCanAccess: false,
+  }
 ];
 
 export const personalLinks: Links[] = [
@@ -168,6 +175,18 @@ export const restrictedLinks: RestrictedLinks[] = [
     name: 'Gerenciar Cargos',
     href: '/gerenciar-cargos',
     icon: BookUser,
+    roles: [
+      { name: "Diretor(a) Presidente" },
+      { name: "Diretor(a) de Gestão de Pessoas" },
+      { name: "Diretor(a) de Mercado" },
+      { name: "Diretor(a) de Operações" },
+      { name: "Diretor(a) de Projetos" },
+    ],
+    exMemberCanAccess: false,
+  }, {
+    name: 'Gerenciar JR-Points',
+    href: 'gerenciar-jr-points',
+    icon: JrPointIconWhite,
     roles: [
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },

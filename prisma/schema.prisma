@@ -1,5 +1,3 @@
-// schema.prisma
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -52,6 +50,9 @@ enum AreaRoles {
   CONSULTORIA
   TATICO
   PRESIDENCIA
+  MARKETING
+  COMERCIAL
+  ADMINISTRATIVO_FINANCEIRO
   OPERACOES
   PESSOAS
   PROJETOS
@@ -97,6 +98,26 @@ enum LinkPosterArea {
   CONSULTORIA
   DIRETORIA
   TATICO
+}
+
+enum JRPointsSolicitationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum JRPointsReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  POINTS_AWARDED
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  NEW_MENTION
+  GENERAL_ALERT
 }
 
 // --- MODELS ---
@@ -149,7 +170,7 @@ model User {
   isExMember        Boolean   @default(false) @map("ex_member")
   alumniDreamer     Boolean   @default(false) @map("alumni_dreamer")
   otherRole         String?
-  currentRoleId     String? // <- NOVO campo
+  currentRoleId     String?
   currentRole       Role?     @relation("UserCurrentRole", fields: [currentRoleId], references: [id])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -172,38 +193,57 @@ model User {
   usefulLinks            UsefulLink[]
   assignedTags           Tag[]                        @relation("AssignedTags")
   madeConnectionRequests ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
-  notifications          Notification[] 
+  notifications          Notification[]
+  roleHistory            UserRoleHistory[]
+  semesterScores         UserSemesterScore[]
+  jrPointsSolicitations  JRPointsSolicitation[]
+  jrPointsReports        JRPointsReport[]
+  posts                  Post[]
+  comments               Comment[]
+  likedPosts             Post[]                       @relation("PostLikes")
+  likedComments          Comment[]                    @relation("CommentLikes")
+  solicitationsAsMember  JRPointsSolicitation[]       @relation("SolicitationMembers")
+}
+
+model UserRoleHistory {
+  id        String   @id @default(uuid())
+  semester  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([roleId])
 }
 
 model UsefulLink {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   title     String
   url       String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relação: Cada link pertence a um usuário
-  userId   String
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Relação: Cada link pode ser global ou específico de uma área
-  isGlobal Boolean   @default(false)
-  area     LinkAreas @default(GERAL) // Define a área do link, padrão é GERAL
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isGlobal  Boolean   @default(false)
+  area      LinkAreas @default(GERAL)
 }
 
 model Role {
-  id          String      @id @default(uuid())
-  name        String      @unique
-  description String
-  area        AreaRoles[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id                   String                       @id @default(uuid())
+  name                 String                       @unique
+  description          String
+  area                 AreaRoles[]
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
   users                User[]                       @relation("UserRoles")
   reportsReceived      Report[]                     @relation("ReportRecipientRole")
   registrationRequests RegistrationRequest[]        @relation("RegistrationRequestRoles")
   currentRoleUsers     User[]                       @relation("UserCurrentRole")
   connectionRequests   ReserveRequestToConections[] @relation("ConnectionRequestRole")
+  userHistory          UserRoleHistory[]
 }
 
 model UserPoints {
@@ -216,19 +256,94 @@ model UserPoints {
   tags        Tag[]
 }
 
+model UserSemesterScore {
+  id          String   @id @default(uuid())
+  semester    String
+  totalPoints Int
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags        Tag[]
+
+  @@index([userId, semester])
+    @@unique([userId, semester])
+}
+
 model JRPointsRanking {
   id       Int     @id @default(1)
   isHidden Boolean @default(false)
 }
 
 model EnterprisePoints {
-  id          Int    @id @default(1)
+  id          Int      @id @default(1)
   value       Int
   description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tags        Tag[]
+}
+
+// -----------------------------------------------------------------
+// --- ESTRUTURA JR POINTS - NÃO QUEBRÁVEL E CORRIGIDA ---
+// -----------------------------------------------------------------
+
+model JRPointsVersion {
+  id                 String    @id @default(uuid())
+  versionName        String    @unique
+  description        String?   @db.Text
+  implementationDate DateTime
+  endDate            DateTime?
+  isActive           Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Uma versão consiste em um conjunto de "moldes de tags" disponíveis
+  tagTemplates TagTemplate[]
+
+  // Relação direta com ActionTypes para fins de organização, como solicitado
+  actionTypes ActionType[] @relation("VersionActionTypes")
+}
+
+model ActionType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ActionType é uma categoria para vários "moldes de tags"
+  tagTemplates TagTemplate[]
+  tags         Tag[]
+
+  // ActionType pode pertencer a múltiplas versões
+  versions JRPointsVersion[] @relation("VersionActionTypes")
+}
+
+model TagTemplate {
+  id                   String   @id @default(uuid())
+  name                 String
+  description          String   @db.Text
+  baseValue            Int
+  // Regras de escalonamento são definidas aqui, no "molde"
+  isScalable           Boolean? @default(false)
+  escalationValue      Float? // Ex: 5, -5. O valor a ser SOMADO a cada streak.
+  escalationStreakDays Int? // Ex: 7. Nº máximo de dias entre atribuições para manter o streak.
+  escalationCondition  String?  @db.Text // Descrição da regra
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tags      Tag[]
+
+  // Relação com sua categoria (ActionType)
+  actionTypeId String
+  actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+
+  // Relação com a versão a que pertence
+  jrPointsVersionId String?
+  jrPointsVersion   JRPointsVersion? @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+
+  // Relação com todas as instâncias de tags criadas a partir deste molde
+  tagInstances Tag[]
+  areas        TagAreas[] @default([GERAL])
 }
 
 model Tag {
@@ -239,61 +354,110 @@ model Tag {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   areas         TagAreas[] @default([GERAL])
-  //Preciso adicionar um assigner. Ou seja, quem atribuiu a tag a um usuario.
-  actionTypeId  String
-  // CORREÇÃO: Adicionado onDelete: Cascade. Se um ActionType for excluído, todas as tags associadas serão excluídas.
-  actionType    ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+  isFromAppeal  Boolean?   @default(false) // Adicionado para a lógica de "Recurso"
 
-  userPointsId       String?
-  // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos de um usuário forem excluídos, suas tags também serão.
-  userPoints         UserPoints?       @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
-  assignerId         String? // ID de quem atribuiu a tag
-  assigner           User?             @relation("AssignedTags", fields: [assignerId], references: [id])
+  // --- CAMPO DE COMPATIBILIDADE ---
+  // Este campo é mantido para garantir que as tags existentes na sua base de dados continuem funcionando.
+  // Para novas tags, ele deve ser preenchido com a informação do TagTemplate no momento da criação.
+  actionTypeId String
+  actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+
+  // --- NOVO SISTEMA DE MOLDES (Templates) ---
+  // Esta relação é OPCIONAL (?) para não quebrar as tags existentes.
+  // Novas tags, criadas a partir de um molde, terão este campo preenchido.
+  templateId String?
+  template   TagTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull) // SetNull para não apagar a tag se o molde for removido
+
+  // --- RELAÇÕES EXISTENTES ---
+  userPointsId String?
+  userPoints   UserPoints? @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
+
+  assignerId String?
+  assigner   User?   @relation("AssignedTags", fields: [assignerId], references: [id], onDelete: SetNull)
+
   enterprisePointsId Int?
-  // CORREÇÃO: Adicionado onDelete: Cascade. Se os pontos da empresa forem excluídos, suas tags também serão.
   enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)
+
+  solicitations       JRPointsSolicitation[] @relation("SolicitationTags")
+  UserSemesterScore   UserSemesterScore?     @relation(fields: [userSemesterScoreId], references: [id])
+  userSemesterScoreId String?
+  JRPointsReport      JRPointsReport[]
 }
 
-model ActionType {
-  id          String @id @default(uuid())
-  name        String @unique
-  description String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tags Tag[]
+model FileAttachment {
+  id                     String                @id @default(uuid())
+  url                    String
+  fileName               String
+  fileType               String
+  createdAt              DateTime              @default(now())
+  jrPointsSolicitationId String?
+  jrPointsSolicitation   JRPointsSolicitation? @relation(fields: [jrPointsSolicitationId], references: [id], onDelete: Cascade)
+  postId                 String?
+  post                   Post?                 @relation(fields: [postId], references: [id], onDelete: Cascade)
+  JRPointsReport         JRPointsReport?       @relation(fields: [jRPointsReportId], references: [id])
+  jRPointsReportId       String?
 }
+
+model JRPointsSolicitation {
+  id              String                     @id @default(uuid())
+  description     String                     @db.Text
+  datePerformed   String
+  directorsNotes  String                    @db.Text
+  status          JRPointsSolicitationStatus @default(PENDING)
+  area            AreaRoles
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  userId          String
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membersSelected User[]                     @relation("SolicitationMembers")
+  tags            Tag[]                      @relation("SolicitationTags")
+  attachments     FileAttachment[]
+}
+
+model JRPointsReport {
+  id           String               @id @default(uuid())
+  description  String               @db.Text
+  attachments FileAttachment[]
+  tag          Tag                  @relation(fields: [tagId], references: [id])
+  status       JRPointsReportStatus @default(PENDING)
+  area         AreaRoles
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tagId        String
+  directorsNotes  String                    @db.Text
+}
+
+// -----------------------------------------------------------------
+// --- DEMAIS MODELOS ---
+// -----------------------------------------------------------------
 
 model Task {
-  id          String     @id @default(uuid())
-  title       String
-  status      TaskStatus
-  description String     @db.Text
-  deadline    DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  author       User?    @relation(fields: [userId], references: [id])
+  id           String     @id @default(uuid())
+  title        String
+  status       TaskStatus
+  description  String     @db.Text
+  deadline     DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   authorId     String?
-  responsibles User[]   @relation("TaskResponsibles")
+  author       User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  responsibles User[]     @relation("TaskResponsibles")
   projectId    String?
-  project      Project? @relation(fields: [projectId], references: [id])
-  userId       String
+  project      Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model Project {
-  id          String        @id @default(uuid())
-  account     AccountType
-  status      ProjectStatus
-  description String        @db.Text
-  deadline    DateTime
-  title       String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  responsibles User[] @relation("ProjectResponsibles")
+  id           String        @id @default(uuid())
+  account      AccountType
+  status       ProjectStatus
+  description  String        @db.Text
+  deadline     DateTime
+  title        String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  responsibles User[]        @relation("ProjectResponsibles")
   tasks        Task[]
 }
 
@@ -302,15 +466,15 @@ model Report {
   title           String
   status          ReportStatus
   content         String       @db.Text
-  recipientNotes  String
+  recipientNotes  String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   referentId      String?
-  referent        User?        @relation("ReportReferent", fields: [referentId], references: [id])
+  referent        User?        @relation("ReportReferent", fields: [referentId], references: [id], onDelete: SetNull)
   recipientUserId String?
-  recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id])
+  recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id], onDelete: SetNull)
   recipientRoleId String?
-  recipientRole   Role?        @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id])
+  recipientRole   Role?        @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id], onDelete: SetNull)
 }
 
 model EstrategyPlan {
@@ -325,55 +489,48 @@ model EstrategyPlan {
 }
 
 model EstrategyObjective {
-  id          String @id @default(uuid())
-  objective   String
-  description String @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id              String         @id @default(uuid())
+  objective       String
+  description     String         @db.Text
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   estrategyPlanId Int?
   estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
   goals           Goal[]
 }
 
 model Goal {
-  id          String   @id @default(uuid())
-  title       String
-  description String   @db.Text
-  goal        Decimal
-  value       Decimal
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id                   String              @id @default(uuid())
+  title                String
+  description          String              @db.Text
+  goal                 Decimal
+  value                Decimal
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
   estrategyObjectiveId String?
   estrategyObjective   EstrategyObjective? @relation(fields: [estrategyObjectiveId], references: [id])
 }
 
 model Value {
-  id            String  @id @default(uuid())
-  name          String
-  description   String
-  isMotherValue Boolean @default(false) @map("is_mother_value")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id              String         @id @default(uuid())
+  name            String
+  description     String
+  isMotherValue   Boolean        @default(false) @map("is_mother_value")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   estrategyPlanId Int?
   estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
 }
 
 model Squad {
-  id          String @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
-  description String @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  leaderId String
-  leader   User   @relation("SquadLeader", fields: [leaderId], references: [id])
-  members  User[] @relation("SquadMembers")
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leaderId    String
+  leader      User     @relation("SquadLeader", fields: [leaderId], references: [id])
+  members     User[]   @relation("SquadMembers")
 }
 
 model Room {
@@ -383,41 +540,35 @@ model Room {
 }
 
 model RoomReservation {
-  id        String     @id @default(uuid())
-  date      DateTime // A data e hora da reserva
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  hourEnter DateTime
-  hourLeave DateTime
-  status    RoomStatus
-  // Relação com a sala reservada
-  roomId    String
-  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
-
-  // Relação com o usuário que fez a reserva
+  id                    String     @id @default(uuid())
+  date                  DateTime
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  hourEnter             DateTime
+  hourLeave             DateTime
+  status                RoomStatus
+  roomId                String
+  room                  Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
   userId                String?
-  user                  User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   googleCalendarEventId String?
 }
 
 model Conversation {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  messages Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  content   String   @db.Text
-  role      String // "user" ou "model"
-  createdAt DateTime @default(now())
-
+  id             String       @id @default(uuid())
+  content        String       @db.Text
+  role           String
+  createdAt      DateTime     @default(now())
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
@@ -425,11 +576,8 @@ model Message {
 model KnowledgeChunk {
   id        String                      @id @default(uuid())
   content   String                      @db.Text
-  // O tamanho do vetor (768) deve corresponder ao modelo de embedding que você usar
-  // (ex: text-embedding-004 da Google)
   embedding Unsupported("vector(768)")?
-
-  createdAt DateTime @default(now())
+  createdAt DateTime                    @default(now())
 }
 
 model LinkPoster {
@@ -444,59 +592,72 @@ model LinkPoster {
 }
 
 model ReserveRequestToConections {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
+  title       String
   date        DateTime
   description String
   applicantId String
-  applicant   User     @relation("ConnectionRequestApplicant", fields: [applicantId], references: [id])
+  applicant   User          @relation("ConnectionRequestApplicant", fields: [applicantId], references: [id])
   roleId      String
-  role        Role     @relation("ConnectionRequestRole", fields: [roleId], references: [id])
+  role        Role          @relation("ConnectionRequestRole", fields: [roleId], references: [id])
+  status      RequestStatus @default(PENDING)
 }
 
 model Notification {
-  id           String   @id @default(uuid())
-  notification String
+  id           String            @id @default(uuid())
+  notification String            @db.Text
   userId       String
-  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  isRead       Boolean?          @default(false)
+  type         NotificationType?
+  link         String?
 
   @@index([userId])
 }
 
-// model Post {
-//   id String @id @default(uuid())
-//   title String
-//   //Pensar em relação a upload de arquivos, pdf's imagens etc.
-//   content String
-//   author User
-//   likes Int
-//   commments PostComment[]
-//   isFixed Boolean
-//   createdAt DateTime
-//   updatedAt DateTime
-// }
+model Post {
+  id          String           @id @default(uuid())
+  title       String
+  content     String           @db.Text
+  isFixed     Boolean?         @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  authorId    String
+  author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likedBy     User[]           @relation("PostLikes")
+  comments    Comment[]
+  layouts     PostsLayout[]    @relation("LayoutPosts")
+  attachments FileAttachment[]
 
-// model PostComment{
-//   id String @id @default(uuid())
-//   user User
-//   comment Comment
-//    createdAt DateTime
-//   updatedAt DateTime
-// }
+  @@index([authorId])
+}
 
-// model Comment {
-//   id String @id @default(uuid())
-//   content String
-//   likes Int
-//   createdAt DateTime
-//   updatedAt DateTime
-// }
+model Comment {
+  id        String    @id @default(uuid())
+  content   String    @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likedBy   User[]    @relation("CommentLikes")
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  replies   Comment[] @relation("CommentReplies")
 
-// model PostsLayout{
-//   id String @id @default(uuid())
-//   title String
-//   imageUrl String
-//   // Carrousel de Posts - Diretores conseguiriam fixar apenas
-//   posts Post[]
-// }
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model PostsLayout {
+  id        String   @id @default(uuid())
+  title     String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]   @relation("LayoutPosts")
+}
