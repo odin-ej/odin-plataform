@@ -266,7 +266,7 @@ function CustomTable<T extends { id: string | number }>({
     ];
   }
   return (
-    <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-6 text-white shadow-lg">
+    <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-6 text-white shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-[#010d26]">
       <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
         <h2 className="text-2xl font-bold text-[#0126fb]">{title}</h2>
         <div className="flex items-center flex-wrap sm:flex-nowrap justify-end gap-4">

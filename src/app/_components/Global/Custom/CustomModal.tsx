@@ -28,6 +28,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CustomCheckboxGroup from "./CustomCheckboxGroup";
 import Image from "next/image";
 import ImageCropModal from "../ImageCropModal";
+import CustomTextArea from "./CustomTextArea";
+import CommandMultiSelect from "./CommandMultiSelect";
 
 export interface FieldConfig<T> {
   type?:
@@ -39,12 +41,14 @@ export interface FieldConfig<T> {
     | "date"
     | "time"
     | "password"
-    | "command";
+    | "command"
+    | "textarea";
   mask?: "phone" | "date" | null;
   header: string;
   accessorKey: Path<T>;
   options?: { value: string; label: string }[];
   disabled?: boolean;
+  isMulti?: boolean;
   renderView?: (data: T) => React.ReactNode;
 }
 
@@ -80,7 +84,7 @@ const CustomModal = <T extends FieldValues>({
   onlyView,
   page,
   cropShape,
-  aspect
+  aspect,
 }: CustomModalProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -221,6 +225,39 @@ const CustomModal = <T extends FieldValues>({
                             case "password":
                               return (
                                 <CustomInput
+                                  form={form}
+                                  field={accessorKey}
+                                  label={fieldInfo.header}
+                                  type={fieldInfo.type}
+                                />
+                              );
+
+                            case "command":
+                              if (fieldInfo.isMulti) {
+                                return (
+                                  <CommandMultiSelect
+                                    key={accessorKey as string}
+                                    form={form}
+                                    name={accessorKey as string}
+                                    label={fieldInfo.header}
+                                    options={fieldInfo.options || []}
+                                  />
+                                );
+                              }
+                              // Fallback para command de seleção única (usando CustomSelect por enquanto)
+                              return (
+                                <CustomSelect
+                                  key={accessorKey as string}
+                                  control={form.control}
+                                  name={accessorKey}
+                                  label={fieldInfo.header}
+                                  placeholder="Selecione uma opção"
+                                  options={fieldInfo.options!}
+                                />
+                              );
+                            case "textarea":
+                              return (
+                                <CustomTextArea
                                   form={form}
                                   field={accessorKey}
                                   label={fieldInfo.header}

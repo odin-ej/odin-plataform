@@ -43,14 +43,14 @@ const CustomCard = ({
     >
       <CardTitle className='sr-only'></CardTitle>
       <CardContent className="p-2 flex items-center justify-center space-x-4">
-        <div className='w-[30%] flex justify-center items-center'><Icon className="text-[#0126fb] w-32 h-32" /></div>
-        <div className={cn("w-[70%]", type === "introduction" && "w-[100%]")}>
+        <div className='w-[45%] sm:w-[40%] md:w-[35%] lg:w-[30%] flex justify-center items-center'><Icon className="text-[#0126fb] h-16 w-16 sm:h-24 sm:w-24 md:w-32 md:h-32" /></div>
+        <div className={cn("w-[55%] sm:w-[60%] md:w-[65%] lg:w-[70%]", type === "introduction" && "w-[100%]")}>
           {type === "link" ? (
             <>
-            <h4 className="text-[#0126fb] mb-1 text-lg sm:text-xl">{title}</h4>
+            <h4 className="text-[#0126fb] mb-1 text-md sm:text-lg md:text-xl">{title}</h4>
             <h2
             className={cn(
-              "text-7xl font-semibold"
+              "text-3xl md:text-5xl lg:text-7xl font-semibold"
             )}
           >
             {value}
@@ -60,7 +60,7 @@ const CustomCard = ({
            <>
             <h2
             className={cn(
-              "text-2xl sm:text-5xl font-semibold"
+              "text-3xl md:text-5xl font-semibold"
             )}
           >
             {title}
