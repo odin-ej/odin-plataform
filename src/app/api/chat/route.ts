@@ -234,6 +234,7 @@ export async function POST(request: Request) {
     if (!conversation?.title || conversation.title === "Nova Conversa") {
       updatedTitle = await generateTitle(prompt);
     }
+    console.log(updatedTitle);
 
 
     await prisma.$transaction(async (tx) => {
