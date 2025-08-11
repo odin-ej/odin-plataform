@@ -3,6 +3,7 @@ import { reserveRequestToConectionsSchema } from "@/lib/schemas/requestToConecti
 import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/db";
 
 /**
  * @swagger
