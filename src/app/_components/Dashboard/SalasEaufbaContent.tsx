@@ -198,43 +198,56 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
     },
   ];
 
-  const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
-    const createFields: FieldConfig<ReserveRequestFormValues>[] = [
-      { accessorKey: "title", header: "Título" },
-      { accessorKey: "date", header: "Data da Solicitação", mask: "date" },
-      { accessorKey: "description", header: "Descrição", type: "textarea" },
-    ];
-  
-    const editFields: FieldConfig<ReserveRequestFormValues>[] = [
-      ...createFields,
-      {
-        accessorKey: "status",
-        header: "Status",
-        type: "select",
-        options: [
-          { value: "PENDING", label: "Em análise" },
-          { value: "APPROVED", label: "Aprovada" },
-          { value: "REJECTED", label: "Rejeitada" },
-        ],
-        disabled: true,
-      },
-    ];
+const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
+  const createFields: FieldConfig<ReserveRequestFormValues>[] = [
+    { accessorKey: "title", header: "Título" },
+    { accessorKey: "date", header: "Data da Solicitação", mask: "date" },
+    { accessorKey: "description", header: "Descrição", type: "textarea" },
+  ];
 
-    const isAssessorEditing = selectedRequest && userHasAllowedRole && selectedRequest.applicantId !== user?.id;
-
-    if (isAssessorEditing) {
-        return editFields.map(field => ({
-            ...field,
-            disabled: field.accessorKey !== 'status',
-        }));
-    }
-  
-    if (selectedRequest) {
-        return editFields;
-    }
-  
-    return createFields;
+  const statusField: FieldConfig<ReserveRequestFormValues> = {
+    accessorKey: "status",
+    header: "Status",
+    type: "select",
+    options: [
+      { value: "PENDING", label: "Em análise" },
+      { value: "APPROVED", label: "Aprovada" },
+      { value: "REJECTED", label: "Rejeitada" },
+    ],
+    disabled: true, // default, será sobrescrito conforme regras abaixo
   };
+
+  const isEditing = Boolean(selectedRequest);
+  const isOwnRequest = selectedRequest?.applicantId === user?.id;
+  const isAssessor = userHasAllowedRole;
+
+  // Criando solicitação
+  if (!isEditing) {
+    return createFields;
+  }
+
+  // Se é assessor e está editando solicitação de outra pessoa → só edita o status
+  if (isAssessor && !isOwnRequest) {
+    return [
+      ...createFields.map(field => ({ ...field, disabled: true })),
+      { ...statusField, disabled: false },
+    ];
+  }
+
+  // Se não é assessor (ou não tem cargo permitido) → status também é desabilitado
+  if (!isAssessor) {
+    return [
+      ...createFields,
+      { ...statusField, disabled: true },
+    ];
+  }
+
+  // Caso normal de edição (assessor editando a própria, ou outro papel permitido)
+  return [
+    ...createFields,
+    { ...statusField, disabled: false },
+  ];
+};
 
   const myRequests = data?.reserveRequestToConections?.filter(req => req.applicantId === user?.id) || [];
   const allRequests = data?.reserveRequestToConections || [];
