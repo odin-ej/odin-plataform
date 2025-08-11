@@ -206,40 +206,42 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
 
 const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
   const isEditing = Boolean(selectedRequest);
-  
-  // Campos base que um usuário sempre pode editar (se for o dono e estiver pendente)
-  const baseFields: FieldConfig<ReserveRequestFormValues>[] = [
-    { accessorKey: "title", header: "Título" },
-    { accessorKey: "date", header: "Data da Solicitação", mask: "date" },
-    { accessorKey: "description", header: "Descrição", type: "textarea" },
-  ];
 
-  // Campo de status com sua configuração padrão
-  const statusField: FieldConfig<ReserveRequestFormValues> = {
-    accessorKey: "status",
-    header: "Status",
-    type: "select",
-    options: [
-      { value: "PENDING", label: "Em análise" },
-      { value: "APPROVED", label: "Aprovada" },
-      { value: "REJECTED", label: "Rejeitada" },
-    ],
-  };
+  // Regra 1: Define se o CONTEÚDO (título, data, etc.) pode ser editado.
+  // Apenas ao criar um novo, ou se o dono estiver editando um pedido AINDA PENDENTE.
+  const canEditContent = !isEditing || 
+    (selectedRequest?.applicantId === user?.id && selectedRequest?.status === 'PENDING');
 
-  // Se for um novo pedido, retorne apenas os campos base
-  if (!isEditing) {
-    return baseFields;
-  }
-  
-  // Se estiver editando, determine a permissão para cada campo
-  const canEditContent = selectedRequest?.applicantId === user?.id && selectedRequest?.status === 'PENDING';
+  // Regra 2: Define se o STATUS pode ser editado.
+  // Apenas usuários com a role específica podem alterar o status.
   const canEditStatus = userHasAllowedRole;
 
-  // Habilita/desabilita os campos com base nas regras
-  const finalFields = baseFields.map(field => ({ ...field, disabled: !canEditContent }));
-  const finalStatusField = { ...statusField, disabled: !canEditStatus };
+  // Define os campos base, que sempre aparecem.
+  // A propriedade 'disabled' é controlada pela regra 'canEditContent'.
+  const fields: FieldConfig<ReserveRequestFormValues>[] = [
+    { accessorKey: "title", header: "Título", disabled: !canEditContent },
+    { accessorKey: "date", header: "Data da Solicitação", mask: "date", disabled: !canEditContent },
+    { accessorKey: "description", header: "Descrição", type: "textarea", disabled: !canEditContent },
+  ];
 
-  return [...finalFields, finalStatusField];
+  // Se estiver em modo de edição, SEMPRE adicionamos o campo de status.
+  if (isEditing) {
+    fields.push({
+      accessorKey: "status",
+      header: "Status",
+      type: "select",
+      options: [
+        { value: "PENDING", label: "Em análise" },
+        { value: "APPROVED", label: "Aprovada" },
+        { value: "REJECTED", label: "Rejeitada" },
+      ],
+      // AQUI ESTÁ A LÓGICA CHAVE:
+      // O campo fica desabilitado se o usuário NÃO tiver a permissão para editar o status.
+      disabled: !canEditStatus,
+    });
+  }
+
+  return fields;
 };
 
   const myRequests = data?.reserveRequestToConections?.filter(req => req.applicantId === user?.id) || [];
