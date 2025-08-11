@@ -155,10 +155,16 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
       return;
     }
 
-    const payload = {
+        const payload: Partial<ReserveRequestFormValues> & { date: string } = {
       ...values,
       date: parsedDate.toISOString(),
     };
+
+    // Se o usuário NÃO tiver permissão para alterar o status,
+    // removemos o campo 'status' do objeto antes de enviar para a API.
+    if (!userHasAllowedRole) {
+      delete (payload as Partial<ReserveRequestFormValues>).status;
+    }
 
     if (selectedRequest) {
       updateRequest(payload);
@@ -199,12 +205,16 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
   ];
 
 const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
-  const createFields: FieldConfig<ReserveRequestFormValues>[] = [
+  const isEditing = Boolean(selectedRequest);
+  
+  // Campos base que um usuário sempre pode editar (se for o dono e estiver pendente)
+  const baseFields: FieldConfig<ReserveRequestFormValues>[] = [
     { accessorKey: "title", header: "Título" },
     { accessorKey: "date", header: "Data da Solicitação", mask: "date" },
     { accessorKey: "description", header: "Descrição", type: "textarea" },
   ];
 
+  // Campo de status com sua configuração padrão
   const statusField: FieldConfig<ReserveRequestFormValues> = {
     accessorKey: "status",
     header: "Status",
@@ -214,39 +224,22 @@ const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
       { value: "APPROVED", label: "Aprovada" },
       { value: "REJECTED", label: "Rejeitada" },
     ],
-    disabled: true, // default, será sobrescrito conforme regras abaixo
   };
 
-  const isEditing = Boolean(selectedRequest);
-  const isOwnRequest = selectedRequest?.applicantId === user?.id;
-  const isAssessor = userHasAllowedRole;
-
-  // Criando solicitação
+  // Se for um novo pedido, retorne apenas os campos base
   if (!isEditing) {
-    return createFields;
+    return baseFields;
   }
+  
+  // Se estiver editando, determine a permissão para cada campo
+  const canEditContent = selectedRequest?.applicantId === user?.id && selectedRequest?.status === 'PENDING';
+  const canEditStatus = userHasAllowedRole;
 
-  // Se é assessor e está editando solicitação de outra pessoa → só edita o status
-  if (isAssessor && !isOwnRequest) {
-    return [
-      ...createFields.map(field => ({ ...field, disabled: true })),
-      { ...statusField, disabled: false },
-    ];
-  }
+  // Habilita/desabilita os campos com base nas regras
+  const finalFields = baseFields.map(field => ({ ...field, disabled: !canEditContent }));
+  const finalStatusField = { ...statusField, disabled: !canEditStatus };
 
-  // Se não é assessor (ou não tem cargo permitido) → status também é desabilitado
-  if (!isAssessor) {
-    return [
-      ...createFields,
-      { ...statusField, disabled: true },
-    ];
-  }
-
-  // Caso normal de edição (assessor editando a própria, ou outro papel permitido)
-  return [
-    ...createFields,
-    { ...statusField, disabled: false },
-  ];
+  return [...finalFields, finalStatusField];
 };
 
   const myRequests = data?.reserveRequestToConections?.filter(req => req.applicantId === user?.id) || [];
