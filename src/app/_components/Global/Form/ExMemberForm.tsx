@@ -110,8 +110,9 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     watchedRoles.includes(otherRoleId);
 
   const isWorking = form.watch("isWorking" as Path<z.infer<T>>) === 'Sim';
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onInvalid = (error: any) => {
-    console.log(error)
+
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
     });
