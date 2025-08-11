@@ -28,7 +28,10 @@ interface UserWithRole extends User {
 }
 
 export const areaConfig: Record<
-  Exclude<AreaRoles, "OUTRO">,
+  Exclude<
+    AreaRoles,
+    "OUTRO" | "ADMINISTRATIVO_FINANCEIRO" | "COMERCIAL" | "MARKETING"
+  >,
   { icon: React.ElementType; color: string; label: string }
 > = {
   [AreaRoles.DIRETORIA]: {
@@ -72,7 +75,10 @@ export const areaConfig: Record<
 
 export function isConfigurableArea(
   area: AreaRoles
-): area is Exclude<AreaRoles, "OUTRO"> {
+): area is Exclude<
+  AreaRoles,
+  "OUTRO" | "ADMINISTRATIVO_FINANCEIRO" | "COMERCIAL" | "MARKETING"
+> {
   return area in areaConfig;
 }
 
