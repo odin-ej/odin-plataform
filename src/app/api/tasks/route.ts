@@ -69,7 +69,6 @@ export async function POST(request: Request) {
       ...taskData,
       deadline: parsedDeadline,
       authorId: authUser.id,
-      author: { connect: { id: authUser.id } },
       responsibles: {
         // Transforma o array de IDs no formato que o Prisma espera para criar relações.
         connect: responsibles.map((id) => ({ id })),
