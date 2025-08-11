@@ -6,10 +6,6 @@ import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { prisma } from "@/db";
 
-interface IParams {
-  id: string;
-}
-
 /**
  * @swagger
  * /api/reserve/salas-eaufba/{id}:
@@ -43,7 +39,7 @@ interface IParams {
  * 500:
  * description: Erro interno do servidor.
  */
-export async function PATCH(req: Request, { params }: { params: IParams }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthenticatedUser();
 
@@ -51,7 +47,7 @@ export async function PATCH(req: Request, { params }: { params: IParams }) {
       return new NextResponse(" Não autorizado", { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const originalRequest = await prisma.reserveRequestToConections.findUnique({
@@ -134,7 +130,7 @@ export async function PATCH(req: Request, { params }: { params: IParams }) {
  * 500:
  * description: Erro interno do servidor.
  */
-export async function DELETE(req: Request, { params }: { params: IParams }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthenticatedUser();
 
@@ -142,7 +138,7 @@ export async function DELETE(req: Request, { params }: { params: IParams }) {
       return new NextResponse("Não autorizado", { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const requestToDelete = await prisma.reserveRequestToConections.findUnique({
       where: { id },
