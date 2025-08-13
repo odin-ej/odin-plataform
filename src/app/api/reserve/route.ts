@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       console.error(
         "Erro de validação da API:",
         validation.error.flatten().fieldErrors
-      );
+    );
       return NextResponse.json(
         {
           message: "Dados inválidos.",
@@ -76,54 +76,54 @@ export async function POST(request: Request) {
       select: { name: true },
     });
 
-    const googleRes = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${process.env.GOOGLE_CALENDAR_ID}/events`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${await getGoogleAuthToken()}`,
-        },
-        body: JSON.stringify({
-          summary: `Reserva da sala ${roomName!.name}`, // Pode usar o ID da sala aqui
-          description: `Reservado por: ${authUser.name}`,
-          start: {
-            dateTime: validation.data.hourEnter,
-            timeZone: "America/Sao_Paulo",
-          },
-          end: {
-            dateTime: validation.data.hourLeave,
-            timeZone: "America/Sao_Paulo",
-          },
-        }),
-      }
-    );
-    // 2. Verifique se a criação no Google funcionou. Se não, pare aqui.
-    if (!googleRes.ok) {
-      const errorDetails = await googleRes.json();
-      console.error(
-        "Falha ao criar evento no Google Calendar:",
-        JSON.stringify(errorDetails, null, 2) // <-- MUDANÇA AQUI
-      );
-      return NextResponse.json(
-        { message: "Erro ao agendar no Google Calendar." },
-        { status: 502 } // 502 Bad Gateway é apropriado
-      );
-    }
+    // const googleRes = await fetch(
+    //   `https://www.googleapis.com/calendar/v3/calendars/${process.env.GOOGLE_CALENDAR_ID}/events`,
+    //   {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       Authorization: `Bearer ${await getGoogleAuthToken()}`,
+    //     },
+    //     body: JSON.stringify({
+    //       summary: `Reserva da sala ${roomName!.name}`, // Pode usar o ID da sala aqui
+    //       description: `Reservado por: ${authUser.name}`,
+    //       start: {
+    //         dateTime: validation.data.hourEnter,
+    //         timeZone: "America/Sao_Paulo",
+    //       },
+    //       end: {
+    //         dateTime: validation.data.hourLeave,
+    //         timeZone: "America/Sao_Paulo",
+    //       },
+    //     }),
+    //   }
+    // );
+    // // 2. Verifique se a criação no Google funcionou. Se não, pare aqui.
+    // if (!googleRes.ok) {
+    //   const errorDetails = await googleRes.json();
+    //   console.error(
+    //     "Falha ao criar evento no Google Calendar:",
+    //     JSON.stringify(errorDetails, null, 2) // <-- MUDANÇA AQUI
+    //   );
+    //   return NextResponse.json(
+    //     { message: "Erro ao agendar no Google Calendar." },
+    //     { status: 502 } // 502 Bad Gateway é apropriado
+    //   );
+    // }
 
-    const googleData = await googleRes.json();
+    // const googleData = await googleRes.json();
 
     // 3. AGORA, se tudo deu certo com o Google, crie a reserva no seu DB de uma só vez
     const newReservation = await prisma.roomReservation.create({
       data: {
         ...validation.data, // Todos os dados validados
-        googleCalendarEventId: googleData.id, // Incluindo o ID do evento do Google googleData.id 
+        // googleCalendarEventId: googleData.id, // Incluindo o ID do evento do Google googleData.id 
       },
     });
 
-    revalidatePath("/");
-    revalidatePath("/reserva-salinhas");
-
+    // revalidatePath("/");
+    // revalidatePath("/reserva-salinhas");
+    console.log('criado com sucesso')
     return NextResponse.json(newReservation, { status: 201 });
   } catch (error) {
     console.error(error)

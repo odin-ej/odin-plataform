@@ -77,6 +77,7 @@ export async function PATCH(
     revalidatePath("/reserva-salinhas");
     return NextResponse.json(updatedReservation);
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { message: "Erro ao atualizar reserva." },
       { status: 500 }
@@ -124,6 +125,7 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 });
 
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { message: "Erro ao apagar reserva." },
       { status: 500 }
