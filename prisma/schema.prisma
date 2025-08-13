@@ -542,6 +542,7 @@ model Room {
 model RoomReservation {
   id                    String     @id @default(uuid())
   date                  DateTime
+  title                 String
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
   hourEnter             DateTime

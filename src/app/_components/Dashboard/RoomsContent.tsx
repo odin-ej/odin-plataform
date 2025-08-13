@@ -53,6 +53,15 @@ import { RoomsPageData } from "@/app/(dashboard)/reserva-salinhas/page";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+/*
+Agrupar todas as reservas em um só lugar
+
+Fazer uma forma de dividir entre duas formas: itens e salas.
+  Fazer sistema de Tabs navigation para reserva de salinhas, salas eaufba
+  Fazer sistema de Tabs navigation para reserva de notebooks, cameras
+
+**/
+
 // --- Tipos e Enums ---
 enum CalendarView {
   MONTH = "month",
@@ -62,6 +71,7 @@ enum CalendarView {
 // Tipo para os dados "achatados" que serão passados para a tabela
 type FlattenedReservation = {
   id: string;
+  title: string;
   roomName: string;
   userName: string;
   formattedDate: string;
@@ -133,7 +143,9 @@ const RoomsContent = ({
         });
 
         if (hourEnter >= hourLeave) {
-          throw new Error("Hora de entrada deve ser menor que a hora de saída.");
+          throw new Error(
+            "Hora de entrada deve ser menor que a hora de saída."
+          );
         }
 
         if (hasConflict)
@@ -142,6 +154,7 @@ const RoomsContent = ({
           );
 
         const payload = {
+          title: formData.title,
           date: hourEnter.toISOString(),
           hourEnter: hourEnter.toISOString(),
           hourLeave: hourLeave.toISOString(),
@@ -203,6 +216,7 @@ const RoomsContent = ({
   ): FlattenedReservation[] => {
     return data.map((res) => ({
       id: res.id,
+      title: res.title,
       roomName: res.room.name,
       userName: res.user.name,
       formattedDate:
@@ -242,6 +256,7 @@ const RoomsContent = ({
       setEditingReservation(reservation);
       form.reset({
         date: format(new Date(reservation.date), "yyyy-MM-dd"),
+        title: reservation.title,
         hourEnter: format(new Date(reservation.hourEnter), "HH:mm"),
         hourLeave: format(new Date(reservation.hourLeave), "HH:mm"),
         roomId: reservation.roomId,
@@ -250,6 +265,7 @@ const RoomsContent = ({
       setEditingReservation(null);
       form.reset({
         date: date ? format(date, "yyyy-MM-dd") : "",
+        title: "",
         hourEnter: "",
         hourLeave: "",
         roomId: undefined,
@@ -263,6 +279,7 @@ const RoomsContent = ({
   ): ColumnDef<FlattenedReservation>[] => [
     { accessorKey: "roomName", header: "Sala" },
     { accessorKey: "formattedDate", header: "Período" },
+    { accessorKey: 'title', header: 'Titulo' },
     {
       accessorKey: "userName",
       header: "Reservado por",
@@ -411,7 +428,7 @@ const RoomsContent = ({
                   view === "month" &&
                     !isSameMonth(day, monthStart) &&
                     "text-gray-600 bg-black/20 pointer-events-none",
-                    isPast && "text-gray-600 bg-black/20 pointer-events-none",
+                  isPast && "text-gray-600 bg-black/20 pointer-events-none",
                   isToday(day) && "bg-blue-500/20",
                   "hover:bg-[#00205e]"
                 )}
@@ -437,14 +454,15 @@ const RoomsContent = ({
                       <div
                         key={res.id}
                         className="bg-[#0126fb]/70 p-1 rounded truncate"
-                        title={`${format(new Date(res.hourEnter), "HH:mm")} - ${ format(new Date(res.hourLeave), "HH:mm")} ${
+                        title={`${format(new Date(res.hourEnter), "HH:mm")} - ${format(new Date(res.hourLeave), "HH:mm")} ${
                           res.room.name
                         } - ${res.user.name}`}
                       >
                         <span className="hidden sm:inline">{`${format(
                           new Date(res.hourEnter),
                           "HH:mm"
-                        )} `}</span>{" "}-{" "}
+                        )} `}</span>{" "}
+                        -{" "}
                         <span className="hidden sm:inline">{`${format(
                           new Date(res.hourLeave),
                           "HH:mm"
@@ -514,6 +532,11 @@ const RoomsContent = ({
             header: "Data da Reserva",
             mask: "date",
             type: "date",
+          },
+          {
+            accessorKey: "title",
+            header: "Título da Reserva",
+            type: "text",
           },
           {
             accessorKey: "hourEnter",

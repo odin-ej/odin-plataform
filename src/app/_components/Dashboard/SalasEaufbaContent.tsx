@@ -9,9 +9,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { toast } from "sonner";
-import { RequestStatus, ReserveRequestToConections, User } from "@prisma/client";
+import {
+  RequestStatus,
+  ReserveRequestToConections,
+  User,
+} from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {  School } from "lucide-react";
+import { School } from "lucide-react";
 import CustomCard from "../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../Global/Custom/CustomTable";
 import CustomModal, { FieldConfig } from "../Global/Custom/CustomModal";
@@ -25,7 +29,9 @@ import { DIRECTORS_ONLY } from "@/lib/permissions";
 // --- Tipos e Schemas ---
 const formValidationSchema = z.object({
   title: z.string().min(3, "O título deve ter no mínimo 3 caracteres."),
-  description: z.string().min(10, "A descrição deve ter no mínimo 10 caracteres."),
+  description: z
+    .string()
+    .min(10, "A descrição deve ter no mínimo 10 caracteres."),
   date: z.string().min(10, "A data no formato DD/MM/AAAA é obrigatória."),
   status: z.nativeEnum(RequestStatus).optional(),
 });
@@ -44,10 +50,13 @@ type RequestWithApplicant = ReserveRequestToConections & { applicant: User };
 const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
   // --- Estados ---
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<RequestWithApplicant | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<RequestWithApplicant | null>(
+    null
+  );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<RequestWithApplicant | null>(null);
-  
+  const [selectedRequest, setSelectedRequest] =
+    useState<RequestWithApplicant | null>(null);
+
   // --- Hooks ---
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -55,7 +64,9 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
   const { data } = useQuery({
     queryKey: ["reserveRequestToConections"],
     queryFn: async () => {
-      const { data } = await axios.get<RequestWithApplicant[]>('/api/reserve/salas-eaufba');
+      const { data } = await axios.get<RequestWithApplicant[]>(
+        "/api/reserve/salas-eaufba"
+      );
       return { reserveRequestToConections: data };
     },
     initialData,
@@ -81,25 +92,36 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
       axios.post("/api/reserve/salas-eaufba", values),
     onSuccess: () => {
       toast.success("Solicitação criada com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["reserveRequestToConections"] });
+      queryClient.invalidateQueries({
+        queryKey: ["reserveRequestToConections"],
+      });
       handleCloseModal();
     },
     onError: (error: AxiosError<{ message?: string }>) =>
-      toast.error("Erro ao criar solicitação.", { description: error.response?.data?.message || error.message }),
+      toast.error("Erro ao criar solicitação.", {
+        description: error.response?.data?.message || error.message,
+      }),
   });
 
   const { mutate: updateRequest, isPending: isUpdating } = useMutation({
     mutationFn: (values: Partial<ReserveRequestFormValues>) => {
       if (!selectedRequest) throw new Error("Nenhuma solicitação selecionada.");
-      return axios.patch(`/api/reserve/salas-eaufba/${selectedRequest.id}`, values);
+      return axios.patch(
+        `/api/reserve/salas-eaufba/${selectedRequest.id}`,
+        values
+      );
     },
     onSuccess: () => {
       toast.success("Solicitação atualizada com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["reserveRequestToConections"] });
+      queryClient.invalidateQueries({
+        queryKey: ["reserveRequestToConections"],
+      });
       handleCloseModal();
     },
     onError: (error: AxiosError<{ message?: string }>) =>
-      toast.error("Erro ao atualizar solicitação.", { description: error.response?.data?.message || error.message }),
+      toast.error("Erro ao atualizar solicitação.", {
+        description: error.response?.data?.message || error.message,
+      }),
   });
 
   const { mutate: deleteRequest, isPending: isDeleting } = useMutation({
@@ -107,10 +129,14 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
     onSuccess: () => {
       toast.success("Solicitação deletada com sucesso!");
       setIsDeleteModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["reserveRequestToConections"] });
+      queryClient.invalidateQueries({
+        queryKey: ["reserveRequestToConections"],
+      });
     },
     onError: (error: AxiosError<{ message?: string }>) =>
-      toast.error("Erro ao deletar solicitação.", { description: error.response?.data?.message || error.message }),
+      toast.error("Erro ao deletar solicitação.", {
+        description: error.response?.data?.message || error.message,
+      }),
   });
 
   // --- Manipuladores de Eventos ---
@@ -149,13 +175,15 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
 
   const onSubmit = (values: ReserveRequestFormValues) => {
     const parsedDate = parse(values.date, "dd/MM/yyyy", new Date());
-   
+
     if (isNaN(parsedDate.getTime())) {
-      toast.error("Data inválida", { description: "Por favor, insira uma data no formato DD/MM/AAAA." });
+      toast.error("Data inválida", {
+        description: "Por favor, insira uma data no formato DD/MM/AAAA.",
+      });
       return;
     }
 
-        const payload: Partial<ReserveRequestFormValues> & { date: string } = {
+    const payload: Partial<ReserveRequestFormValues> & { date: string } = {
       ...values,
       date: parsedDate.toISOString(),
     };
@@ -172,20 +200,25 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
       createRequest(payload);
     }
   };
-  
+
   // --- Definições de Colunas e Campos ---
   const requestColumns: ColumnDef<RequestWithApplicant>[] = [
     {
       accessorKey: "date",
       header: "Data da Solicitação",
-      cell: (row) => new Date(row.date).toLocaleDateString("pt-BR", { timeZone: 'UTC' }),
+      cell: (row) =>
+        new Date(row.date).toLocaleDateString("pt-BR", { timeZone: "UTC" }),
     },
     { accessorKey: "title", header: "Título" },
     {
       accessorKey: "status",
       header: "Status",
       cell: (row) => {
-        const statusMap: Record<RequestStatus, string> = { PENDING: "Em análise", APPROVED: "Aprovada", REJECTED: "Rejeitada" };
+        const statusMap: Record<RequestStatus, string> = {
+          PENDING: "Em análise",
+          APPROVED: "Aprovada",
+          REJECTED: "Rejeitada",
+        };
         return statusMap[row.status] || "Desconhecido";
       },
     },
@@ -194,57 +227,80 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
       header: "Solicitante",
       cell: (row) => (
         <Avatar className="h-8 w-8">
-          <AvatarImage src={row.applicant.imageUrl} alt={row.applicant.name} className="object-cover" />
-          <span className='text-white p-1'>{row.applicant.name}</span>
+          <AvatarImage
+            src={row.applicant.imageUrl}
+            alt={row.applicant.name}
+            className="object-cover"
+          />
+          <span className="text-white p-1">{row.applicant.name}</span>
           <AvatarFallback className="bg-[#0126fb] text-xs">
-            {row.applicant.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+            {row.applicant.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()}
           </AvatarFallback>
         </Avatar>
       ),
     },
   ];
 
-const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
-  const isEditing = Boolean(selectedRequest);
+  const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
+    const isEditing = Boolean(selectedRequest);
 
-  // Regra 1: Define se o CONTEÚDO (título, data, etc.) pode ser editado.
-  // Apenas ao criar um novo, ou se o dono estiver editando um pedido AINDA PENDENTE.
-  const canEditContent = !isEditing || 
-    (selectedRequest?.applicantId === user?.id && selectedRequest?.status === 'PENDING');
+    // Regra 1: Define se o CONTEÚDO (título, data, etc.) pode ser editado.
+    // Apenas ao criar um novo, ou se o dono estiver editando um pedido AINDA PENDENTE.
+    const canEditContent =
+      !isEditing ||
+      (selectedRequest?.applicantId === user?.id &&
+        selectedRequest?.status === "PENDING");
 
-  // Regra 2: Define se o STATUS pode ser editado.
-  // Apenas usuários com a role específica podem alterar o status.
-  const canEditStatus = userHasAllowedRole;
+    // Regra 2: Define se o STATUS pode ser editado.
+    // Apenas usuários com a role específica podem alterar o status.
+    const canEditStatus = userHasAllowedRole;
+    console.log(canEditStatus); // retorna false
+    // Define os campos base, que sempre aparecem.
+    // A propriedade 'disabled' é controlada pela regra 'canEditContent'.
+    const fields: FieldConfig<ReserveRequestFormValues>[] = [
+      { accessorKey: "title", header: "Título", disabled: !canEditContent },
+      {
+        accessorKey: "date",
+        header: "Data da Solicitação",
+        mask: "date",
+        disabled: !canEditContent,
+      },
+      {
+        accessorKey: "description",
+        header: "Descrição",
+        type: "textarea",
+        disabled: !canEditContent, //mesmo retornando false, aparentemente isso daqui fica como false também por algum motivo
+      },
+    ];
 
-  // Define os campos base, que sempre aparecem.
-  // A propriedade 'disabled' é controlada pela regra 'canEditContent'.
-  const fields: FieldConfig<ReserveRequestFormValues>[] = [
-    { accessorKey: "title", header: "Título", disabled: !canEditContent },
-    { accessorKey: "date", header: "Data da Solicitação", mask: "date", disabled: !canEditContent },
-    { accessorKey: "description", header: "Descrição", type: "textarea", disabled: !canEditContent },
-  ];
+    // Se estiver em modo de edição, SEMPRE adicionamos o campo de status.
+    if (isEditing) {
+      fields.push({
+        accessorKey: "status",
+        header: "Status",
+        type: "select",
+        options: [
+          { value: "PENDING", label: "Em análise" },
+          { value: "APPROVED", label: "Aprovada" },
+          { value: "REJECTED", label: "Rejeitada" },
+        ],
+        // AQUI ESTÁ A LÓGICA CHAVE:
+        // O campo fica desabilitado se o usuário NÃO tiver a permissão para editar o status.
+        disabled: !canEditStatus,
+      });
+    }
 
-  // Se estiver em modo de edição, SEMPRE adicionamos o campo de status.
-  if (isEditing) {
-    fields.push({
-      accessorKey: "status",
-      header: "Status",
-      type: "select",
-      options: [
-        { value: "PENDING", label: "Em análise" },
-        { value: "APPROVED", label: "Aprovada" },
-        { value: "REJECTED", label: "Rejeitada" },
-      ],
-      // AQUI ESTÁ A LÓGICA CHAVE:
-      // O campo fica desabilitado se o usuário NÃO tiver a permissão para editar o status.
-      disabled: !canEditStatus,
-    });
-  }
+    return fields;
+  };
 
-  return fields;
-};
-
-  const myRequests = data?.reserveRequestToConections?.filter(req => req.applicantId === user?.id) || [];
+  const myRequests =
+    data?.reserveRequestToConections?.filter(
+      (req) => req.applicantId === user?.id
+    ) || [];
   const allRequests = data?.reserveRequestToConections || [];
 
   return (
@@ -271,27 +327,27 @@ const getModalFields = (): FieldConfig<ReserveRequestFormValues>[] => {
           handleActionClick={handleOpenCreateModal} // Botão "Adicionar" agora abre o modal de criação
           isActionLoading={isCreating}
         />
-        
-       
-          <CustomTable
-            data={allRequests}
-            columns={requestColumns}
-            filterColumns={["title", "status"]}
-            title="Todas as Solicitações"
-            type="noSelection"
-            onEdit={handleOpenEditModal}
-            onDelete={handleDeleteClick}
-            isRowEditable={() => userHasAllowedRole}
-            isRowDeletable={() => userHasAllowedRole}
-          />
-       
+
+        <CustomTable
+          data={allRequests}
+          columns={requestColumns}
+          filterColumns={["title", "status"]}
+          title="Todas as Solicitações"
+          type={userHasAllowedRole ? "noSelection" : "onlyView"}
+          onEdit={handleOpenEditModal}
+          onDelete={handleDeleteClick}
+          isRowEditable={() => userHasAllowedRole}
+          isRowDeletable={() => userHasAllowedRole}
+        />
       </div>
 
       <CustomModal
         fields={getModalFields()}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={selectedRequest ? "Detalhes da Solicitação" : "Solicitar Reserva"}
+        title={
+          selectedRequest ? "Detalhes da Solicitação" : "Solicitar Reserva"
+        }
         form={form}
         onSubmit={onSubmit}
         isLoading={isCreating || isUpdating}

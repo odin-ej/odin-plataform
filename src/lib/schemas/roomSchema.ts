@@ -9,6 +9,7 @@ export type ExtendedReservation = RoomReservation & {
 // --- Schema Zod para o formulário do modal ---
 export const reservationSchema = z.object({
   date: z.string().min(1, "A data é obrigatória."),
+  title: z.string().min(1,'O título/finalidade é obrigatório'),
   hourEnter: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato de hora inválido (HH:MM).")
@@ -23,6 +24,7 @@ export type ReservationFormValues = z.infer<typeof reservationSchema>;
 
 export const apiReservationSchema = z.object({
   date: z.string().datetime({ message: "Formato de data inválido." }),
+  title: z.string(),
   hourEnter: z
     .string()
     .datetime({ message: "Formato de hora de entrada inválido." }),

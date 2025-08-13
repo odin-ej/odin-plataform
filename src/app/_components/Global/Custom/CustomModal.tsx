@@ -220,6 +220,7 @@ const CustomModal = <T extends FieldValues>({
                                   label={fieldInfo.header}
                                   placeholder="Selecione uma opção"
                                   options={fieldInfo.options!}
+                                  disabled={fieldInfo.disabled}
                                 />
                               );
                             case "password":
@@ -253,6 +254,7 @@ const CustomModal = <T extends FieldValues>({
                                   label={fieldInfo.header}
                                   placeholder="Selecione uma opção"
                                   options={fieldInfo.options!}
+                                  disabled={fieldInfo.disabled}
                                 />
                               );
                             case "textarea":
@@ -262,6 +264,7 @@ const CustomModal = <T extends FieldValues>({
                                   field={accessorKey}
                                   label={fieldInfo.header}
                                   type={fieldInfo.type}
+                                  disabled={fieldInfo.disabled}
                                 />
                               );
                             case "checkbox":
@@ -271,6 +274,7 @@ const CustomModal = <T extends FieldValues>({
                                   name={accessorKey}
                                   label={fieldInfo.header}
                                   options={fieldInfo.options!}
+                                  disabled={fieldInfo.disabled}
                                 />
                               );
                             case "boolean":
