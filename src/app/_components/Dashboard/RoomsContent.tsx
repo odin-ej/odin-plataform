@@ -216,7 +216,7 @@ const RoomsContent = ({
   ): FlattenedReservation[] => {
     return data.map((res) => ({
       id: res.id,
-      title: res.title,
+      title: res.title as string ?? 'Sem título',
       roomName: res.room.name,
       userName: res.user.name,
       formattedDate:
@@ -256,7 +256,7 @@ const RoomsContent = ({
       setEditingReservation(reservation);
       form.reset({
         date: format(new Date(reservation.date), "yyyy-MM-dd"),
-        title: reservation.title,
+        title: reservation.title as string ?? 'Sem título',
         hourEnter: format(new Date(reservation.hourEnter), "HH:mm"),
         hourLeave: format(new Date(reservation.hourLeave), "HH:mm"),
         roomId: reservation.roomId,
