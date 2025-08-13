@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     const newReservation = await prisma.roomReservation.create({
       data: {
         ...validation.data, // Todos os dados validados
-        // googleCalendarEventId: googleData.id, // Incluindo o ID do evento do Google googleData.id 
+        googleCalendarEventId: googleData.id, // Incluindo o ID do evento do Google googleData.id 
       },
     });
 
