@@ -121,8 +121,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // revalidatePath("/");
-    // revalidatePath("/reserva-salinhas");
+    revalidatePath("/");
+    revalidatePath("/reserva-salinhas");
     console.log('criado com sucesso')
     return NextResponse.json(newReservation, { status: 201 });
   } catch (error) {
