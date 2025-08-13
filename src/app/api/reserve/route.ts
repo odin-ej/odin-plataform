@@ -50,7 +50,8 @@ export async function POST(request: Request) {
 
     const rawBody = await request.text();
     const body = JSON.parse(rawBody);
-
+    console.log(rawBody)
+    console.log(body)
     // CORREÇÃO: Usando o novo schema (apiReservationSchema) para validar o payload da API.
     const validation = apiReservationSchema.safeParse({
       ...body,
