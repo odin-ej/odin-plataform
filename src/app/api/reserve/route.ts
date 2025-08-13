@@ -55,7 +55,6 @@ export async function POST(request: Request) {
       ...body,
       userId: authUser.id, // Adiciona o userId para validação
     });
-    console.log(body)
     if (!validation.success) {
       console.error(
         "Erro de validação da API:",
@@ -125,6 +124,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newReservation, { status: 201 });
   } catch (error) {
+    console.error(error)
     return NextResponse.json(
       { message: "Erro ao criar reserva." },
       { status: 500 }
