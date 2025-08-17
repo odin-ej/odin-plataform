@@ -23,6 +23,7 @@ import { s3Client } from "@/lib/aws";
 import bcrypt from "bcrypt";
 import z from "zod";
 import { UserProfileValues } from "@/lib/schemas/memberFormSchema";
+import { update } from "lodash";
 
 // Configuração do cliente Cognito
 const cognitoClient = new CognitoIdentityProviderClient({
@@ -127,8 +128,9 @@ export async function PATCH(
 
       if (validatedData.password) {
         updateData.password = await bcrypt.hash(validatedData.password, 10);
+        console.log(updateData.password)
       }
-
+      
       // Lógica de sincronização para Interesses e Histórico
       if (validatedData.professionalInterests) {
         updateData.professionalInterests = {
