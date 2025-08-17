@@ -53,7 +53,7 @@ export async function GET() {
     const usersWithoutPassword = users.map((user: (typeof users)[number]) => {
       const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
-    }); //id do Admin do banco de produção
+    }).filter(u => u.id === 'f34cea1a-c091-709f-d7ae-ac6583665cbd'); //id do Admin do banco de produção
     return NextResponse.json({ users: usersWithoutPassword });
   } catch (error) {
     console.error("Erro ao buscar utilizadores:", error);
