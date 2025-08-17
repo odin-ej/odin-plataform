@@ -198,7 +198,7 @@ const UnifiedCalendar = ({
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-center text-gray-400 font-bold pt-1">
+                  <div className="text-center text-gray-400 font-bold pt-1 overflow-hidden">
                     + {dayEvents.length - 3} mais...
                   </div>
                 )}
