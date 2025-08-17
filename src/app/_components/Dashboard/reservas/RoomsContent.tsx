@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { format, areIntervalsOverlapping } from "date-fns";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { toZonedTime, formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import CustomTable, { ColumnDef } from "../../Global/Custom/CustomTable";
 import CustomModal from "../../Global/Custom/CustomModal";
 import { Pencil, Trash2 } from "lucide-react";
@@ -65,59 +65,73 @@ const RoomsContent = ({ initialData, isDirector }: RoomsContentProps) => {
   const availableRooms = data?.rooms || [];
 
   // --- Apenas Update/Delete aqui ---
-  const { mutate: updateReservation, isPending: isSaving } = useMutation({
-    mutationFn: async (formData: RoomReservationFormValues) => {
-      if (!editingReservation) return;
+const { mutate: updateReservation, isPending: isSaving } = useMutation({
+  mutationFn: async (formData: RoomReservationFormValues) => {
+    if (!editingReservation) return;
 
-      const hourEnter = new Date(`${formData.date}T${formData.hourEnter}:00`);
-      const hourLeave = new Date(`${formData.date}T${formData.hourLeave}:00`);
+    // --- CORREÇÃO DO FUSO HORÁRIO ---
+    const timeZone = "America/Sao_Paulo";
+    // Interpreta a data/hora do formulário no fuso horário correto
+    const hourEnterUTC = fromZonedTime(
+      `${formData.date} ${formData.hourEnter}`,
+      timeZone
+    );
+    const hourLeaveUTC = fromZonedTime(
+      `${formData.date} ${formData.hourLeave}`,
+      timeZone
+    );
+    // --------------------------------
 
-      const freshData = await queryClient.fetchQuery<RoomsPageData>({
-        queryKey: ["reservationsData"],
-      });
+    // A validação agora usa as datas UTC corretas
+    if (hourEnterUTC >= hourLeaveUTC) {
+      throw new Error("A hora de entrada deve ser anterior à hora de saída.");
+    }
 
-      const hasConflict = freshData.reservations.some((res) => {
-        if (res.id === editingReservation.id) return false;
-        if (res.roomId !== formData.roomId) return false;
-        return areIntervalsOverlapping(
-          { start: hourEnter, end: hourLeave },
-          { start: new Date(res.hourEnter), end: new Date(res.hourLeave) }
-        );
-      });
+    const freshData = await queryClient.fetchQuery<RoomsPageData>({
+      queryKey: ["reservationsData"],
+    });
 
-      if (hourEnter >= hourLeave) {
-        throw new Error("Hora de entrada deve ser menor que a hora de saída.");
-      }
-      if (hasConflict) {
-        throw new Error(
-          "Esta sala já está reservada para o horário selecionado."
-        );
-      }
-
-      const payload = {
-        ...formData,
-        date: hourEnter.toISOString(),
-        hourEnter: hourEnter.toISOString(),
-        hourLeave: hourLeave.toISOString(),
-        userId: user!.id,
-        status: "BUSY",
-      };
-
-      return axios.patch(
-        `${API_URL}/api/reserve/${editingReservation.id}`,
-        payload
+    // A verificação de conflitos agora compara corretamente UTC com UTC
+    const hasConflict = freshData.reservations.some((res) => {
+      if (res.id === editingReservation.id) return false;
+      if (res.roomId !== formData.roomId) return false;
+      return areIntervalsOverlapping(
+        { start: hourEnterUTC, end: hourLeaveUTC },
+        { start: new Date(res.hourEnter), end: new Date(res.hourLeave) }
       );
-    },
-    onSuccess: () => {
-      toast.success("Reserva atualizada com sucesso!");
-      setIsModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
-    },
-    onError: (error: any) =>
-      toast.error("Erro na atualização", {
-        description: error.message || error.response?.data?.message,
-      }),
-  });
+    });
+
+    if (hasConflict) {
+      throw new Error(
+        "Esta sala já está reservada para o horário selecionado."
+      );
+    }
+    
+    // O payload agora envia as datas UTC corretas para o backend
+    const payload = {
+      ...formData,
+      date: hourEnterUTC.toISOString(),
+      hourEnter: hourEnterUTC.toISOString(),
+      hourLeave: hourLeaveUTC.toISOString(),
+      userId: user!.id,
+      status: "BUSY",
+    };
+
+    return axios.patch(
+      `${API_URL}/api/reserve/${editingReservation.id}`,
+      payload
+    );
+  },
+  onSuccess: () => {
+    toast.success("Reserva atualizada com sucesso!");
+    setIsModalOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
+  },
+  onError: (error: any) =>
+    toast.error("Erro na atualização", {
+      description: error.message || error.response?.data?.message,
+    }),
+});
 
   const { mutate: deleteReservation, isPending: isDeleting } = useMutation({
     mutationFn: (reservationId: string) =>

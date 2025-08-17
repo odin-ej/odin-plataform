@@ -235,15 +235,21 @@ const EnterprisePageContent = ({
         type,
         status,
         directorsNotes,
+        newValue,
+        newDescription,
       }: {
         id: string;
         type: string;
         status: string;
         directorsNotes: string;
+        newValue?: number;
+        newDescription?: string;
       }) =>
         axios.patch(`${API_URL}/api/jr-points/${type}s/${id}/approve`, {
           status,
           directorsNotes,
+          newValue,
+          newDescription
         }),
       onSuccess: () => {
         toast.success("Status atualizado!");

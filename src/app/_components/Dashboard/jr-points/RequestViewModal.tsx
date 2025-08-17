@@ -35,7 +35,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 
 // ... (interfaces e tipos não mudam) ...
-interface ReviewData {
+export interface ReviewData {
   id: string;
   type: "solicitation" | "report";
   status: "APPROVED" | "REJECTED";
@@ -63,7 +63,7 @@ const reviewFormSchema = z.object({
   newDescription: z.string().optional(),
   newValue: z.coerce.number().optional(), // coerce tenta converter string vazia para número (NaN) que tratamos
 });
-type ReviewFormData = z.infer<typeof reviewFormSchema>;
+export type ReviewFormData = z.infer<typeof reviewFormSchema>;
 const RequestReviewModal = ({
   request,
   isOpen,
