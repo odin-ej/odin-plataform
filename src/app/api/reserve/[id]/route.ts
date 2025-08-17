@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from "@/db";
 import { getGoogleAuthToken } from "@/lib/google-auth";
-import { apiReservationSchema } from "@/lib/schemas/roomSchema";
+import { roomReservationSchema } from "@/lib/schemas/reservationsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
@@ -18,15 +17,53 @@ export async function PATCH(
     const { id } = await params;
 
     const body = await request.json();
-    const validation = apiReservationSchema.partial().safeParse(body); // .partial() torna todos os campos opcionais
+    const validation = roomReservationSchema.partial().safeParse(body); // .partial() torna todos os campos opcionais
 
     if (!validation.success) {
       return NextResponse.json({ message: "Dados inválidos" }, { status: 400 });
     }
+    let startDateTime: Date | undefined = undefined;
+    let endDateTime: Date | undefined = undefined;
 
+    if (
+      !validation.data.date ||
+      !validation.data.hourEnter ||
+      !validation.data.hourLeave
+    )
+      return NextResponse.json(
+        {
+          message: "Preencha os campos de dado e/ou horário",
+        },
+        { status: 400 }
+      );
+
+    if (validation.data.date && validation.data.hourEnter) {
+      startDateTime = new Date(
+        `${validation.data.date}T${validation.data.hourEnter}:00-03:00`
+      );
+    }
+
+    if (validation.data.date && validation.data.hourLeave) {
+      endDateTime = new Date(
+        `${validation.data.date}T${validation.data.hourLeave}:00-03:00`
+      );
+    }
+
+    const dataToUpdate = {
+      title: validation.data.title,
+      status: validation.data.status,
+      roomId: validation.data.roomId,
+    };
+
+    // --- Atualizar no Prisma (não tocar em startDate/endDate) ---
     const updatedReservation = await prisma.roomReservation.update({
       where: { id },
-      data: validation.data,
+      data: {
+        ...dataToUpdate,
+        date: new Date(validation.data.date),
+        hourEnter: startDateTime,
+        hourLeave: endDateTime,
+      },
       select: {
         room: { select: { name: true } },
         title: true,
@@ -49,11 +86,11 @@ export async function PATCH(
         body: JSON.stringify({
           summary: `Reserva da sala ${updatedReservation.room.name}: ${updatedReservation.title}`,
           start: {
-            dateTime: updatedReservation.hourEnter,
+            dateTime: startDateTime!.toISOString(),
             timeZone: "America/Sao_Paulo",
           },
           end: {
-            dateTime: updatedReservation.hourLeave,
+            dateTime: endDateTime!.toISOString(),
             timeZone: "America/Sao_Paulo",
           },
         }),
@@ -77,7 +114,7 @@ export async function PATCH(
     revalidatePath("/reserva-salinhas");
     return NextResponse.json(updatedReservation);
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return NextResponse.json(
       { message: "Erro ao atualizar reserva." },
       { status: 500 }
@@ -96,7 +133,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
     const { id } = await params;
-    
+
     const roomToDelete = await prisma.roomReservation.delete({ where: { id } });
 
     const googleApiResponse = await fetch(
@@ -123,9 +160,8 @@ export async function DELETE(
     }
     revalidatePath("/reserva-salinhas");
     return new NextResponse(null, { status: 204 });
-
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return NextResponse.json(
       { message: "Erro ao apagar reserva." },
       { status: 500 }

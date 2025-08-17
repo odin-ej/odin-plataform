@@ -45,6 +45,29 @@ export async function PATCH(
 
     revalidatePath("/atualizar-estrategia");
 
+    const allMembersId = await prisma.user.findMany({
+      where: { isExMember: false },
+      select: { id: true },
+    });
+
+    const notification = await prisma.notification.create({
+      data: {
+        type: "NEW_MENTION",
+        notification: `O objetivo estratégico ${updatedObjective.objective} foi atualizado.`,
+        link: `/metas-casinha`,
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: allMembersId
+        .filter((member) => member.id !== authUser.id)
+        .map((member) => ({
+          notificationId: notification.id,
+          userId: member.id,
+          isRead: false,
+        })),
+    });
+
     return NextResponse.json(updatedObjective);
   } catch (error) {
     console.error("Erro ao atualizar objetivo estratégico:", error);

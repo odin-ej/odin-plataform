@@ -1,4 +1,4 @@
-import PendenciesContent from "@/app/_components/Dashboard/PendenciesContent";
+import PendenciesContent from "@/app/_components/Dashboard/tarefas/PendenciesContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
@@ -45,7 +45,10 @@ async function getPageData(): Promise<MyPendenciesPageData> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/minhas-pendencias", user: user! });
+  const hasPermission = verifyAccess({
+    pathname: "/minhas-pendencias",
+    user: user!,
+  });
   if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">

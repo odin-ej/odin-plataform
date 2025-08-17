@@ -1,6 +1,6 @@
 import { constructMetadata } from "@/lib/metadata";
-import PerfilContent from "../../_components/Dashboard/PerfilContent";
-import { Role, User } from "@prisma/client";
+import PerfilContent from "../../_components/Dashboard/usuarios/PerfilContent";
+import { InterestCategory, ProfessionalInterest, Role, User, UserRoleHistory,  } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 import { verifyAccess } from "@/lib/utils";
@@ -8,10 +8,18 @@ import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 
 export const metadata = constructMetadata({ title: "Perfil" });
 
+export interface FullUserProfile extends User {
+  professionalInterests: ProfessionalInterest[];
+  roleHistory: (UserRoleHistory & { role: Role })[];
+  roles: Role[];
+  currentRole: Role;
+}
+
 // Tipagem para os dados da página
 export interface PerfilPageData {
-  user: (User & { roles: Role[] }) | null;
+  user: FullUserProfile | null;
   roles: Role[] | null;
+  interestCategories: (InterestCategory & { interests: ProfessionalInterest[] })[];
 }
 
 export const dynamic = "force-dynamic";
@@ -22,21 +30,19 @@ async function getUserPageData(id: string): Promise<PerfilPageData> {
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
 
-    const [userResponse, rolesResponse] = await Promise.all([
-      fetch(`${baseUrl}/api/users/${id}`, { headers, cache: "no-store" }),
-      fetch(`${baseUrl}/api/roles`, { headers, cache: "no-store" }),
-    ]);
+    const profileDataResponse = await fetch(
+      `${baseUrl}/api/users/${id}/profile-data`,
+      { headers, cache: "no-store" }
+    );
 
-    if (!userResponse.ok || !rolesResponse.ok) {
-      throw new Error("Falha ao buscar os dados do perfil.");
+    if (!profileDataResponse.ok) {
+      throw new Error("Falha ao buscar os dados do usuário.");
     }
 
-    const user = await userResponse.json();
-    const roles = await rolesResponse.json();
-    return { user, roles };
+    return profileDataResponse.json();
   } catch (error) {
     console.error("Erro em getUserPageData:", error);
-    return { user: null, roles: null };
+    return { user: null, roles: null, interestCategories: [] };
   }
 }
 

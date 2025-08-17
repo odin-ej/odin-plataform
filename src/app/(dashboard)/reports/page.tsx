@@ -1,4 +1,4 @@
-import ReportsContent from "@/app/_components/Dashboard/ReportsContent";
+import ReportsContent from "@/app/_components/Dashboard/reports/ReportsContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { ExtendedReport } from "@/lib/schemas/reportSchema";
@@ -54,7 +54,7 @@ const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/reports", user: user! });
-  if(!hasPermission) return <DeniedAccess />
+  if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="md:p-8 p-4 overflow-x-auto">
       {/* Pass the data as a single initialData object */}

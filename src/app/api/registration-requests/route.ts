@@ -50,7 +50,6 @@ export async function POST(request: Request) {
       },
     });
 
-
     const existingPhoneUser = await prisma.user.findFirst({
       where: {
         phone: phone,
@@ -77,10 +76,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if(semesterLeaveEj){
-      if(!semesterLeaveEj.match(/^\d{4}\.\d{1,2}$/)){
+    if (semesterLeaveEj) {
+      if (!semesterLeaveEj.match(/^\d{4}\.\d{1,2}$/)) {
         return NextResponse.json(
-          { message: "Formato de semestre de saída inválido. Use o formato AAAA.S | Ex.: 2025.2" },
+          {
+            message:
+              "Formato de semestre de saída inválido. Use o formato AAAA.S | Ex.: 2025.2",
+          },
           { status: 400 }
         );
       }
@@ -91,21 +93,33 @@ export async function POST(request: Request) {
       const semesterEntry = partsSemesterEntry[1];
       const yearSemesterEntry = partsSemesterEntry[0];
 
-      if(yearSemesterEntry > new Date().getFullYear() || yearSemesterLeave > new Date().getFullYear()){
+      if (
+        yearSemesterEntry > new Date().getFullYear() ||
+        yearSemesterLeave > new Date().getFullYear()
+      ) {
         return NextResponse.json(
-          { message: "O semestre de semestre de entrada e saída devem ser anterior ao semestre atual." },
+          {
+            message:
+              "O semestre de semestre de entrada e saída devem ser anterior ao semestre atual.",
+          },
           { status: 400 }
         );
       }
 
-      if (yearSemesterLeave < yearSemesterEntry || (yearSemesterLeave === yearSemesterEntry && semesterLeave < semesterEntry)) {
+      if (
+        yearSemesterLeave < yearSemesterEntry ||
+        (yearSemesterLeave === yearSemesterEntry &&
+          semesterLeave < semesterEntry)
+      ) {
         return NextResponse.json(
-          { message: "O semestre de saída deve ser posterior ao semestre de entrada." },
+          {
+            message:
+              "O semestre de saída deve ser posterior ao semestre de entrada.",
+          },
           { status: 400 }
         );
       }
-    } 
-
+    }
 
     const parsedBirthDate =
       typeof birthDate === "string" ? parseBrazilianDate(birthDate) : null;
@@ -122,7 +136,7 @@ export async function POST(request: Request) {
     // 2. Adiciona os cargos anteriores (`roles`), garantindo que não haja duplicatas.
     if (roles && Array.isArray(roles)) {
       // Filtra os cargos anteriores para incluir apenas IDs que não sejam o `roleId` principal.
-      if(roleId) finalRoleIds.push(roleId);
+      if (roleId) finalRoleIds.push(roleId);
       const otherRoles = roles.filter((id) => id && id !== roleId);
 
       // Usa um Set para remover duplicatas internas da lista `otherRoles` e depois adiciona ao array final.
@@ -151,7 +165,7 @@ export async function POST(request: Request) {
         about,
         aboutEj,
         workplace,
-        isWorking: isWorking === 'Sim' ? true : false,
+        isWorking: isWorking === "Sim" ? true : false,
         alumniDreamer: alumniDreamer === "Sim" ? true : false,
         otherRole,
         isExMember: "aboutEj" in body,
@@ -160,6 +174,25 @@ export async function POST(request: Request) {
         }, // << USANDO A LÓGICA DE CONEXÃO CORRETA
       },
     });
+    const allDirectorsID = await prisma.user.findMany({
+      where: { currentRole: { area: { has: "DIRETORIA" } } },
+      select: { id: true },
+    });
+    const notification = await prisma.notification.create({
+      data: {
+        link: "/minhas-pendencias",
+        type: "NEW_MENTION",
+        notification: `O utilizador ${name} fez uma nova solicitação de registo.`,
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: allDirectorsID.map((user) => ({
+        notificationId: notification.id,
+        userId: user.id,
+      })),
+    })
+
     return NextResponse.json(
       { message: "Pedido de registo enviado com sucesso!" },
       { status: 201 }

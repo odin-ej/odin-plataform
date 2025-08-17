@@ -1,6 +1,6 @@
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { LinkPosterArea } from "@prisma/client";
+import { AreaRoles, LinkPosterArea, } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
@@ -25,6 +25,7 @@ export async function GET() {
     const linkPosters = await prisma.linkPoster.findMany({
       orderBy: { updatedAt: "desc" },
     });
+
     return NextResponse.json(linkPosters);
   } catch (error) {
     console.error("Erro ao buscar postagens de links:", error);
@@ -62,6 +63,41 @@ export async function POST(request: Request) {
         imageUrl: validatedData.imageUrl as string,
       },
     });
+
+    const allMembersId = await prisma.user.findMany({
+      include: {currentRole: true}
+    });
+
+    const membersCanSee = allMembersId.filter(member => {
+      const userRole = member.currentRole;
+      if (!userRole) return false;
+      if(userRole.area.includes(AreaRoles.DIRETORIA) || validatedData.areas.includes(LinkPosterArea.YGGDRASIL) || validatedData.areas.includes(LinkPosterArea.HOME) || validatedData.areas.includes(LinkPosterArea.GERAL)) return true;
+      if(authUser.isExMember && validatedData.areas.includes(LinkPosterArea.EXMEMBROS)) return true;
+      if(!authUser.isExMember && validatedData.areas.includes(LinkPosterArea.MEMBROS)) return true;
+      if(userRole.area.includes(AreaRoles.TATICO) && validatedData.areas.includes(LinkPosterArea.TATICO)) return true;
+      if(userRole.area.includes(AreaRoles.CONSULTORIA) && validatedData.areas.includes(LinkPosterArea.CONSULTORIA)) return true;
+      if(userRole.area.includes(AreaRoles.TATICO) && validatedData.areas.includes(LinkPosterArea.TATICO)) return true;
+      {
+
+      }
+    });
+
+    const notification = await prisma.notification.create({
+      data: {
+        link: "/",
+        type: "GENERAL_ALERT",
+        notification: `${authUser.name} criou um novo poster.`,
+      
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: membersCanSee.filter((member) => member.id !== authUser.id).map((member) => ({
+        notificationId: notification.id,
+        userId: member.id,
+      })),
+    });
+
     revalidatePath("/gerenciar-link-posters");
     revalidatePath("/");
     return NextResponse.json(poster);

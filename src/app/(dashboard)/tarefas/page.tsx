@@ -1,4 +1,4 @@
-import TarefasContent from "@/app/_components/Dashboard/TarefasContent";
+import TarefasContent from "@/app/_components/Dashboard/tarefas/TarefasContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAssignableUsers } from "@/lib/permissions";

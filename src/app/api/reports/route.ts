@@ -52,6 +52,20 @@ export async function POST(request: Request) {
         recipientRoleId: recipientRoleId,
       },
     });
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/reports`,
+        type: "NEW_MENTION",
+        notification: `Um novo report foi criado por ${user.name.split(" ")[0]}.`,
+      },
+    });
+
+    await prisma.notificationUser.create({
+      data: {
+        notificationId: notification.id,
+        userId: user.id!,
+      },
+    });
 
     return NextResponse.json(newReport, { status: 201 });
   } catch (error) {

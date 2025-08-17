@@ -12,15 +12,33 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 
 // Funções de autenticação
-import { confirmResetPassword, fetchAuthSession, resetPassword, signIn } from "aws-amplify/auth";
+import {
+  confirmResetPassword,
+  fetchAuthSession,
+  resetPassword,
+  signIn,
+} from "aws-amplify/auth";
 
 // Componentes UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import CustomInput from "@/app/_components/Global/Custom/CustomInput";
 import { MailCheck, KeyRound } from "lucide-react";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -37,8 +55,7 @@ const obfuscateEmail = (email: string): string => {
       : `${localPart[0]}***`;
 
   return `${maskedLocalPart}@${domain}`;
-}
-
+};
 
 // Schema de validação (sem alterações)
 const confirmSchema = z
@@ -98,8 +115,7 @@ const ConfirmStep = ({ email, onConfirmSuccess }: ConfirmStepProps) => {
     mutationFn: () => resetPassword({ username: email }),
     onSuccess: () => {
       toast.success("Novo código enviado!", {
-        description: `Verifique seu e-mail ${obfuscateEmail(
-          email)}
+        description: `Verifique seu e-mail ${obfuscateEmail(email)}
          novamente.`,
       });
       // Reinicia o temporizador
@@ -196,11 +212,33 @@ const ConfirmStep = ({ email, onConfirmSuccess }: ConfirmStepProps) => {
             )}
             className="space-y-4"
           >
-            <CustomInput
-              form={confirmForm}
-              field="code"
-              label="Código de Verificação"
-              placeholder="123456"
+            <FormField
+              control={confirmForm.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Código de Verficação</FormLabel>
+                  <FormControl>
+                    <InputOTP
+                      maxLength={6}
+                      pattern={REGEXP_ONLY_DIGITS}
+                      {...field}
+                      className="flex justify-center gap-2"
+                    >
+                      <InputOTPGroup className="flex gap-2">
+                        {[0, 1, 2, 3, 4, 5].map((index) => (
+                          <InputOTPSlot
+                            key={index}
+                            index={index}
+                            className="w-12 h-14 text-xl font-bold text-white bg-[#010d26] border-2 border-[#0126fb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5b719] focus:border-[#f5b719] transition-all duration-200"
+                          />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             {/* --- SEÇÃO DE REENVIO DE CÓDIGO --- */}

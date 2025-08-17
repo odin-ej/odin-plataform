@@ -124,7 +124,7 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
       defaultValue="new"
       className="w-[300px] sm:w-[500px] md:w-[600px] lg:w-[800px] align-center rounded-lg"
     >
-      <TabsList className="grid w-full grid-cols-2 bg-[#0B2A6B] text-white font-semibold border-2 border-[#f5b719] p-0 focus:outline-none focus-visible:ring-0 shadow-none">
+      <TabsList className="grid w-full grid-cols-2 bg-[#00205e] text-white font-semibold border-2 border-[#f5b719] p-0 focus:outline-none focus-visible:ring-0 shadow-none">
         <TabsTrigger
           value="new"
           className="data-[state=active]:!bg-[#f5b719] !text-white rounded-r-none"

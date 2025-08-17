@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/db";
+import { fromZonedTime } from "date-fns-tz";
 
 /**
  * @swagger
@@ -83,24 +84,47 @@ export async function POST(req: Request) {
     const conectionsRole = await prisma.role.findUnique({
       where: { name: "Assessor(a) de Conexões" },
     });
+
+    const actualConectionsMember = await prisma.user.findFirst({
+      where: { currentRole: { name: "Assessor(a) de Conexões" } },
+      select: { id: true }
+    });
+
     if (!conectionsRole) {
       return NextResponse.json(
         { message: "Cargo de Conexões não encontrado" },
         { status: 404 }
       );
     }
+    console.log(fromZonedTime(date, "America/Sao_Paulo").toISOString())
 
     const newRequest = await prisma.reserveRequestToConections.create({
       data: {
         title,
         description,
-        date: new Date(date),
+        date: fromZonedTime(date, "America/Sao_Paulo").toISOString(),
         applicantId: authUser.id, // ID do usuário vem da sessão, não do body
         roleId: conectionsRole.id,
         status: "PENDING", // O status inicial é sempre pendente
       },
     });
-    revalidatePath("/salas-eaufba");
+
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/salas-eaufba`,
+        type: 'NEW_MENTION',
+        notification: `Solicitação de reserva de sala EAUFBA: ${title} foi criada por ${authUser.name.split(" ")[0]}.`,
+      }
+    });
+
+    await prisma.notificationUser.create({
+      data: {
+        notificationId: notification.id,
+        userId: actualConectionsMember?.id ?? authUser.id
+      }
+    });
+
+    revalidatePath("/central-de-reservas");
     return NextResponse.json(newRequest, { status: 201 });
   } catch (error) {
     console.error("[SALAS_EAUFBA_POST]", error);

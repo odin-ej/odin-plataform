@@ -176,7 +176,6 @@ export function parseBrazilianDate(dateString: string): Date | null {
   if (parts.length !== 3) {
     return null;
   }
-
   const day = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10); // O mês no JS é 0-indexado (0-11)
   const year = parseInt(parts[2], 10);

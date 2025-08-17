@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import CulturalContent from "@/app/_components/Dashboard/CulturalContent";
+import CulturalContent from "@/app/_components/Dashboard/cultural/CulturalContent";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { fullStrategy } from "../atualizar-estrategia/page";
@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { Role } from "@prisma/client";
 
 export const metadata = constructMetadata({ title: "Área Cultural" });
 
@@ -19,6 +20,7 @@ interface CulturePageProps {
     totalProjects: number;
     details: { accountName: string; projectCount: number }[];
   } | null;
+  roles: Role[]
 }
 
 async function getPageData(): Promise<CulturePageProps> {
@@ -26,7 +28,7 @@ async function getPageData(): Promise<CulturePageProps> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
-    const [estrategyPlanResponse, allUsersResponse, mondayResponse] =
+    const [estrategyPlanResponse, allUsersResponse, mondayResponse, rolesResponse] =
       await Promise.all([
         fetch(`${baseUrl}/api/culture`, {
           next: { revalidate: 45 },
@@ -40,6 +42,10 @@ async function getPageData(): Promise<CulturePageProps> {
           next: { revalidate: 45 },
           headers,
         }),
+        fetch(`${baseUrl}/api/roles`, {
+          next: {revalidate:45},
+          headers
+        })
       ]);
 
     if (!estrategyPlanResponse.ok) {
@@ -80,6 +86,19 @@ async function getPageData(): Promise<CulturePageProps> {
       );
     }
 
+
+    if(!rolesResponse.ok) {
+      const errorText = await rolesResponse.text()
+      console.error(
+        "Erro na resposta da API de estatísticas do Monday:",
+        rolesResponse.status,
+        errorText
+      );
+      throw new Error(
+        `Falha ao carregar os cargos: ${rolesResponse.statusText}`
+      );
+    }
+
     const estrategyPlanResult: fullStrategy =
       await estrategyPlanResponse.json();
     const estrategyPlan = Array.isArray(estrategyPlanResult)
@@ -88,24 +107,26 @@ async function getPageData(): Promise<CulturePageProps> {
     const allUsersJson = await allUsersResponse.json();
     const allUsers: MemberWithFullRoles[] = allUsersJson.users;
     const mondayJson = await mondayResponse.json();
+    const rolesJson = await rolesResponse.json()
     const data = {
       estrategy: estrategyPlan,
       allUsers,
       mondayStats: mondayJson,
+      roles:  rolesJson,
     };
     return data;
   } catch (error) {
-    return { estrategy: null, allUsers: null, mondayStats: null };
+    return { estrategy: null, allUsers: null, mondayStats: null, roles: [] };
   }
 }
 
 const Page = async () => {
-  const { allUsers, estrategy, mondayStats } = await getPageData();
+  const { allUsers, estrategy, mondayStats, roles } = await getPageData();
   if (!allUsers || !estrategy || !mondayStats) return null;
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/cultural", user: user! });
   if (!hasPermission) return <DeniedAccess />;
-  const initialData = { estrategy, allUsers, mondayStats };
+  const initialData = { estrategy, allUsers, mondayStats, roles };
   return (
     <div className="p-4 sm:p-8">
       <CulturalContent initialData={initialData} />

@@ -53,6 +53,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/tarefas": MEMBERS_ONLY,
   "/chat": MEMBERS_ONLY,
   "/jr-points": MEMBERS_ONLY,
+  'central-reservas': DIRECTORS_ONLY,
   "/jr-points/nossa-empresa": MEMBERS_ONLY,
   "/metas": MEMBERS_ONLY,
   "/pendencias": MEMBERS_ONLY,

@@ -1,4 +1,4 @@
-import UsersContent from "@/app/_components/Dashboard/UsersContent";
+import UsersContent from "@/app/_components/Dashboard/usuarios/UsersContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";

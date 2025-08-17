@@ -28,7 +28,29 @@ export async function GET(request: Request) {
       },
       select: {
         id: true, // Seleciona apenas os IDs para ser mais eficiente.
+        responsibles: true,
+        authorId: true,
       },
+    });
+
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/minhas-pendencias`,
+        notification: `Existem ${overdueTasks.length} tarefas atrasadas.`,
+        type: "NEW_MENTION",
+      },
+    });
+
+    const membersToNotify = [
+      ...overdueTasks.map((task) => task.authorId),
+      ...overdueTasks.map((task) => task.responsibles.map((user) => user.id)),
+    ].filter(Boolean) as string[];
+
+    await prisma.notificationUser.createMany({
+      data: membersToNotify.map((userId) => ({
+        notificationId: notification.id,
+        userId,
+      })),
     });
 
     // Se não houver tarefas atrasadas, termina a execução.
@@ -68,5 +90,5 @@ export async function GET(request: Request) {
       { message: "Erro interno do servidor." },
       { status: 500 }
     );
-  } 
+  }
 }

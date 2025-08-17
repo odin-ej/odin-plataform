@@ -233,155 +233,174 @@ const objetivosEstrategicos = [
 async function main() {
   console.log("Iniciando o processo de seed...");
 
-  console.log("A semear cargos...");
-  await prisma.role.deleteMany(); // Limpa os cargos existentes para evitar duplicados
-  await prisma.role.createMany({
-    data: cargos.map((cargo) => ({
-      name: cargo.name,
-      description: `Descrição para o cargo de ${cargo.name}`,
-      area: cargo.area,
-    })),
-    skipDuplicates: true,
+  // console.log("A semear cargos...");
+  // await prisma.role.deleteMany(); // Limpa os cargos existentes para evitar duplicados
+  // await prisma.role.createMany({
+  //   data: cargos.map((cargo) => ({
+  //     name: cargo.name,
+  //     description: `Descrição para o cargo de ${cargo.name}`,
+  //     area: cargo.area,
+  //   })),
+  //   skipDuplicates: true,
+  // });
+  // console.log("Cargos semeados com sucesso.");
+
+  // // 2. Seed do Plano Estratégico, Valores, Objetivos e Metas
+  // console.log("A semear o Plano Estratégico...");
+  // // Usamos upsert para criar ou atualizar o plano estratégico, garantindo que ele seja único.
+  // await prisma.estrategyPlan.upsert({
+  //   where: { id: 1 },
+  //   update: {}, // Não faz nada se já existir
+  //   create: {
+  //     id: 1,
+  //     propose: proposito,
+  //     mission: mission,
+  //     vision: vision,
+  //     values: {
+  //       create: valores.map((valor) => ({
+  //         name: valor.name,
+  //         description: valor.description,
+  //         isMotherValue: valor.isMotherValue || false,
+  //       })),
+  //     },
+  //     estrategyObjectives: {
+  //       create: objetivosEstrategicos.map((obj) => ({
+  //         objective: obj.objective,
+  //         description: obj.description,
+  //         goals: {
+  //           create: obj.goals.map((goal) => ({
+  //             title: goal.title,
+  //             description: goal.description,
+  //             goal: goal.goal,
+  //             value: goal.value,
+  //           })),
+  //         },
+  //       })),
+  //     },
+  //   },
+  // });
+
+  // console.log(
+  //   "Plano Estratégico, Valores, Objetivos e Metas semeados com sucesso."
+  // );
+
+  // await prisma.room.createMany({
+  //   data: [{ name: "Talentos" }, { name: "Comitê" }],
+  // });
+
+  // const diretorRole = await prisma.role.findUnique({
+  //   where: { name: "Diretor(a) Presidente" },
+  // });
+
+  // if (!diretorRole) {
+  //   console.error(
+  //     'O cargo "Diretor(a) Presidente" não foi encontrado. A seed não pode continuar.'
+  //   );
+  //   return;
+  // }
+
+  // const adminEmail = "plataforma@empresajr.org";
+  // const adminPassword = "Plataformaodin123@"; // Use uma senha segura nas suas variáveis de ambiente
+
+  // // Faz o hash da senha
+  // let cognitoUserSub: string | undefined;
+
+  // try {
+  //   // Verifica se o utilizador já existe no Cognito
+  //   const existingCognitoUser = await cognitoClient.send(
+  //     new AdminGetUserCommand({
+  //       UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+  //       Username: adminEmail,
+  //     })
+  //   );
+  //   cognitoUserSub = existingCognitoUser.UserAttributes?.find(
+  //     (attr: { Name: string }) => attr.Name === "sub"
+  //   )?.Value;
+  //   console.log(`Utilizador já existe no Cognito: ${adminEmail}`);
+  // } catch (error: any) {
+  //   if (error.name === "UserNotFoundException") {
+  //     // Se o utilizador não existe, cria-o no Cognito
+  //     console.log(`Utilizador não encontrado no Cognito. A criar...`);
+  //     const createCognitoUserResponse = await cognitoClient.send(
+  //       new AdminCreateUserCommand({
+  //         UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+  //         Username: adminEmail,
+  //         UserAttributes: [
+  //           { Name: "email", Value: adminEmail },
+  //           { Name: "name", Value: "Admin Odin" },
+  //           { Name: "email_verified", Value: "true" },
+  //         ],
+  //         MessageAction: "SUPPRESS",
+  //       })
+  //     );
+
+  //     cognitoUserSub = createCognitoUserResponse.User?.Attributes?.find(
+  //       (attr: { Name: string }) => attr.Name === "sub"
+  //     )?.Value;
+
+  //     // Define a senha do novo utilizador como permanente
+  //     await cognitoClient.send(
+  //       new AdminSetUserPasswordCommand({
+  //         UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+  //         Username: adminEmail,
+  //         Password: adminPassword,
+  //         Permanent: true,
+  //       })
+  //     );
+  //     console.log(`Utilizador criado no Cognito com sucesso: ${adminEmail}`);
+  //   } else {
+  //     throw error; // Lança outros erros do Cognito
+  //   }
+  // }
+
+  // if (!cognitoUserSub) {
+  //   console.error(
+  //     "Não foi possível obter o ID (sub) do utilizador do Cognito."
+  //   );
+  //   return;
+  // }
+
+  // // Faz o hash da senha para guardar no Prisma
+  // const hashedPassword4 = await bcrypt.hash(adminPassword, 10);
+
+  // // Usa 'upsert' para criar o utilizador no Prisma se ele não existir
+  // await prisma.user.upsert({
+  //   where: { email: adminEmail },
+  //   update: {},
+  //   create: {
+  //     id: cognitoUserSub, // Usa o ID do Cognito como ID no Prisma
+  //     name: "Admin Odin",
+  //     email: adminEmail,
+  //     emailEJ: "plataforma@empresajr.org",
+  //     password: hashedPassword4,
+  //     birthDate: new Date(),
+  //     phone: "(00) 00000-0000",
+  //     imageUrl: "https://placehold.co/100x100/0126fb/f5b719?text=AD",
+  //     semesterEntryEj: "2024.1",
+  //     isExMember: false,
+  //     alumniDreamer: false,
+  //     currentRole: { connect: { id: diretorRole.id } },
+  //     roles: { connect: { id: diretorRole.id } },
+  //   },
+  // });
+  const gestao = await prisma.interestCategory.create({
+    data: { name: "Gestão & Estratégia" },
   });
-  console.log("Cargos semeados com sucesso.");
-
-  // 2. Seed do Plano Estratégico, Valores, Objetivos e Metas
-  console.log("A semear o Plano Estratégico...");
-  // Usamos upsert para criar ou atualizar o plano estratégico, garantindo que ele seja único.
-  await prisma.estrategyPlan.upsert({
-    where: { id: 1 },
-    update: {}, // Não faz nada se já existir
-    create: {
-      id: 1,
-      propose: proposito,
-      mission: mission,
-      vision: vision,
-      values: {
-        create: valores.map((valor) => ({
-          name: valor.name,
-          description: valor.description,
-          isMotherValue: valor.isMotherValue || false,
-        })),
-      },
-      estrategyObjectives: {
-        create: objetivosEstrategicos.map((obj) => ({
-          objective: obj.objective,
-          description: obj.description,
-          goals: {
-            create: obj.goals.map((goal) => ({
-              title: goal.title,
-              description: goal.description,
-              goal: goal.goal,
-              value: goal.value,
-            })),
-          },
-        })),
-      },
-    },
+  const tech = await prisma.interestCategory.create({
+    data: { name: "Tecnologia & Dados" },
   });
 
-  console.log(
-    "Plano Estratégico, Valores, Objetivos e Metas semeados com sucesso."
-  );
+  // Depois, criar os interesses, associando-os a uma categoria
+  await prisma.professionalInterest.createMany({
+    data: [
+      { name: "Gestão de Projetos (Agile, Scrum)", categoryId: gestao.id },
+      { name: "Consultoria Estratégica", categoryId: gestao.id },
 
-  await prisma.room.createMany({
-    data: [{ name: "Talentos" }, { name: "Comitê" }],
-  });
-
-  const diretorRole = await prisma.role.findUnique({
-    where: { name: "Diretor(a) Presidente" },
-  });
-
-  if (!diretorRole) {
-    console.error(
-      'O cargo "Diretor(a) Presidente" não foi encontrado. A seed não pode continuar.'
-    );
-    return;
-  }
-
-  const adminEmail = "plataforma@empresajr.org";
-  const adminPassword = "Plataformaodin123@"; // Use uma senha segura nas suas variáveis de ambiente
-
-  // Faz o hash da senha
-  let cognitoUserSub: string | undefined;
-
-  try {
-    // Verifica se o utilizador já existe no Cognito
-    const existingCognitoUser = await cognitoClient.send(
-      new AdminGetUserCommand({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-        Username: adminEmail,
-      })
-    );
-    cognitoUserSub = existingCognitoUser.UserAttributes?.find(
-      (attr: { Name: string }) => attr.Name === "sub"
-    )?.Value;
-    console.log(`Utilizador já existe no Cognito: ${adminEmail}`);
-  } catch (error: any) {
-    if (error.name === "UserNotFoundException") {
-      // Se o utilizador não existe, cria-o no Cognito
-      console.log(`Utilizador não encontrado no Cognito. A criar...`);
-      const createCognitoUserResponse = await cognitoClient.send(
-        new AdminCreateUserCommand({
-          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-          Username: adminEmail,
-          UserAttributes: [
-            { Name: "email", Value: adminEmail },
-            { Name: "name", Value: "Admin Odin" },
-            { Name: "email_verified", Value: "true" },
-          ],
-          MessageAction: "SUPPRESS",
-        })
-      );
-
-      cognitoUserSub = createCognitoUserResponse.User?.Attributes?.find(
-        (attr: { Name: string }) => attr.Name === "sub"
-      )?.Value;
-
-      // Define a senha do novo utilizador como permanente
-      await cognitoClient.send(
-        new AdminSetUserPasswordCommand({
-          UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
-          Username: adminEmail,
-          Password: adminPassword,
-          Permanent: true,
-        })
-      );
-      console.log(`Utilizador criado no Cognito com sucesso: ${adminEmail}`);
-    } else {
-      throw error; // Lança outros erros do Cognito
-    }
-  }
-
-  if (!cognitoUserSub) {
-    console.error(
-      "Não foi possível obter o ID (sub) do utilizador do Cognito."
-    );
-    return;
-  }
-
-  // Faz o hash da senha para guardar no Prisma
-  const hashedPassword4 = await bcrypt.hash(adminPassword, 10);
-
-  // Usa 'upsert' para criar o utilizador no Prisma se ele não existir
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      id: cognitoUserSub, // Usa o ID do Cognito como ID no Prisma
-      name: "Admin Odin",
-      email: adminEmail,
-      emailEJ: "plataforma@empresajr.org",
-      password: hashedPassword4,
-      birthDate: new Date(),
-      phone: "(00) 00000-0000",
-      imageUrl: "https://placehold.co/100x100/0126fb/f5b719?text=AD",
-      semesterEntryEj: "2024.1",
-      isExMember: false,
-      alumniDreamer: false,
-      currentRole: { connect: { id: diretorRole.id } },
-      roles: { connect: { id: diretorRole.id } },
-    },
+      { name: "Análise de Dados (Business Intelligence)", categoryId: tech.id },
+      { name: "Desenvolvimento de Software", categoryId: tech.id },
+      { name: "Design de Produto (UX/UI)", categoryId: tech.id },
+      // ... e assim por diante
+    ],
   });
   console.log("Seed concluído com sucesso!");
 

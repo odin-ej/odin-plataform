@@ -1,4 +1,4 @@
-import KnowledgeContent from "@/app/_components/Dashboard/KnowledgeContent";
+import KnowledgeContent from "@/app/_components/Dashboard/conhecimento/KnowledgeContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";

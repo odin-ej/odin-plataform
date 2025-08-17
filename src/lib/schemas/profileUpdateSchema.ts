@@ -1,76 +1,47 @@
 import { z } from "zod";
 
 // Parte 1: Schema base cru, agora com imageUrl
-const rawBaseSchema = z.object({
+const baseProfileSchema = z.object({
   name: z.string().min(3, "Nome completo é obrigatório"),
   birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
   email: z.string().email("E-mail pessoal inválido"),
   emailEJ: z.string().email("E-mail institucional inválido"),
-  semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório"),
+  phone: z.string().regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
   course: z.string().min(1, "Curso é obrigatório"),
-  phone: z
-    .string()
-    .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
+  semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório"),
+  about: z.string().optional(),
+  image: z.any().optional(), // Para upload
+  imageUrl: z.string().url().optional().or(z.literal("")),
+  linkedin: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal("")),
   instagram: z.string().optional(),
-  linkedin: z.string().optional(),
-  about: z.string().min(10, "Descreva um pouco sobre você"),
-  image: z.any().optional(),
+  
+  professionalInterests: z.array(z.string()).optional(),
+  roleHistory: z.array(
+    z.object({
+      roleId: z.string().min(1, "Selecione um cargo."),
+      semester: z.string().regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+    })
+  ).optional(),
 
-  // CORREÇÃO: Adicionado o campo imageUrl para validação
-  imageUrl: z
-    .string()
-    .url("URL da imagem inválida")
-    .optional()
-    .or(z.literal("")),
-  isExMember: z.enum(["Sim", "Não"]),
-  alumniDreamer: z.enum(["Sim", "Não"]),
-  password: z
-    .string()
-    .min(8, "A senha deve ter no mínimo 8 caracteres.")
-    .regex(/[a-z]/, "A senha deve conter pelo menos uma letra minúscula.")
-    .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula.")
-    .regex(/[0-9]/, "A senha deve conter pelo menos um número.")
-    .regex(
-      /[^a-zA-Z0-9]/,
-      "A senha deve conter pelo menos um caractere especial."
-    )
-    .optional()
-    .or(z.literal("")),
+  password: z.string().optional().or(z.literal("")),
   confPassword: z.string().optional().or(z.literal("")),
 });
 
-// Parte 2: Schemas específicos (sem alterações aqui)
+// Schema para Membros Ativos
+export const memberUpdateSchema = baseProfileSchema.extend({
+  currentRoleId: z.string().min(1, "O cargo atual é obrigatório"),
+});
 
-export const memberUpdateSchema = rawBaseSchema
-  .extend({
-    roleId: z.string().optional(),
-    roles: z.array(z.string()).optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.password && data.password.length > 0) {
-        return data.password === data.confPassword;
-      }
-      return true;
-    },
-    {
-      path: ["confPassword"],
-      message: "As senhas precisam coincidir",
-    }
-  );
-
-export const exMemberUpdateSchema = rawBaseSchema
-  .extend({
-    semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório"),
-    aboutEj: z.string().min(10, "Descreva um pouco da sua experiência na EJ"),
-    roles: z.array(z.string()).nonempty("Selecione pelo menos um cargo"),
-    otherRole: z.string().optional(),
-    isWorking: z.enum(["Sim", "Não"], {
-      errorMap: () => ({ message: "Selecione 'Sim' ou 'Não'" }),
-    }),
-    workplace: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
+// Schema para Ex-Membros
+export const exMemberUpdateSchema = baseProfileSchema.extend({
+  semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório"),
+  aboutEj: z.string().optional(),
+  roles: z.array(z.string()).min(1, "Selecione pelo menos um cargo ocupado."),
+  otherRole: z.string().optional(),
+  alumniDreamer: z.enum(["Sim", "Não"]),
+  isWorking: z.enum(["Sim", "Não"]),
+  workplace: z.string().optional(),
+}).superRefine((data, ctx) => {
     if (
       data.password &&
       data.password.length > 0 &&

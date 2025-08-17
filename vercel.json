@@ -11,6 +11,10 @@
     {
       "path": "/api/users/reset-message-limit",
       "schedule": "10 3 * * *"
+    },
+    {
+      "path": "/api/users/notify-incomplete-profiles",
+      "schedule": "0 14 * * 1,3"
     }
   ]
 }

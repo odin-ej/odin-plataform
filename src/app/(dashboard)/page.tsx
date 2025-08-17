@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { constructMetadata } from "@/lib/metadata";
-import HomeContent from "../_components/Dashboard/HomeContent";
+import HomeContent from "../_components/Dashboard/home/HomeContent";
 import { Goal, LinkPoster, LinkPosterArea, UsefulLink } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
@@ -115,7 +115,7 @@ export default async function Home() {
   const hasPermission = verifyAccess({ pathname: "/", user: user! });
   if (!hasPermission) return <DeniedAccess />;
 
- const prioridade: Record<LinkPosterArea, number> = {
+  const prioridade: Record<LinkPosterArea, number> = {
     GERAL: 0,
     HOME: 1,
     YGGDRASIL: 1,

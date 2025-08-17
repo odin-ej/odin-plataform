@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-const { PrismaPlugin } = require("@prisma/nextjs-monorepo-workaround-plugin");
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -9,6 +8,13 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "odin-platform-user-avatars.s3.amazonaws.com",
+        port: "",
+        pathname: "/**",
+        // Você pode ser mais específico com a porta e o pathname se desejar
+      },
+            {
+        protocol: "https",
+        hostname: "odin-plataform-jr-points-attachments.s3.amazonaws.com",
         port: "",
         pathname: "/**",
         // Você pode ser mais específico com a porta e o pathname se desejar
@@ -27,13 +33,6 @@ const nextConfig: NextConfig = {
 
 
   serverExternalPackages: ["pdf-parse"],
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.plugins = [...config.plugins, new PrismaPlugin()];
-    }
-
-    return config;
-  },
 };
 
 export default nextConfig;

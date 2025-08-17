@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { User, Role, RegistrationRequest } from "@prisma/client";
+import { User, Role, RegistrationRequest, UserRoleHistory } from "@prisma/client";
 
 const baseMemberSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
@@ -88,13 +88,23 @@ export const userProfileSchema = baseMemberSchema
     alumniDreamer: z.enum(["Sim", "Não"]).optional(),
     isWorking: z.enum(["Sim", "Não"]).optional(),
     workplace: z.string().optional(),
-  })
- 
+    professionalInterests: z.array(z.string()).optional(),
+    roleHistory: z
+      .array(
+        z.object({
+          roleId: z.string().min(1, "Selecione um cargo."),
+          semester: z
+            .string()
+            .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+        })
+      )
+      .optional(),
+  });
 
 export type memberType = z.infer<typeof memberSchema>;
 export type UserProfileValues = z.infer<typeof userProfileSchema>;
 export type MemberWithRoles = User & { roles: Role[] };
-export type MemberWithFullRoles = User & { roles: Role[]; currentRole: Role };
+export type MemberWithFullRoles = User & { roles: Role[]; currentRole: Role; roleHistory: (UserRoleHistory & { role: { name: string } })[] };
 export type RegistrationRequestWithRoles = RegistrationRequest & {
   roles: Role[];
 };

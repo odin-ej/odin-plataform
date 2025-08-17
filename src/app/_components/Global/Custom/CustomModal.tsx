@@ -30,6 +30,7 @@ import Image from "next/image";
 import ImageCropModal from "../ImageCropModal";
 import CustomTextArea from "./CustomTextArea";
 import CommandMultiSelect from "./CommandMultiSelect";
+import FileUploadZone, { UploadableFile } from "../FileUploadZone";
 
 export interface FieldConfig<T> {
   type?:
@@ -42,7 +43,8 @@ export interface FieldConfig<T> {
     | "time"
     | "password"
     | "command"
-    | "textarea";
+    | "textarea"
+    | "attachments";
   mask?: "phone" | "date" | null;
   header: string;
   accessorKey: Path<T>;
@@ -50,6 +52,8 @@ export interface FieldConfig<T> {
   disabled?: boolean;
   isMulti?: boolean;
   renderView?: (data: T) => React.ReactNode;
+    uploadableFiles?: UploadableFile[];
+  onFilesChange?: (files: UploadableFile[]) => void;
 }
 
 interface CustomModalProps<T extends FieldValues> {
@@ -92,7 +96,6 @@ const CustomModal = <T extends FieldValues>({
   // Estado para armazenar a referência do formulário para poder usar o setValue
   const [formRef, setFormRef] = useState<any>(null);
   const data = form.getValues();
-
   // CORREÇÃO: Função wrapper que controla o estado de submissão.
   // Envolvida com useCallback para otimização.
   const handleInternalSubmit = useCallback(
@@ -221,6 +224,15 @@ const CustomModal = <T extends FieldValues>({
                                   placeholder="Selecione uma opção"
                                   options={fieldInfo.options!}
                                   disabled={fieldInfo.disabled}
+                                />
+                              );
+                            case "attachments":
+                              return (
+                                <FileUploadZone
+                                  uploadableFiles={fieldInfo.uploadableFiles!}
+        onFilesChange={fieldInfo.onFilesChange!}
+                              
+                                  
                                 />
                               );
                             case "password":

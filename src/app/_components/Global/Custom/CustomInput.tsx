@@ -10,11 +10,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { formatDate, formatPhone } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { FieldValues, Path, UseFormReturn } from "react-hook-form";
+import { FieldValues, Path, UseFormReturn, Control } from "react-hook-form";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 export interface CustomFieldProps<T extends FieldValues> {
-  form: UseFormReturn<T>;
+  form?: UseFormReturn<T>;
+  control?: Control<T>;
   field: Path<T>;
   label: string;
   placeholder?: string;
@@ -37,10 +38,19 @@ const CustomInput = <T extends FieldValues>({
   className,
   labelClassName,
   disabled,
+  control,
   onBlur,
-}: CustomFieldProps<T>) => (
-  <FormField
-    control={form.control}
+}: CustomFieldProps<T>) => {
+  const formControl = form?.control || control;
+
+  if (!formControl) {
+    // Lança um erro se nenhuma forma de controle for fornecida
+    throw new Error("Você precisa fornecer a prop 'form' ou 'control' para o CustomInput.");
+  }
+
+  return (
+    <FormField
+      control={formControl}
     name={field}
     render={({ field, fieldState }) => (
       <FormItem className="w-full">
@@ -82,5 +92,6 @@ const CustomInput = <T extends FieldValues>({
     )}
   />
 );
+}
 
 export default CustomInput;

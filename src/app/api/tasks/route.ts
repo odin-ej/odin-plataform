@@ -16,7 +16,6 @@ export async function GET() {
 
     const whereClause = getTasksWhereClauseForUser(authUser);
 
-  
     const tasks = await prisma.task.findMany({
       where: whereClause,
       include: {
@@ -74,9 +73,25 @@ export async function POST(request: Request) {
         connect: responsibles.map((id) => ({ id })),
       },
     };
-
+    const authorName = authUser.name.split(" ")[0];
     const newTask = await prisma.task.create({ data: dataForPrisma });
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/minhas-pendencias`,
+        type: "NEW_MENTION",
+        notification: `${authorName} criou uma nova tarefa. Clique no link para ver os detalhes.`,
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: responsibles.map((id) => ({
+        notificationId: notification.id,
+        userId: id,
+      })),
+    });
+
     revalidatePath("/tarefas");
+    revalidatePath("/minhas-pendencias");
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar tarefa:", error);

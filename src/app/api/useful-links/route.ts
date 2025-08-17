@@ -3,6 +3,7 @@ import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { linkSchema } from "@/lib/schemas/linksSchema";
 import { revalidatePath } from "next/cache";
+import { AreaRoles } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
 
     if (authUser.isExMember) return NextResponse.json({ links: [] });
 
-    const {isGlobal, ...body } = await request.json();
+    const { isGlobal, ...body } = await request.json();
 
     const validation = linkSchema.safeParse(body);
     if (!validation.success) {
@@ -30,7 +31,35 @@ export async function POST(request: Request) {
         userId: authUser.id,
       },
     });
-    revalidatePath('/')
+    const allMembersId = await prisma.user.findMany({
+      where: {
+        isExMember: false,
+      },
+      select: {id: true, currentRole: true}
+    });
+
+    const membersCanSee = allMembersId.filter((member) => {
+      return member?.currentRole?.area.includes(newLink.area as AreaRoles);
+    });
+    if (isGlobal) {
+      const notification = await prisma.notification.create({
+        data: {
+          link: `/`,
+          type: 'NEW_MENTION',
+          notification:
+            `${authUser.name} criou um link global: ${data.title}. Clique no link para ver o link completo.`
+        },
+      });
+
+      await prisma.notificationUser.createMany({
+        data: membersCanSee.filter((user) => user.id !== authUser.id).map((user) => ({
+          notificationId: notification.id,
+          userId: user.id,
+        })),
+      });
+    }
+
+    revalidatePath("/");
     return NextResponse.json(newLink, { status: 201 });
   } catch (error) {
     console.error(error);

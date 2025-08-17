@@ -5,6 +5,8 @@ import { checkUserPermission } from "@/lib/utils"; // Sua função de verificaç
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { prisma } from "@/db";
+import { revalidatePath } from "next/cache";
+import { fromZonedTime } from "date-fns-tz";
 
 /**
  * @swagger
@@ -77,6 +79,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         where: { id },
         data: { status },
       });
+
+      const notification = await prisma.notification.create({
+        data: {
+          link: `/salas-eaufba`,
+          type: 'NEW_MENTION',
+          notification: `A solicitação de reserva: ${originalRequest.title} foi alterada para ${status === 'PENDING' ? 'Pendente' : status === 'APPROVED' ? 'Aprovada' : 'Rejeitada'}.`,
+        },
+      })
+
+      await prisma.notificationUser.create({
+        data: {
+          notificationId: notification.id,
+          userId: originalRequest.applicantId,
+        },
+      })
+
     } else {
       // Usuário comum só pode editar a própria solicitação se estiver PENDENTE
       if (originalRequest.applicantId !== authUser.id) {
@@ -88,13 +106,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
       const { title, description, date } =
         reserveRequestToConectionsSchema.parse(body);
-
+      console.log(fromZonedTime(date, "America/Sao_Paulo").toISOString())
       updatedRequest = await prisma.reserveRequestToConections.update({
         where: { id },
-        data: { title, description, date: new Date(date) },
+        data: { title, description, date: fromZonedTime(date, "America/Sao_Paulo").toISOString(), },
       });
     }
 
+    revalidatePath('/central-de-reservas')
     return NextResponse.json(updatedRequest);
   } catch (error) {
     console.error("[SALAS_EAUFBA_PATCH]", error);
@@ -159,7 +178,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.reserveRequestToConections.delete({
       where: { id },
     });
-
+    revalidatePath('/central-de-reservas')
     return NextResponse.json({ message: "Solicitação deletada com sucesso." });
   } catch (error) {
     console.error("[SALAS_EAUFBA_DELETE]", error);

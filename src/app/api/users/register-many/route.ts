@@ -200,6 +200,25 @@ export async function POST(request: Request) {
             welcomeEmailCommand({ email: newUser.email, name: newUser.name })
           );
         }
+        const allMembersId = await prisma.user.findMany({
+          select: { id: true },
+        });
+
+        const notification = await prisma.notification.create({
+          data: {
+            link: `/cultural`,
+            type: "NEW_MENTION",
+            notification: `Um novo ${newUser.isExMember ? "ex-membro" : "membro"} está na Plataforma da Casinha dos Sonhos: ${newUser.name}.`,
+          },
+        });
+
+        await prisma.notificationUser.createMany({
+          data: allMembersId.filter(member => member.id !== newUser.id).map((user) => ({
+            notificationId: notification.id,
+            userId: user.id,
+          })),
+        })
+
         await prisma.registrationRequest.delete({ where: { id: req.id } });
 
         results.successful.push({ id: req.id, email: req.email });

@@ -1,4 +1,4 @@
-import UsersContent from "@/app/_components/Dashboard/UsersContent";
+import UsersContent from "@/app/_components/Dashboard/usuarios/UsersContent";
 import { constructMetadata } from "@/lib/metadata";
 import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
@@ -47,9 +47,12 @@ async function getPageData() {
 const Page = async () => {
   // Busca os dados iniciais
   const initialData = await getPageData();
-    const user = await getAuthenticatedUser();
-    const hasPermission = verifyAccess({ pathname: "/aprovacao-cadastro", user: user! });
-    if (!hasPermission) return <DeniedAccess />;
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({
+    pathname: "/aprovacao-cadastro",
+    user: user!,
+  });
+  if (!hasPermission) return <DeniedAccess />;
   // A lógica de filtro agora vai para o componente cliente.
   // A página do servidor apenas entrega os dados brutos.
   const members = initialData.requests.filter(

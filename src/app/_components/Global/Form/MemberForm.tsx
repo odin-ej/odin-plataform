@@ -8,12 +8,14 @@ import DynamicDropzone from "@/app/_components/Global/Custom/DynamicDropzone";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import CustomSelect from "../Custom/CustomSelect";
-import { Role } from "@prisma/client";
+import { InterestCategory, ProfessionalInterest, Role } from "@prisma/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { handleFileAccepted } from "@/lib/utils";
 import z from "zod";
 import CustomCheckboxGroup from "../Custom/CustomCheckboxGroup";
+import ProfessionalInterestsManager from "../../Dashboard/usuarios/ProfessionalInterestsManager";
+import RoleHistoryManager from "../../Dashboard/usuarios/RoleHistoryManager";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface MemberFormProps<T extends z.ZodType<any, any, any>> {
@@ -28,6 +30,10 @@ interface MemberFormProps<T extends z.ZodType<any, any, any>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFileSelect?: (file: File, form: any) => void;
   onSubmit: (data: z.infer<T>) => void | Promise<void>;
+  interestCategories?: (InterestCategory & {
+    interests: ProfessionalInterest[];
+  })[];
+  view?: "registration" | "profile";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,31 +46,33 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
   onFileSelect,
   schema,
   isLoading,
+  interestCategories,
+  view,
 }: MemberFormProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const defaultFormValues = {
-    name: '',
-    birthDate: '',
-    email: '',
-    emailEJ: '',
-    password: '',
-    confPassword: '',
-    phone: '',
-    semesterEntryEj: '',
-    course: '',
-    roleId: '',
-    instagram: '',
-    linkedin: '',
+    name: "",
+    birthDate: "",
+    email: "",
+    emailEJ: "",
+    password: "",
+    confPassword: "",
+    phone: "",
+    semesterEntryEj: "",
+    course: "",
+    roleId: "",
+    instagram: "",
+    linkedin: "",
     roles: [],
-    about: '',
+    about: "",
     image: undefined,
-    imageUrl: '',
+    imageUrl: "",
   };
 
   const form = useForm<z.infer<T>>({
     resolver: zodResolver(schema),
-   defaultValues: {
+    defaultValues: {
       ...defaultFormValues,
       ...values,
     } as DefaultValues<z.infer<T>>,
@@ -72,17 +80,21 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
 
   const formatedRoles = roles.map((role) => ({
     value: role.id,
-    label: role.name
-  }))
+    label: role.name,
+  }));
 
-  const roleOptions = formatedRoles.filter((role) => role.label !== 'Outro');
-
+  const roleOptions = formatedRoles.filter((role) => role.label !== "Outro");
 
   const onInvalid = () => {
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
     });
   };
+
+  const watchedRoles = form.watch("roles" as Path<z.infer<T>>);
+  const userRoles = roles.filter((role) => {
+    return watchedRoles.includes(role.id);
+  });
 
   return (
     <Form {...form}>
@@ -165,7 +177,11 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
           />
           <CustomSelect
             control={form.control}
-            name={"roleId" as Path<z.infer<T>>}
+            name={
+              view === "profile"
+                ? ("currentRoleId" as Path<z.infer<T>>)
+                : ("roleId" as Path<z.infer<T>>)
+            }
             label="Cargo Atual"
             disabled={canChangeRole ? false : true}
             placeholder="Selecione o seu cargo"
@@ -178,7 +194,7 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
           <CustomInput
             label="Instagram"
             field={"instagram" as Path<z.infer<T>>}
-            placeholder='Link ou nome do instagram. Ex.: empresajr'
+            placeholder="Link ou nome do instagram. Ex.: empresajr"
             form={form}
           />
           <CustomInput
@@ -211,9 +227,20 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
           progress={uploadProgress}
           label="Imagem de Perfil"
           onFileAccepted={() => handleFileAccepted(setUploadProgress)}
-          onFileSelect={onFileSelect ? (file) => onFileSelect(file, form) : undefined}
+          onFileSelect={
+            onFileSelect ? (file) => onFileSelect(file, form) : undefined
+          }
           defaultImageUrl={values?.image}
         />
+
+        {view === "profile" && interestCategories && (
+          <div className="space-y-8 pt-6">
+            <ProfessionalInterestsManager
+              interestCategories={interestCategories}
+            />
+            <RoleHistoryManager roles={userRoles} />
+          </div>
+        )}
 
         <Button
           type="submit"

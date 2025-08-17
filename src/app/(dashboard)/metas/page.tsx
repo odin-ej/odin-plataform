@@ -1,4 +1,4 @@
-import MetasContent from "@/app/_components/Dashboard/MetasContent";
+import MetasContent from "@/app/_components/Dashboard/metas-casinha/MetasContent";
 import { EstrategyObjective, Goal } from "@prisma/client";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
@@ -44,7 +44,7 @@ const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/metas", user: user! });
-  if(!hasPermission) return <DeniedAccess />
+  if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">
       {/* Passamos os dados dentro de um objeto 'initialData' */}

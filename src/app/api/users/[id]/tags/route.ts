@@ -2,6 +2,8 @@ import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { NextResponse } from "next/server";
 
+const ENTERPRISE_USER_ID = "enterprise-points-id";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -12,32 +14,33 @@ export async function GET(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
     const { id } = await params;
-   const userPointsRecord = await prisma.userPoints.findUnique({
-      where: {
-        userId: id, // Buscamos o registro de pontos pelo ID do usuário
-      },
-      // 2. Incluímos a relação 'tags' para buscar a lista COMPLETA de tags
-      //    que pertencem a este registro de pontos.
-      include: {
-        tags: {
-          // 3. Fazemos um 'include' aninhado para também buscar
-          //    o nome de quem atribuiu ('assigner') cada tag.
-          include: {
-            assigner: {
-              select: {
-                name: true,
-              },
+    let tags = [];
+   if (id === ENTERPRISE_USER_ID) {
+      tags = await prisma.tag.findMany({
+        where: { enterprisePointsId: 1 }, // ID fixo da empresa
+        include: {
+          assigner: { select: { name: true } },
+          actionType: { select: { name: true } },
+        },
+        orderBy: { datePerformed: "desc" },
+      });
+    } else {
+      // Se for um ID de usuário normal, busca as tags do usuário.
+      const userPointsRecord = await prisma.userPoints.findUnique({
+        where: { userId: id },
+        include: {
+          tags: {
+            include: {
+              assigner: { select: { name: true } },
+              actionType: { select: { name: true } },
             },
-          },
-          // Podemos manter a ordenação aqui
-          orderBy: {
-            datePerformed: "desc",
+            orderBy: { datePerformed: "desc" },
           },
         },
-      },
-    });
-    const userTags = userPointsRecord?.tags || [];
-    return NextResponse.json(userTags);
+      });
+      tags = userPointsRecord?.tags || [];
+    }
+    return NextResponse.json(tags);
   } catch (error) {
     return NextResponse.json(
       { message: "Erro ao buscar tags do utilizador.", error },

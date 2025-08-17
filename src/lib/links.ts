@@ -13,7 +13,6 @@ import {
   Link,
   Megaphone,
   MessageSquare,
-  School,
   TicketCheck,
   Users,
 } from "lucide-react";
@@ -71,16 +70,10 @@ export const generalLinks: Links[] = [
     href: "/reports",
     icon: Megaphone,
   },
-  {
-    name: "Reserva de Salinhas",
-    href: "/reserva-salinhas",
+{
+    name: 'Central de Reservas',
+    href: 'central-de-reservas',
     icon: CalendarClock,
-    exMemberCanAccess: false,
-  },
-  {
-    name: 'Reserva Salas EAUFBA',
-    href: '/salas-eaufba',
-    icon: School,
     exMemberCanAccess: false,
   }
 ];
@@ -184,8 +177,8 @@ export const restrictedLinks: RestrictedLinks[] = [
     ],
     exMemberCanAccess: false,
   }, {
-    name: 'Gerenciar JR-Points',
-    href: 'gerenciar-jr-points',
+    name: 'Gerenciar JR Points',
+    href: '/gerenciar-jr-points',
     icon: JrPointIconWhite,
     roles: [
       { name: "Diretor(a) Presidente" },

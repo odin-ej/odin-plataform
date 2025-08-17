@@ -77,3 +77,39 @@ export const exMemberWelcomeEmailCommand = ({
     },
   });
 };
+
+export const completeProfileEmailCommand = ({
+  email,
+  name,
+}: {
+  email: string;
+  name: string;
+}) => {
+  return new SendEmailCommand({
+    Source: "plataforma@empresajr.org",
+    Destination: { ToAddresses: [email] },
+    Message: {
+      Subject: { Data: `Quase lá, ${name}! Complete seu perfil na Casinha.` },
+      Body: {
+        Html: {
+          Charset: "UTF-8",
+          Data: `<html>
+                    <body style="font-family: Arial, sans-serif; ...">
+                        <div style="max-width: 600px; ... text-align: center;">
+                        <div style="margin-bottom: 30px;">
+                            <img src="${process.env.NEXT_PUBLIC_API_URL}/logo-azul.png" alt="Logotipo da Empresa JR" style="..."/>
+                        </div>    
+                        <h1 style="color: #0126fb;">Seu perfil está quase completo!</h1>
+                            <p style="font-size: 16px; line-height: 1.6;">Olá, ${name}!</p>
+                            <p style="font-size: 16px; line-height: 1.6;">Vimos que ainda faltam algumas informações importantes no seu perfil, como seus <strong>interesses profissionais</strong> e seu <strong>histórico de cargos</strong>.</p>
+                            <p style="font-size: 16px; line-height: 1.6;">Manter seu perfil atualizado nos ajuda a conectar você com oportunidades e conteúdos que realmente importam.</p>
+                            <a href="${process.env.NEXT_PUBLIC_API_URL}/perfil" style="display: inline-block; background-color: #f5b719; color: #ffffff; font-weight: bold; padding: 14px 28px; ...">Completar Perfil Agora</a>
+                            <p style="font-size: 14px; color: #555;">Leva só alguns minutos!</p>
+                        </div>
+                    </body>
+                   </html>`,
+        },
+      },
+    },
+  });
+};

@@ -43,7 +43,31 @@ export async function PATCH(
       data: dataToUpdate,
     });
 
+    const allMembersId = await prisma.user.findMany({
+      where: {
+        isExMember: false,
+      },
+      select: { id: true },
+    });
+
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/metas-casinha`,
+        notification: `A meta ${updatedGoal.title} foi atualizada por ${authUser.name}. Clique no link para ver os detalhes.`,
+        type: "GENERAL_ALERT",
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: allMembersId.filter(member => member.id !== authUser.id).map((member) => ({
+        notificationId: notification.id,
+        userId: member.id,
+        isRead: false,
+      })),
+    });
+
     revalidatePath("/atualizar-estrategia");
+    revalidatePath("/metas-casinha");
 
     return NextResponse.json(updatedGoal);
   } catch (error) {

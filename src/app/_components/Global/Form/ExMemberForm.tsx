@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import CustomInput from "@/app/_components/Global/Custom/CustomInput";
 import CustomTextArea from "@/app/_components/Global/Custom/CustomTextArea";
 import DynamicDropzone from "@/app/_components/Global/Custom/DynamicDropzone";
-import { Role } from "@prisma/client";
+import { InterestCategory, ProfessionalInterest, Role } from "@prisma/client";
 import { useState } from "react";
 import { toast } from "sonner";
 import CustomSelect from "../Custom/CustomSelect";
 import CustomCheckboxGroup from "../Custom/CustomCheckboxGroup";
 import z from "zod";
+import ProfessionalInterestsManager from "../../Dashboard/usuarios/ProfessionalInterestsManager";
+import RoleHistoryManager from "../../Dashboard/usuarios/RoleHistoryManager";
 
 interface ExMemberFormProps<T extends z.ZodType<any, any, any>> {
   isLoading: boolean;
@@ -23,8 +25,11 @@ interface ExMemberFormProps<T extends z.ZodType<any, any, any>> {
   values?: Partial<z.infer<T>>;
   schema: T;
   canChangeRole?: boolean;
-    onFileSelect?: (file: File, form: any) => void;
+  onFileSelect?: (file: File, form: any) => void;
   isPerfilPage?: boolean;
+  interestCategories?: (InterestCategory & {
+    interests: ProfessionalInterest[];
+  })[];
 }
 
 const ExMemberForm = <T extends z.ZodType<any, any, any>>({
@@ -36,6 +41,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
   isLoading,
   roles,
   isPerfilPage,
+  interestCategories,
 }: ExMemberFormProps<T>) => {
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -109,10 +115,9 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     otherRoleId &&
     watchedRoles.includes(otherRoleId);
 
-  const isWorking = form.watch("isWorking" as Path<z.infer<T>>) === 'Sim';
+  const isWorking = form.watch("isWorking" as Path<z.infer<T>>) === "Sim";
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onInvalid = (error: any) => {
-
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
     });
@@ -128,6 +133,11 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     }
     onSubmit(finalData);
   };
+
+
+    const userRoles = roles.filter(role => {
+      return watchedRoles.includes(role.id)
+    }) 
 
   return (
     <FormProvider {...form}>
@@ -246,8 +256,14 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
               { value: "Sim", label: "Sim" },
               { value: "Não", label: "Não" },
             ]}
-          />  
-          <CustomInput form={form} field={"workplace" as Path<z.infer<T>>} label="Local de Trabalho" disabled={!isWorking} placeholder='Empresa. Ex.: Sanar' />
+          />
+          <CustomInput
+            form={form}
+            field={"workplace" as Path<z.infer<T>>}
+            label="Local de Trabalho"
+            disabled={!isWorking}
+            placeholder="Empresa. Ex.: Sanar"
+          />
         </div>
 
         <CustomCheckboxGroup
@@ -288,11 +304,22 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           control={form.control}
           name={"image" as Path<z.infer<T>>}
           onFileAccepted={handleFileAccepted}
-          onFileSelect={onFileSelect ? (file) => onFileSelect(file, form) : undefined}
+          onFileSelect={
+            onFileSelect ? (file) => onFileSelect(file, form) : undefined
+          }
           defaultImageUrl={values?.image}
           progress={uploadProgress}
           label="Imagem de Perfil"
         />
+
+        {isPerfilPage && interestCategories && (
+          <div className="space-y-8 pt-6">
+            <ProfessionalInterestsManager
+              interestCategories={interestCategories}
+            />
+            <RoleHistoryManager roles={userRoles} />
+          </div>
+        )}
 
         <Button
           type="submit"

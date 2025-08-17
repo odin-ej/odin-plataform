@@ -39,6 +39,13 @@ enum ProjectStatus {
   CANCELED
 }
 
+enum ItemAreas {
+  CONSULTORIA
+  TATICO
+  DIRETORIA
+  GERAL
+}
+
 enum ReportStatus {
   DRAFT
   SUBMITTED
@@ -120,6 +127,12 @@ enum NotificationType {
   GENERAL_ALERT
 }
 
+enum ItemStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+}
+
 // --- MODELS ---
 
 model RegistrationRequest {
@@ -151,6 +164,20 @@ model RegistrationRequest {
   updatedAt       DateTime      @updatedAt
 }
 
+model InterestCategory {
+  id        String                 @id @default(uuid())
+  name      String                 @unique // Ex: "Gestão & Estratégia", "Tecnologia & Dados"
+  interests ProfessionalInterest[] // Uma categoria tem muitos interesses
+}
+
+model ProfessionalInterest {
+  id         String           @id @default(uuid())
+  name       String           @unique
+  categoryId String
+  category   InterestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  users      User[]
+}
+
 model User {
   id                String    @id
   name              String
@@ -179,30 +206,33 @@ model User {
   isWorking         Boolean?
   workplace         String?
 
-  conversations          Conversation[]
-  roles                  Role[]                       @relation("UserRoles")
-  points                 UserPoints?
-  tasksResponsibleFor    Task[]                       @relation("TaskResponsibles")
-  projectsResponsibleFor Project[]                    @relation("ProjectResponsibles")
-  reportsSent            Report[]                     @relation("ReportReferent")
-  reportsReceived        Report[]                     @relation("ReportRecipientUser")
-  squadsLed              Squad[]                      @relation("SquadLeader")
-  squadsAsMember         Squad[]                      @relation("SquadMembers")
-  roomReservation        RoomReservation[]
-  tasksAuthor            Task[]
-  usefulLinks            UsefulLink[]
-  assignedTags           Tag[]                        @relation("AssignedTags")
-  madeConnectionRequests ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
-  notifications          Notification[]
-  roleHistory            UserRoleHistory[]
-  semesterScores         UserSemesterScore[]
-  jrPointsSolicitations  JRPointsSolicitation[]
-  jrPointsReports        JRPointsReport[]
-  posts                  Post[]
-  comments               Comment[]
-  likedPosts             Post[]                       @relation("PostLikes")
-  likedComments          Comment[]                    @relation("CommentLikes")
-  solicitationsAsMember  JRPointsSolicitation[]       @relation("SolicitationMembers")
+  conversations               Conversation[]
+  roles                       Role[]                       @relation("UserRoles")
+  points                      UserPoints?
+  tasksResponsibleFor         Task[]                       @relation("TaskResponsibles")
+  projectsResponsibleFor      Project[]                    @relation("ProjectResponsibles")
+  reportsSent                 Report[]                     @relation("ReportReferent")
+  reportsReceived             Report[]                     @relation("ReportRecipientUser")
+  squadsLed                   Squad[]                      @relation("SquadLeader")
+  squadsAsMember              Squad[]                      @relation("SquadMembers")
+  roomReservation             RoomReservation[]
+  tasksAuthor                 Task[]
+  usefulLinks                 UsefulLink[]
+  assignedTags                Tag[]                        @relation("AssignedTags")
+  madeConnectionRequests      ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
+  roleHistory                 UserRoleHistory[]
+  semesterScores              UserSemesterScore[]
+  jrPointsSolicitations       JRPointsSolicitation[]
+  jrPointsReports             JRPointsReport[]
+  posts                       Post[]
+  comments                    Comment[]
+  likedPosts                  Post[]                       @relation("PostLikes")
+  likedComments               Comment[]                    @relation("CommentLikes")
+  solicitationsAsMember       JRPointsSolicitation[]       @relation("SolicitationMembers")
+  notifications               NotificationUser[]
+  professionalInterests       ProfessionalInterest[]
+  profileCompletionNotifiedAt DateTime?
+  ItemReservation             ItemReservation[]
 }
 
 model UserRoleHistory {
@@ -256,17 +286,55 @@ model UserPoints {
   tags        Tag[]
 }
 
+model Semester {
+  id        String    @id @default(uuid())
+  name      String    @unique // Ex: "Semestre 2025.1", "Temporada de Férias 2026"
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean   @default(false) // Apenas um pode ser ativo por vez
+  createdAt DateTime  @default(now())
+
+  // Relações com os placares daquele semestre
+  userScores       UserSemesterScore[]
+  enterpriseScores EnterpriseSemesterScore[]
+}
+
+// NOVO MODELO: Guarda o histórico de pontos da empresa
+model EnterpriseSemesterScore {
+  id        String   @id @default(uuid())
+  semester  String // Nome do semestre (ex: "Semestre 2025.1")
+  value     Int
+  createdAt DateTime @default(now())
+
+  semesterPeriodId String
+  semesterPeriod   Semester @relation(fields: [semesterPeriodId], references: [id])
+
+  tags          Tag[]
+  reports       JRPointsReport[]
+  solicitations JRPointsSolicitation[]
+
+  @@unique([semesterPeriodId])
+}
+
 model UserSemesterScore {
   id          String   @id @default(uuid())
   semester    String
   totalPoints Int
   createdAt   DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags        Tag[]
 
-  @@index([userId, semester])
-    @@unique([userId, semester])
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relação com o período
+  semesterPeriodId String?
+  semesterPeriod   Semester? @relation(fields: [semesterPeriodId], references: [id])
+
+  // Relações com as transações daquele semestre
+  tags          Tag[]
+  reports       JRPointsReport[]
+  solicitations JRPointsSolicitation[]
+
+  @@unique([userId, semesterPeriodId])
 }
 
 model JRPointsRanking {
@@ -298,10 +366,12 @@ model JRPointsVersion {
   updatedAt          DateTime  @updatedAt
 
   // Uma versão consiste em um conjunto de "moldes de tags" disponíveis
-  tagTemplates TagTemplate[]
-
+  tagTemplates         TagTemplate[]
+  tags                 Tag[]
   // Relação direta com ActionTypes para fins de organização, como solicitado
-  actionTypes ActionType[] @relation("VersionActionTypes")
+  actionTypes          ActionType[]           @relation("VersionActionTypes")
+  jRPointsSolicitation JRPointsSolicitation[]
+  jRPointsReport       JRPointsReport[]
 }
 
 model ActionType {
@@ -339,11 +409,11 @@ model TagTemplate {
 
   // Relação com a versão a que pertence
   jrPointsVersionId String?
-  jrPointsVersion   JRPointsVersion? @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
-
+  jrPointsVersion   JRPointsVersion?       @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  solicitations     JRPointsSolicitation[] @relation("SolicitationTagTemplates")
   // Relação com todas as instâncias de tags criadas a partir deste molde
-  tagInstances Tag[]
-  areas        TagAreas[] @default([GERAL])
+  tagInstances      Tag[]
+  areas             TagAreas[]             @default([GERAL])
 }
 
 model Tag {
@@ -378,10 +448,14 @@ model Tag {
   enterprisePointsId Int?
   enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)
 
-  solicitations       JRPointsSolicitation[] @relation("SolicitationTags")
-  UserSemesterScore   UserSemesterScore?     @relation(fields: [userSemesterScoreId], references: [id])
-  userSemesterScoreId String?
-  JRPointsReport      JRPointsReport[]
+  userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id])
+  userSemesterScoreId       String?
+  jRPointsReport            JRPointsReport[]
+  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id])
+  enterpriseSemesterScoreId String?
+
+  jrPointsVersionId String?
+  jrPointsVersion   JRPointsVersion? @relation(fields: [jrPointsVersionId], references: [id])
 }
 
 model FileAttachment {
@@ -399,34 +473,48 @@ model FileAttachment {
 }
 
 model JRPointsSolicitation {
-  id              String                     @id @default(uuid())
-  description     String                     @db.Text
-  datePerformed   String
-  directorsNotes  String                    @db.Text
-  status          JRPointsSolicitationStatus @default(PENDING)
-  area            AreaRoles
-  createdAt       DateTime                   @default(now())
-  updatedAt       DateTime                   @updatedAt
-  userId          String
-  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  membersSelected User[]                     @relation("SolicitationMembers")
-  tags            Tag[]                      @relation("SolicitationTags")
-  attachments     FileAttachment[]
+  id                        String                     @id @default(uuid())
+  description               String                     @db.Text
+  datePerformed             DateTime                   @map("date_performed")
+  directorsNotes            String?                    @db.Text
+  status                    JRPointsSolicitationStatus @default(PENDING)
+  jrPointsVersionId         String
+  jrPointsVersion           JRPointsVersion            @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  area                      AreaRoles
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  userId                    String
+  user                      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membersSelected           User[]                     @relation("SolicitationMembers")
+  tags                      TagTemplate[]              @relation("SolicitationTagTemplates")
+  attachments               FileAttachment[]
+  userSemesterScore         UserSemesterScore?         @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
+  userSemesterScoreId       String?
+  isForEnterprise           Boolean                    @default(false)
+  enterpriseSemesterScore   EnterpriseSemesterScore?   @relation(fields: [enterpriseSemesterScoreId], references: [id])
+  enterpriseSemesterScoreId String?
 }
 
 model JRPointsReport {
-  id           String               @id @default(uuid())
-  description  String               @db.Text
-  attachments FileAttachment[]
-  tag          Tag                  @relation(fields: [tagId], references: [id])
-  status       JRPointsReportStatus @default(PENDING)
-  area         AreaRoles
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  userId       String
-  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tagId        String
-  directorsNotes  String                    @db.Text
+  id                        String                   @id @default(uuid())
+  description               String                   @db.Text
+  attachments               FileAttachment[]
+  tag                       Tag                      @relation(fields: [tagId], references: [id])
+  status                    JRPointsReportStatus     @default(PENDING)
+  jrPointsVersionId         String
+  jrPointsVersion           JRPointsVersion          @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  area                      AreaRoles
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  userId                    String
+  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tagId                     String
+  directorsNotes            String?                  @db.Text
+  userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
+  userSemesterScoreId       String?
+  isForEnterprise           Boolean                  @default(false)
+  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id])
+  enterpriseSemesterScoreId String?
 }
 
 // -----------------------------------------------------------------
@@ -536,7 +624,7 @@ model Squad {
 model Room {
   id           String            @id @default(uuid())
   name         String            @unique
-  reservations RoomReservation[]
+  reservations RoomReservation[]         
 }
 
 model RoomReservation {
@@ -604,18 +692,50 @@ model ReserveRequestToConections {
   status      RequestStatus @default(PENDING)
 }
 
-model Notification {
-  id           String            @id @default(uuid())
-  notification String            @db.Text
-  userId       String
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  isRead       Boolean?          @default(false)
-  type         NotificationType?
-  link         String?
+model ReservableItem {
+  id          String     @id @default(uuid())
+  name        String     @unique // Ex: "Notebook Dell Vostro", "Câmera Canon T5i"
+  description String     @db.Text
+  imageUrl    String?
+  status      ItemStatus @default(AVAILABLE)
+  areas       ItemAreas[]
+  reservations ItemReservation[] // Um item pode ter várias reservas
+}
 
-  @@index([userId])
+// NOVO MODELO para as reservas dos itens
+model ItemReservation {
+  id        String   @id @default(uuid())
+  title String
+  startDate DateTime // Data e hora de início
+  endDate   DateTime // Data e hora de fim
+  itemId String
+  item   ReservableItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model NotificationUser {
+  id             String       @id @default(uuid())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  notificationId String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, notificationId])
+}
+
+model Notification {
+  id                String             @id @default(uuid())
+  notification      String             @db.Text
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  type              NotificationType?
+  link              String?
+  notificationUsers NotificationUser[]
 }
 
 model Post {

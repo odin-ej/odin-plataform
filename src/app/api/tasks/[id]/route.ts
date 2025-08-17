@@ -46,7 +46,24 @@ export async function PATCH(
     const updatedTask = await prisma.task.update({
       where: { id },
       data: dataForPrisma,
+      include: { responsibles: true },
     });
+
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/tarefas`,
+        type: "NEW_MENTION",
+        notification: `A tarefa: ${updatedTask.title} foi atualizada por ${authUser.name.split(" ")[0]}.`,
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: updatedTask.responsibles.map((user) => ({
+        notificationId: notification.id,
+        userId: user.id,
+      })),
+    });
+
     revalidatePath("/tarefas");
     return NextResponse.json(updatedTask);
   } catch (error) {
@@ -69,7 +86,25 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await prisma.task.delete({ where: { id } });
+    const taskToDelete = await prisma.task.delete({
+      where: { id },
+      include: { responsibles: true },
+    });
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/minhas-pendencias`,
+        type: "NEW_MENTION",
+        notification: `A tarefa: ${taskToDelete.title} foi apagada por ${authUser.name.split(" ")[0]}.`,
+      },
+    });
+
+    await prisma.notificationUser.createMany({
+      data: taskToDelete.responsibles.map((user) => ({
+        notificationId: notification.id,
+        userId: user.id,
+      })),
+    });
+
     revalidatePath("/tarefas");
     return NextResponse.json({ status: 204 });
   } catch (error) {

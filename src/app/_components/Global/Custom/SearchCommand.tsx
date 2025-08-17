@@ -99,35 +99,41 @@ const SearchCommand = ({
                 }
               `}
             </style>
-            <DialogTitle className="sr-only">Navegação por Comandos</DialogTitle>
+            <DialogTitle className="sr-only">
+              Navegação por Comandos
+            </DialogTitle>
             <DialogDescription className="sr-only">
-              Navegue para diferentes páginas ou execute ações usando comandos de texto.
+              Navegue para diferentes páginas ou execute ações usando comandos
+              de texto.
             </DialogDescription>
             <Command className='bg-transparent [&_[cmdk-input-wrapper]]:h-14 [&_[cmdk-group-heading]]:px-4 [&_[cmdk-input]]:h-14 [&_[data-slot="command-input-wrapper"]]:h-14 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-gray-400 [&_[cmdk-list]]:max-h-[300px]'>
               <CommandInput
                 placeholder={placeholder}
-            
                 className="!min-h-14  text-base text-white ring-offset-transparent placeholder:text-gray-400 focus:ring-0"
               />
               <CommandList>
-                <CommandEmpty className="py-6 text-center text-sm text-gray-400">Nenhum resultado encontrado.</CommandEmpty>
+                <CommandEmpty className="py-6 text-center text-sm text-gray-400">
+                  Nenhum resultado encontrado.
+                </CommandEmpty>
                 {groups.map((group, groupIndex) => (
                   <React.Fragment key={group.heading}>
                     <CommandGroup heading={group.heading}>
-                      {Array.isArray(group.items) && group.items.map((item) => (
-                        <CommandItem
-                          key={item.label}
-                          value={normalizeString(item.label)}
-                          onSelect={() => runCommand(item.action)}
-                        
-                          className="cursor-pointer bg-transparent px-4 py-3 text-white/80 transition-colors duration-200 data-[selected=true]:bg-[#0126fb] data-[selected=true]:text-white hover:!bg-white/10 hover:!text-[#f5b719]"
-                        >
-                          <item.icon className="mr-3 h-5 w-5" />
-                          <span>{item.label}</span>
-                        </CommandItem>
-                      ))}
+                      {Array.isArray(group.items) &&
+                        group.items.map((item) => (
+                          <CommandItem
+                            key={item.label}
+                            value={normalizeString(item.label)}
+                            onSelect={() => runCommand(item.action)}
+                            className="cursor-pointer bg-transparent px-4 py-3 text-white/80 transition-colors duration-200 data-[selected=true]:bg-[#0126fb] data-[selected=true]:text-white hover:!bg-white/10 hover:!text-[#f5b719]"
+                          >
+                            <item.icon className="mr-3 h-5 w-5" />
+                            <span>{item.label}</span>
+                          </CommandItem>
+                        ))}
                     </CommandGroup>
-                    {groupIndex < groups.length - 1 && <CommandSeparator className="bg-gray-700" />}
+                    {groupIndex < groups.length - 1 && (
+                      <CommandSeparator className="bg-gray-700" />
+                    )}
                   </React.Fragment>
                 ))}
               </CommandList>

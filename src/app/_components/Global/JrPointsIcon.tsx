@@ -24,7 +24,7 @@ export const JrPointIconBlue = ({ className }: JrPointIconProps) => {
       alt="JR Points"
       className={cn(
         className,
-        "h-auto w-auto max-w-[60px] max-h-[60px] sm:max-w-[100px] sm:max-h-[100px] md:max-w-[150px] md:max-h-[150px] sm:aspect-[1/1] object-contain"
+        "h-auto w-auto max-w-[64px] max-h-[64px] sm:max-w-[96px] sm:max-h-[96px] md:max-w-[128px] md:max-h-[128px] sm:aspect-[1/1] object-contain"
       )}
     />
   );

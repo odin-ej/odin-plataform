@@ -1,12 +1,12 @@
 "use client";
 import { Conversation, Message } from "@prisma/client";
-import ChatContent from "@/app/_components/Dashboard/ChatContent";
+import ChatContent from "@/app/_components/Dashboard/chat/ChatContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { verifyAccess } from "@/lib/utils";
-import ChatSkeleton from "@/app/_components/Dashboard/ChatSkeleton";
+import ChatSkeleton from "@/app/_components/Dashboard/chat/ChatSkeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useQuery } from "@tanstack/react-query";
-import ConversationNotFound from "@/app/_components/Dashboard/ConversationNotFound";
+import ConversationNotFound from "@/app/_components/Dashboard/chat/ConversationNotFound";
 import axios from "axios";
 import { useParams } from "next/navigation";
 

@@ -14,9 +14,9 @@ export async function GET() {
       userPointsData,
       rankingSettings,
       enterpriseData,
-      allUsers,
-      allTags,
-      allActionTypes,
+      enterpriseSemesterScores,
+      allVersions,
+      allSemesters,
     ] = await Promise.all([
       // 1. Busca os pontos dos usuários para o ranking
       prisma.userPoints.findMany({
@@ -37,30 +37,25 @@ export async function GET() {
         where: { id: 1 },
         include: {
           tags: {
-            include: { actionType: true },
+            include: { actionType: true, assigner: { select: { name: true } } },
             orderBy: { datePerformed: "desc" },
           },
         },
       }),
-      // 4. Busca todos os usuários para modais de atribuição
-      prisma.user.findMany({
-        select: { id: true, name: true, imageUrl: true },
-        where: { isExMember: false },
+      prisma.enterpriseSemesterScore.findMany({
+        orderBy: { createdAt: "desc" },
       }),
-      // 5. Busca todas as tags disponíveis para modais
-      prisma.tag.findMany({
-        where: { userPointsId: null, enterprisePointsId: null },
-        include: { actionType: true },
-        orderBy: { datePerformed: "asc" },
-      }),
-      // 6. Busca todos os tipos de ação para modais
-      prisma.actionType.findMany({
-        orderBy: { name: "asc" },
-        include: {
-          _count: {
-            select: { tags: true },
-          },
+      prisma.jRPointsVersion.findMany({
+        orderBy: { createdAt: "desc" },
+       include: {
+         _count: {
+          // Inclui a contagem de templates associados
+          select: { tagTemplates: true },
         },
+       }
+      }),
+      prisma.semester.findMany({
+        orderBy: { createdAt: "desc" },
       }),
     ]);
 
@@ -76,13 +71,15 @@ export async function GET() {
 
     // Monta o objeto de resposta final com todos os dados
     const responseData = {
+      myPoints: userPointsData.find((u) => u.user.id === authUser.id)
+        ?.totalPoints,
       usersRanking: usersRanking,
       rankingIsHidden: rankingSettings?.isHidden ?? false,
       enterprisePoints: enterpriseData?.value ?? 0,
       enterpriseTags: enterpriseData?.tags ?? [],
-      allUsers: allUsers,
-      allTags: allTags,
-      allActionTypes: allActionTypes,
+      enterpriseSemesterScores,
+      allVersions,
+      allSemesters,
     };
     return NextResponse.json(responseData);
   } catch (error) {

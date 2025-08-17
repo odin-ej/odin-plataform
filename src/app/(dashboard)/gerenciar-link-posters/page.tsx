@@ -1,4 +1,4 @@
-import LinkPostersPageContent from "@/app/_components/Dashboard/LinkPostersPageContent";
+import LinkPostersPageContent from "@/app/_components/Dashboard/link-posters/LinkPostersPageContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
@@ -20,7 +20,6 @@ async function getPageData(): Promise<LinkPostersPageData> {
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
 
-
     const response = await fetch(`${API_URL}/api/link-posters`, {
       headers,
     });
@@ -29,7 +28,7 @@ async function getPageData(): Promise<LinkPostersPageData> {
 
     return { linkPosters: [] };
   } catch (error) {
-   console.error(error);
+    console.error(error);
     return { linkPosters: null };
   }
 }

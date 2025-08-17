@@ -36,6 +36,22 @@ export async function PATCH(
       where: { id },
       data: validation.data,
     });
+
+    const notification = await prisma.notification.create({
+      data: {
+        link: `/reports`,
+        notification: `O report ${updatedReport.title} foi atualizado. Clique no link para ver os detalhes.`,
+        type: 'NEW_MENTION'
+      },
+    })
+
+   await prisma.notificationUser.create({
+    data: {
+      notificationId: notification.id,
+      userId: updatedReport.recipientUserId!
+    }
+   })
+
     return NextResponse.json(updatedReport);
   } catch (error) {
     return NextResponse.json(

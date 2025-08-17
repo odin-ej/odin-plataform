@@ -21,13 +21,18 @@ export interface ColumnDef<T> {
   className?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getNestedValue = (obj: any, path: string) => {
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+};
+
 interface CustomTableProps<T> {
   title: string;
   type?: string;
   data: T[];
   message?: string;
   columns: ColumnDef<T>[];
-  filterColumns: (keyof T)[];
+  filterColumns: string[];
   itemsPerPage?: number;
   isActionLoading?: boolean;
   onRowClick?: (row: T) => void;
@@ -71,13 +76,14 @@ function CustomTable<T extends { id: string | number }>({
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
     return data.filter((row) =>
-      filterColumns.some((columnKey: keyof T) =>
-        String(row[columnKey])
+      filterColumns.some((key) => {
+        const value = getNestedValue(row, String(key));
+        return String(value)
           .toLowerCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
-          .includes(normalizedFilter)
-      )
+          .includes(normalizedFilter);
+      })
     );
   }, [data, filter, filterColumns]);
 
