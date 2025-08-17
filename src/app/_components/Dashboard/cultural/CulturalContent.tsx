@@ -53,7 +53,7 @@ const fetchCulturalData = async (): Promise<CulturePageData> => {
 const CulturalContent = ({ initialData }: CulturalContentProps) => {
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<MemberWithFullRoles | null>(
-    null
+  null
   );
   const { user } = useAuth();
 

@@ -40,6 +40,8 @@ export async function GET() {
         roles: true,
         currentRole: true,
         roleHistory: { include: { role: { select: {name: true}} } },
+        professionalInterests: true,
+        
       },
       orderBy: {
         createdAt: "desc",
