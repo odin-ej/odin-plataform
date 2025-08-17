@@ -114,7 +114,7 @@ const EnterprisePageContent = ({
     onSuccess: () => {
       toast.success("Item atualizado com sucesso!");
       setIsEditModalOpen(false);
-      form.reset()
+      form.reset();
       queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
     },
     onError: (error: any) =>
@@ -265,11 +265,21 @@ const EnterprisePageContent = ({
     setEditingItem({ ...item, type });
     // Reutiliza o mesmo modal de criação/edição para versões e semestres
     if (type === "version" || type === "semester") {
-      if(type === 'version') {
-        form.reset({...item, implementationDate: item.implementationDate ? format(item.implementationDate, "yyyy-MM-dd") : "", endDate: item.endDate ? format(item.endDate, "yyyy-MM-dd") : ""});
+      if (type === "version") {
+        form.reset({
+          ...item,
+          implementationDate: item.implementationDate
+            ? format(item.implementationDate, "yyyy-MM-dd")
+            : "",
+          endDate: item.endDate ? format(item.endDate, "yyyy-MM-dd") : "",
+        });
       }
-      if(type === 'semester') {
-        form.reset({...item, startDate: item.startDate ? format(item.startDate, "yyyy-MM-dd") : "", endDate: item.endDate ? format(item.endDate, "yyyy-MM-dd") : ""});
+      if (type === "semester") {
+        form.reset({
+          ...item,
+          startDate: item.startDate ? format(item.startDate, "yyyy-MM-dd") : "",
+          endDate: item.endDate ? format(item.endDate, "yyyy-MM-dd") : "",
+        });
       }
       setModalType(type);
       setIsCreateModalOpen(true);
@@ -481,34 +491,39 @@ const EnterprisePageContent = ({
       tagsCount: enterprisePoints?.tags.length || 0,
       imageUrl: "/logo-amarela.png", // Use um caminho para o logo da sua empresa
       // Preencha outros campos do tipo User com valores padrão se necessário
-      about: '',
-      aboutEj: '',
+      about: "",
+      aboutEj: "",
       alumniDreamer: false,
       isExMember: false,
-      course: 'Administração',
-      currentRoleId: 'cargo-master',
+      course: "Administração",
+      currentRoleId: "cargo-master",
       dailyMessageCount: 40,
       isWorking: false,
-      instagram: 'donosdesonhos',
+      instagram: "donosdesonhos",
       lastMessageDate: new Date(),
       createdAt: new Date(),
-      linkedin: '',
-      otherRole: '',
-      password: '',
-      semesterLeaveEj: '',
+      linkedin: "",
+      otherRole: "",
+      password: "",
+      semesterLeaveEj: "",
       profileCompletionNotifiedAt: new Date(),
       tags: enterprisePoints?.tags || [],
       updatedAt: new Date(),
-      workplace: '',
-      email: '', emailEJ: '', birthDate: new Date(), phone: '', semesterEntryEj: '',
+      workplace: "",
+      email: "",
+      emailEJ: "",
+      birthDate: new Date(),
+      phone: "",
+      semesterEntryEj: "",
     };
 
     // 2. Ordena o ranking de usuários normalmente
-    const sortedUserRanking = [...usersRanking].sort((a, b) => b.totalPoints - a.totalPoints);
+    const sortedUserRanking = [...usersRanking].sort(
+      (a, b) => b.totalPoints - a.totalPoints
+    );
 
     // 3. Adiciona a empresa no topo da lista
     return [enterpriseUser, ...sortedUserRanking];
-
   }, [usersRanking, enterprisePoints]);
   if (isLoadingData) {
     return (
@@ -562,7 +577,17 @@ const EnterprisePageContent = ({
         setItemToDelete={setItemToDelete}
         semesters={allSemesters}
         onSnapshot={handleSnapshot} // Passa a função que abre a confirmação
-        onCreateSemester={() => setIsCreateModalOpen(true)}
+        onCreateSemester={() => {
+          setEditingItem(null); // Limpa o item em edição para garantir o modo de criação
+          setModalType("semester"); // Define o TIPO para semestre
+          setIsCreateModalOpen(true); // ABRE o modal
+        }}
+        // ... outras props
+        onCreateVersion={() => {
+          setEditingItem(null); // Limpa o item em edição para garantir o modo de criação
+          setModalType("version"); // Define o TIPO para versão
+          setIsCreateModalOpen(true); // ABRE o modal
+        }}
         onSemesterToggle={toggleSemesterMutation}
         onEditSemester={(semester: any) =>
           handleOpenEditModal(semester, "semester")
@@ -587,7 +612,6 @@ const EnterprisePageContent = ({
             "Modelo de Tags"
           )
         }
-        onCreateVersion={() => setIsCreateModalOpen(true)}
         snapshots={usersSemesterScore}
       />
 
