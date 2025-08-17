@@ -61,7 +61,7 @@ const DivisionSidebar = ({
                           : "hover:bg-white/10 "
                       )}
                     >
-                      <item.icon className="ml-2 mr-3 h-5 w-5" />
+                      <item.icon className="ml-2 mr-3 h-4 w-4" />
                       <span>{item.name}</span>
                     </SidebarMenuButton>
                   </Link>

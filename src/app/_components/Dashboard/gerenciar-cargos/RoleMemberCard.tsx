@@ -1,6 +1,6 @@
 "use client";
 
-import { AreaRoles, Role, User } from "@prisma/client";
+import { AreaRoles, } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import {
   Building,
@@ -22,10 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface UserWithRole extends User {
-  currentRole: Role | null;
-}
+import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 
 export const areaConfig: Record<
   Exclude<
@@ -85,14 +82,16 @@ export function isConfigurableArea(
 const RoleMemberCard = ({
   user,
   isManagment,
+  onClick
 }: {
-  user: UserWithRole;
+  user: MemberWithFullRoles;
   isManagment: boolean;
+  onClick?: (user: MemberWithFullRoles) => void;
 }) => {
   const roleAreas = user.currentRole?.area || [];
 
   return (
-    <Card className="bg-[#02102E] border-blue-900/50 text-white overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 flex flex-col h-full">
+    <Card onClick={onClick ? () => onClick(user) : undefined}  className="bg-[#02102E] border-blue-900/50 text-white overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 flex flex-col h-full">
       <CardHeader className="p-0 text-center">
         {/* Fundo decorativo */}
         <div className="h-16 bg-gradient-to-r from-sky-900 to-blue-900" />

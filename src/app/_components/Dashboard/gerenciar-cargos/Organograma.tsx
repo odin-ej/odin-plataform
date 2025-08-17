@@ -16,9 +16,10 @@ interface OrganogramaContent{
    users: MemberWithFullRoles[];
    areas: AreaRoles[];
    isManagment: boolean
+   onClick?: (user: MemberWithFullRoles) => void;
 }
 
-const Organograma = ({users, areas, isManagment}: OrganogramaContent) => {
+const Organograma = ({users, areas, isManagment, onClick}: OrganogramaContent) => {
   const [selectedArea, setSelectedArea] = useState<AreaRoles | "TODOS">(
     "TODOS"
   );
@@ -90,7 +91,7 @@ const Organograma = ({users, areas, isManagment}: OrganogramaContent) => {
                 className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5"
               >
                 <div className="p-1">
-                  <RoleMemberCard isManagment={isManagment} user={user} />
+                  <RoleMemberCard onClick={onClick} isManagment={isManagment} user={user} />
                 </div>
               </CarouselItem>
             ))}

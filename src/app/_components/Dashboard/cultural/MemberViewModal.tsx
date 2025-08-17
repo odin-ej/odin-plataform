@@ -31,14 +31,17 @@ const MemberViewModal = ({
       return {};
     }
 
-    // Usamos reduce para transformar o array em um objeto de { categoria: [interesses] }
     return user.professionalInterests.reduce<Record<string, string[]>>(
       (acc, interest) => {
-        const categoryName = interest.category.name;
-        if (!acc[categoryName]) {
-          acc[categoryName] = [];
+        // ✅ CORREÇÃO: Adiciona uma verificação para garantir que o interesse e sua categoria existem
+        if (interest && interest.category && interest.category.name) {
+          const categoryName = interest.category.name;
+          if (!acc[categoryName]) {
+            acc[categoryName] = [];
+          }
+          acc[categoryName].push(interest.name);
         }
-        acc[categoryName].push(interest.name);
+        // Retorna o acumulador em todos os casos para continuar o loop
         return acc;
       },
       {}
@@ -80,10 +83,12 @@ const MemberViewModal = ({
             : `https://linkedin.com/in/${user.linkedin}`
       : "";
 
-  const roleHistorys = user.roleHistory.filter((roleH) => roleH.role).map((roleH) => ({
-    name: roleH.role.name,
-    semester: roleH.semester,
-  }));
+  const roleHistorys = user.roleHistory
+    .filter((roleH) => roleH.role)
+    .map((roleH) => ({
+      name: roleH.role.name,
+      semester: roleH.semester,
+    }));
 
   const rolesWithoutSemester = user.roles
     .filter((role) => role && role.name !== "Outro")

@@ -261,7 +261,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       </div>
 
       <div className='mt-4'>
-        <Organograma users={data.allUsers} areas={areas} isManagment={false} />
+        <Organograma users={data.allUsers} areas={areas} isManagment={false} onClick={(user) => openModal(user)} />
       </div>
 
       <div className="mt-4">
