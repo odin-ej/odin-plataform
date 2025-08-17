@@ -55,11 +55,21 @@ const UnifiedCalendar = ({
   const [view, setView] = useState<CalendarView>(CalendarView.MONTH); // Estado para a visão
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
+
     events.forEach((event) => {
-      const dayKey = format(event.start, "yyyy-MM-dd");
-      if (!map.has(dayKey)) map.set(dayKey, []);
-      map.get(dayKey)?.push(event);
+      // gera todos os dias entre o início e o fim da reserva
+      const daysInRange = eachDayOfInterval({
+        start: event.start,
+        end: event.end,
+      });
+
+      daysInRange.forEach((day) => {
+        const dayKey = format(day, "yyyy-MM-dd");
+        if (!map.has(dayKey)) map.set(dayKey, []);
+        map.get(dayKey)?.push(event);
+      });
     });
+
     return map;
   }, [events]);
 
@@ -129,7 +139,9 @@ const UnifiedCalendar = ({
               size="sm"
               onClick={() => setView(CalendarView.WEEK)}
               variant={view === "week" ? "default" : "ghost"}
-              className={cn(view === 'week' && 'bg-[#0126fb] hover:bg-[#0126fb]/90')}
+              className={cn(
+                view === "week" && "bg-[#0126fb] hover:bg-[#0126fb]/90"
+              )}
             >
               Semana
             </Button>
@@ -137,7 +149,9 @@ const UnifiedCalendar = ({
               size="sm"
               onClick={() => setView(CalendarView.MONTH)}
               variant={view === "month" ? "default" : "ghost"}
-              className={cn(view === 'month' && 'bg-[#0126fb] hover:bg-[#0126fb]/90')}
+              className={cn(
+                view === "month" && "bg-[#0126fb] hover:bg-[#0126fb]/90"
+              )}
             >
               Mês
             </Button>
@@ -181,7 +195,7 @@ const UnifiedCalendar = ({
               >
                 {format(day, "d")}
               </span>
-              <div className="mt-1 space-y-1 text-[10px] sm:text-xs overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700">
+              <div className="mt-1 space-y-1 text-[10px] sm:text-xs scrollbar-thin scrollbar-thumb-gray-700">
                 {dayEvents.slice(0, 3).map((event) => (
                   <div
                     key={event.id}
@@ -194,7 +208,11 @@ const UnifiedCalendar = ({
                     title={`${format(event.start, "HH:mm")} - ${format(event.end, "HH:mm")}  | ${event.title}`}
                   >
                     {getEventIcon(event.type)}
-                    <span className="truncate">{event.type !== 'eaufba' && (`${format(event.start, "HH:mm")} - ${format(event.end, "HH:mm")}`)} | {event.title}</span>
+                    <span className="truncate">
+                      {event.type !== "eaufba" &&
+                        `${format(event.start, "HH:mm")} - ${format(event.end, "HH:mm")}`}{" "}
+                      | {event.title}
+                    </span>
                   </div>
                 ))}
                 {dayEvents.length > 3 && (

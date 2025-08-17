@@ -15,15 +15,19 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import CustomInput from "../../Global/Custom/CustomInput";
 import CustomSelect from "../../Global/Custom/CustomSelect";
-import { format } from "date-fns";
+import { areIntervalsOverlapping, format } from "date-fns";
 import { Room, ReservableItem, RoomStatus, ItemAreas } from "@prisma/client";
 import { Box, CalendarIcon, Loader2, School } from "lucide-react";
 import {
+  ExtendedReservation,
   ReservationFormValues,
   reservationSchema,
 } from "@/lib/schemas/reservationsSchema";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { ItemWithRelations } from "./ItemsContent";
+import { fromZonedTime } from "date-fns-tz";
+import { toast } from "sonner";
 
 export const getDefaultValuesByType = (
   type: "salinha" | "item" | "eaufba",
@@ -77,6 +81,8 @@ interface CreateReservationModalProps {
   rooms: Room[];
   items: ReservableItem[];
   isLoading: boolean;
+  existingRoomReservations: ExtendedReservation[];
+  existingItemReservations: ItemWithRelations[];
 }
 
 const CreateReservationModal = ({
@@ -89,12 +95,14 @@ const CreateReservationModal = ({
   rooms,
   items,
   isLoading,
+  existingRoomReservations,
+  existingItemReservations
 }: CreateReservationModalProps) => {
   const [activeTab, setActiveTab] = useState<"salinha" | "item" | "eaufba">(
     "salinha"
   );
 
-  const {user} = useAuth()
+  const { user } = useAuth();
 
   const form = useForm<ReservationFormValues>({
     // O resolver muda dinamicamente com a aba
@@ -102,21 +110,109 @@ const CreateReservationModal = ({
     defaultValues: getDefaultValuesByType("salinha", selectedDate),
   });
 
-  const onSubmit = (data: any) => {
-    const payload = { ...data, date: format(selectedDate, "yyyy-MM-dd") };
-    if (activeTab === "salinha") createRoomReservation(payload);
-    else if (activeTab === "item") createItemReservation(payload);
-    else if (activeTab === "eaufba") createEaufbaRequest(payload);
+  const onSubmit = (data: ReservationFormValues) => {
+    const timeZone = "America/Sao_Paulo";
+
+    // --- VERIFICAÇÃO DE CONFLITO PARA SALINHAS ---
+    if (data.type === "salinha") {
+      const newInterval = {
+        start: fromZonedTime(`${data.date} ${data.hourEnter}`, timeZone),
+        end: fromZonedTime(`${data.date} ${data.hourLeave}`, timeZone),
+      };
+
+      // Valida se a hora de início é anterior à de fim
+      if (newInterval.start >= newInterval.end) {
+        toast.error("Horário inválido", {
+          description: "A hora de início deve ser anterior à hora de término.",
+        });
+        return; // Interrompe a submissão
+      }
+
+      const hasConflict = existingRoomReservations.some((reservation) => {
+        // Verifica apenas as reservas da mesma sala
+        if (reservation.roomId !== data.roomId) {
+          return false;
+        }
+        const existingInterval = {
+          start: new Date(reservation.hourEnter),
+          end: new Date(reservation.hourLeave),
+        };
+        return areIntervalsOverlapping(newInterval, existingInterval);
+      });
+
+      if (hasConflict) {
+        toast.error("Conflito de agendamento", {
+          description:
+            "Esta sala já está reservada para o horário selecionado.",
+        });
+        return; // Interrompe a submissão
+      }
+
+      createRoomReservation(data);
+    }
+
+    // --- VERIFICAÇÃO DE CONFLITO PARA ITENS ---
+    else if (data.type === "item") {
+      const newInterval = {
+        start: fromZonedTime(`${data.startDate} ${data.startTime}`, timeZone),
+        end: fromZonedTime(`${data.endDate} ${data.endTime}`, timeZone),
+      };
+
+      if (newInterval.start >= newInterval.end) {
+        toast.error("Período inválido", {
+          description: "A data/hora de início deve ser anterior à de término.",
+        });
+        return;
+      }
+
+      const hasConflict = existingItemReservations.some((reservation) => {
+        if (reservation.itemId !== data.itemId) {
+          return false;
+        }
+        const existingInterval = {
+          start: new Date(reservation.startDate),
+          end: new Date(reservation.endDate),
+        };
+        return areIntervalsOverlapping(newInterval, existingInterval);
+      });
+
+      if (hasConflict) {
+        toast.error("Conflito de agendamento", {
+          description:
+            "Este item já está reservado para o período selecionado.",
+        });
+        return;
+      }
+
+      createItemReservation(data);
+    }
+
+    // --- LÓGICA PARA EAUFBA (SEM VERIFICAÇÃO DE CONFLITO) ---
+    else if (data.type === "eaufba") {
+      createEaufbaRequest(data);
+    }
   };
 
-  
   const userHasPermissionToItem = (item: ReservableItem) => {
-    const userCurrentRoleAreas = user?.currentRole.area
-    if(item.areas.includes(ItemAreas.GERAL) || item.areas.includes(ItemAreas.DIRETORIA)) return true
-    return userCurrentRoleAreas?.some((area: string) => item.areas.includes(area as ItemAreas))
-  }
+    const userCurrentRoleAreas = user?.currentRole.area;
+    if (
+      item.areas.includes(ItemAreas.GERAL) ||
+      item.areas.includes(ItemAreas.DIRETORIA)
+    )
+      return true;
+    return userCurrentRoleAreas?.some((area: string) =>
+      item.areas.includes(area as ItemAreas)
+    );
+  };
 
-  const itensAvailable = items.filter(item => item.status !== 'IN_USE' && item.status !== 'MAINTENANCE' && userHasPermissionToItem(item)).map(item => ({value: item.id, label: item.name}))
+  const itensAvailable = items
+    .filter(
+      (item) =>
+        item.status !== "IN_USE" &&
+        item.status !== "MAINTENANCE" &&
+        userHasPermissionToItem(item)
+    )
+    .map((item) => ({ value: item.id, label: item.name }));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

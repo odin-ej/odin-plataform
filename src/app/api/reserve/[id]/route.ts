@@ -18,8 +18,9 @@ export async function PATCH(
 
     const body = await request.json();
     const validation = roomReservationSchema.partial().safeParse(body); // .partial() torna todos os campos opcionais
-
+    console.log(body)
     if (!validation.success) {
+      console.error(validation.error.flatten().fieldErrors)
       return NextResponse.json({ message: "Dados inválidos" }, { status: 400 });
     }
     let startDateTime: Date | undefined = undefined;
@@ -54,6 +55,8 @@ export async function PATCH(
       status: validation.data.status,
       roomId: validation.data.roomId,
     };
+
+
 
     // --- Atualizar no Prisma (não tocar em startDate/endDate) ---
     const updatedReservation = await prisma.roomReservation.update({

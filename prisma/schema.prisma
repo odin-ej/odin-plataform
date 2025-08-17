@@ -468,7 +468,7 @@ model FileAttachment {
   jrPointsSolicitation   JRPointsSolicitation? @relation(fields: [jrPointsSolicitationId], references: [id], onDelete: Cascade)
   postId                 String?
   post                   Post?                 @relation(fields: [postId], references: [id], onDelete: Cascade)
-  JRPointsReport         JRPointsReport?       @relation(fields: [jRPointsReportId], references: [id])
+  jRPointsReport         JRPointsReport?       @relation(fields: [jRPointsReportId], references: [id], onDelete: Cascade)
   jRPointsReportId       String?
 }
 
@@ -491,7 +491,7 @@ model JRPointsSolicitation {
   userSemesterScore         UserSemesterScore?         @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
   userSemesterScoreId       String?
   isForEnterprise           Boolean                    @default(false)
-  enterpriseSemesterScore   EnterpriseSemesterScore?   @relation(fields: [enterpriseSemesterScoreId], references: [id])
+  enterpriseSemesterScore   EnterpriseSemesterScore?   @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
   enterpriseSemesterScoreId String?
 }
 
@@ -499,7 +499,7 @@ model JRPointsReport {
   id                        String                   @id @default(uuid())
   description               String                   @db.Text
   attachments               FileAttachment[]
-  tag                       Tag                      @relation(fields: [tagId], references: [id])
+  tag                       Tag                      @relation(fields: [tagId], references: [id], onDelete: Cascade)
   status                    JRPointsReportStatus     @default(PENDING)
   jrPointsVersionId         String
   jrPointsVersion           JRPointsVersion          @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
@@ -513,7 +513,7 @@ model JRPointsReport {
   userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
   userSemesterScoreId       String?
   isForEnterprise           Boolean                  @default(false)
-  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id])
+  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
   enterpriseSemesterScoreId String?
 }
 

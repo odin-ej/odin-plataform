@@ -15,7 +15,7 @@ const baseSchema = z.object({
 export const roomReservationSchema = baseSchema.extend({
   type: z.literal("salinha"),
   title: z.string().min(1, "O título/finalidade é obrigatório"),
-  hourEnter: z
+ hourEnter: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato de hora inválido (HH:MM)."),
   hourLeave: z

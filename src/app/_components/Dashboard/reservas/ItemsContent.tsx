@@ -181,6 +181,8 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
   const handleOpenEditReservationModal = (reservation: ItemWithRelations) => {
     setEditingReservation(reservation);
     reservationForm.reset({
+      type: "item",
+      title: reservation.title,
       itemId: reservation.itemId,
       startDate: format(new Date(reservation.startDate), "yyyy-MM-dd"),
       startTime: format(new Date(reservation.startDate), "HH:mm"),
@@ -192,12 +194,16 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
 
   // --- COLUNAS E CAMPOS ---
   const itemColumns: ColumnDef<ReservableItem>[] = [
-    { accessorKey: "name", header: "Item", cell: (row) => (
-      <div className="flex">
-        <Box className="mr-2 h-4 w-4" />
-        <span>{row.name}</span>
-      </div>
-    ) },
+    {
+      accessorKey: "name",
+      header: "Item",
+      cell: (row) => (
+        <div className="flex">
+          <Box className="mr-2 h-4 w-4" />
+          <span>{row.name}</span>
+        </div>
+      ),
+    },
     {
       accessorKey: "description",
       header: "Descrição",
@@ -209,10 +215,23 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
             : "Em manutenção",
     },
     {
-      accessorKey: 'areas',
-      header: 'Áreas Permitidas',
-      cell: (row) => row.areas.map(area => area === 'CONSULTORIA' ? 'Consultoria' : area === 'DIRETORIA' ? 'Diretoria' : area === 'GERAL' ? 'Geral' : area === 'TATICO' ? 'Tático' : 'Sem área') .join(', ')
-    }
+      accessorKey: "areas",
+      header: "Áreas Permitidas",
+      cell: (row) =>
+        row.areas
+          .map((area) =>
+            area === "CONSULTORIA"
+              ? "Consultoria"
+              : area === "DIRETORIA"
+                ? "Diretoria"
+                : area === "GERAL"
+                  ? "Geral"
+                  : area === "TATICO"
+                    ? "Tático"
+                    : "Sem área"
+          )
+          .join(", "),
+    },
   ];
 
   const reservationColumns: ColumnDef<ItemWithRelations>[] = [
@@ -284,6 +303,19 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     { accessorKey: "endTime", header: "Hora de Devolução", type: "time" },
   ];
 
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   const handleInvalidSubmit = (errors: any) => {
+      console.error("Erros de validação do formulário:", errors);
+      // Pega a mensagem de erro do primeiro campo que falhou
+      //@ts-expect-error Erro esperado
+      const firstErrorMessage = Object.values(errors)[0].message;
+      toast.error("Formulário inválido", {
+        description:
+          (firstErrorMessage as string) ||
+          "Por favor, verifique os campos e tente novamente.",
+      });
+    };
+
   return (
     <div>
       {/* Tabela de Itens */}
@@ -339,6 +371,7 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
           isEditing={true}
           fields={itemEntityFields}
           setIsEditing={() => {}}
+          onInvalid={handleInvalidSubmit}
         />
       )}
 
@@ -357,6 +390,7 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
           isEditing={true}
           fields={reservationFields}
           setIsEditing={() => {}}
+          onInvalid={handleInvalidSubmit}
         />
       )}
 

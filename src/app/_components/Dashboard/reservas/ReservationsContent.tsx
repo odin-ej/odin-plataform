@@ -55,6 +55,7 @@ const ReservationsContent = ({
       );
       return response.data;
     },
+    initialData,
   });
 
   const {eaufbaRequests, itemReservations, reservableItems, roomReservations, rooms} = data || {};
@@ -271,8 +272,10 @@ const ReservationsContent = ({
           createRoomReservation={createReservation}
           createItemReservation={createItem}
           createEaufbaRequest={createEaufba}
-          rooms={initialData.rooms}
-          items={initialData.reservableItems}
+          rooms={rooms}
+          items={reservableItems}
+          existingItemReservations={itemReservations}
+          existingRoomReservations={roomReservations}
           isLoading={
             isCreatingEaufba || isCreatingReservation || isCreatingItem
           }
