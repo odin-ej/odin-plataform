@@ -118,6 +118,8 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
  const formInitialValues = useMemo(() => {
     if (!user) return undefined;
     console.log(user.currentRoleId)
+    console.log(user)
+    console.log(authUser)
     return {
       name: user.name,
       email: user.email,
