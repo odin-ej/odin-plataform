@@ -103,7 +103,7 @@ export const completeProfileEmailCommand = ({
                             <p style="font-size: 16px; line-height: 1.6;">Olá, ${name}!</p>
                             <p style="font-size: 16px; line-height: 1.6;">Vimos que ainda faltam algumas informações importantes no seu perfil, como seus <strong>interesses profissionais</strong> e seu <strong>histórico de cargos</strong>.</p>
                             <p style="font-size: 16px; line-height: 1.6;">Manter seu perfil atualizado nos ajuda a conectar você com oportunidades e conteúdos que realmente importam.</p>
-                            <a href="${process.env.NEXT_PUBLIC_API_URL}/perfil" style="display: inline-block; background-color: #f5b719; color: #ffffff; font-weight: bold; padding: 14px 28px; ...">Completar Perfil Agora</a>
+                            <a href="${process.env.NEXT_PUBLIC_API_URL}/perfil" style="display: inline-block; background-color: #0126fb; color: #ffffff; font-weight: bold; padding: 14px 28px; ...">Completar Perfil Agora</a>
                             <p style="font-size: 14px; color: #555;">Leva só alguns minutos!</p>
                         </div>
                     </body>

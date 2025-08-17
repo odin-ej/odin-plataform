@@ -531,12 +531,22 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       uploadableFiles: uploadableFiles,
       onFilesChange: setUploadableFiles,
     };
+
+    const memberSelect: FieldConfig<FormDataType> = {
+      accessorKey: "membersSelected" as any,
+      header: "Membros Envolvidos",
+      type: "command" as const,
+      options: allUsers.map((u) => ({ value: u.id, label: u.name })),
+      isMulti: true,
+    };
+
     if (requestType === "solicitation") {
       const options =
         requestTarget === "enterprise"
           ? allTagTemplates.filter((t) => t.areas.includes("GERAL"))
           : allTagTemplates;
-      return [
+
+      const fields: FieldConfig<FormDataType>[] = [
         {
           accessorKey: "description",
           header: "Descrição da Atividade",
@@ -556,18 +566,17 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
           isMulti: true,
         },
       ];
+
+      if (requestTarget === "user") {
+        fields.push(memberSelect);
+      }
+
+      return fields;
     }
+
+    // Lógica para requestType === "report" (sem alterações, mas agora está correta)
     const options =
       requestTarget === "enterprise" ? enterpriseTags : myPoints?.tags;
-
-    const memberSelect = {
-      accessorKey: "membersSelected" as any,
-      header: "Membros Envolvidos",
-      type: "command" as const,
-      options: allUsers.map((u) => ({ value: u.id, label: u.name })),
-      isMulti: true,
-      disabled: requestTarget === "enterprise",
-    };
 
     const fields = [
       {
@@ -584,8 +593,10 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
           label: `${t.description} (${t.value} pts)`,
         })),
       },
+
       attachmentField,
     ];
+
     return requestTarget === "enterprise" ? fields : [...fields, memberSelect];
   }, [
     requestType,
@@ -596,7 +607,6 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     myPoints?.tags,
     uploadableFiles,
   ]);
-
   if (isLoading || !data)
     return (
       <div className="flex justify-center items-center h-screen">
