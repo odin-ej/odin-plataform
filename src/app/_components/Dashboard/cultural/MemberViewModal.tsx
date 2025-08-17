@@ -80,13 +80,13 @@ const MemberViewModal = ({
             : `https://linkedin.com/in/${user.linkedin}`
       : "";
 
-  const roleHistorys = user.roleHistory.map((roleH) => ({
+  const roleHistorys = user.roleHistory.filter((roleH) => roleH.role).map((roleH) => ({
     name: roleH.role.name,
     semester: roleH.semester,
   }));
 
   const rolesWithoutSemester = user.roles
-    .filter((role) => role.name !== "Outro")
+    .filter((role) => role && role.name !== "Outro")
     .map((role) => ({
       name: role.name,
       semester: "N/A",

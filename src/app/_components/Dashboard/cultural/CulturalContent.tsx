@@ -172,6 +172,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       Sobre: u.about || "N/A",
       Experiencia: u.aboutEj || "N/A",
       Imagem: u.imageUrl || "N/A",
+      Interesses_Categoria: u.professionalInterests.map(i => i.name + ' - '+i.category.name),
       Data_Exportacao: new Date().toLocaleDateString().split("T")[0],
     }));
     exportToExcel(dataToExport, "banco_de_socios");

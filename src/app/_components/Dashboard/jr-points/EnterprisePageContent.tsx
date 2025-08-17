@@ -609,8 +609,12 @@ const EnterprisePageContent = ({
                     name: "Exemplo",
                     description: "...",
                     baseValue: 10,
-                    areas: "GERAL",
                     actionTypeId: "ID",
+                    isScalable: true,
+                    escalationValue: 5,
+                    escalationStreakDays: 7,
+                    escalationCondition: 'A cada semana',
+                    areas: "GERAL",
                   },
                 ],
                 "modelo_importacao_tags"
