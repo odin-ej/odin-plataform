@@ -95,7 +95,9 @@ const MemberViewModal = ({
   const rolesCombined = rolesWithoutSemester.concat(roleHistorys);
 
   const rolesArray = Array.from(
-    new Map(rolesCombined.map((item) => [item.name, item])).values()
+    new Map(
+      rolesCombined.map((item) => [`${item.name}-${item.semester}`, item])
+    ).values()
   );
 
   return (
