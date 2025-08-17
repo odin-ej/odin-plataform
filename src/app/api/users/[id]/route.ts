@@ -90,13 +90,14 @@ export async function PATCH(
         { status: 404 }
       );
     }
-
+    console.log(body)
     // A validação Zod usa o schema correto com base no status do usuário no banco
     const validation = userToUpdate.isExMember
       ? exMemberUpdateSchema.safeParse(body)
       : memberUpdateSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error(validation.error.flatten().fieldErrors)
       return NextResponse.json(
         {
           message: "Dados de atualização inválidos.",
