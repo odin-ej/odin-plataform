@@ -525,9 +525,9 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
 
   const requestFields = useMemo((): FieldConfig<FormDataType>[] => {
     const attachmentField: FieldConfig<FormDataType> = {
-      accessorKey: "attachments" as any,
+      accessorKey: "attachments" as const,
       header: "Anexos",
-      type: "attachments",
+      type: "attachments" as const,
       uploadableFiles: uploadableFiles,
       onFilesChange: setUploadableFiles,
     };
@@ -550,33 +550,35 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         attachmentField,
         {
           accessorKey: "tags",
-          header: "Tags Relacionadas (Opcional)",
+          header: "Tags Relacionadas",
           type: "command",
           options: options.map((t) => ({ value: t.id, label: t.name })),
           isMulti: true,
-        },
-        {
-          accessorKey: "membersSelected",
-          header: "Membros Envolvidos",
-          type: "command",
-          options: allUsers.map((u) => ({ value: u.id, label: u.name })),
-          isMulti: true,
-          disabled: requestTarget === "enterprise",
         },
       ];
     }
     const options =
       requestTarget === "enterprise" ? enterpriseTags : myPoints?.tags;
-    return [
+
+    const memberSelect = {
+      accessorKey: "membersSelected" as any,
+      header: "Membros Envolvidos",
+      type: "command" as const,
+      options: allUsers.map((u) => ({ value: u.id, label: u.name })),
+      isMulti: true,
+      disabled: requestTarget === "enterprise",
+    };
+
+    const fields = [
       {
-        accessorKey: "description",
+        accessorKey: "description" as any,
         header: "Descrição do Recurso",
-        type: "textarea",
+        type: "textarea" as const,
       },
       {
-        accessorKey: "tagId",
+        accessorKey: "tagId" as const,
         header: "Tag a ser Reavaliada",
-        type: "command",
+        type: "command" as const,
         options: options?.map((t: any) => ({
           value: t.id,
           label: `${t.description} (${t.value} pts)`,
@@ -584,6 +586,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       },
       attachmentField,
     ];
+    return requestTarget === "enterprise" ? fields : [...fields, memberSelect];
   }, [
     requestType,
     requestTarget,
@@ -644,7 +647,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
             </Avatar>
             <h3 className="font-semibold text-lg text-white">Minhas Ações</h3>
             <p className="text-xs text-gray-500 mb-4">
-              Para seu placar pessoal
+              Ações para pontuação pessoal
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -752,86 +755,99 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
             <SelectContent className="bg-[#00205e]/90 text-white hover:text-white transition-colors border-[#f5b719]">
-              <SelectItem className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors" value="tags">Extrato de Pontos</SelectItem>
-              <SelectItem className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors" value="solicitations">Minhas Solicitações ({mySolicitations.length})</SelectItem>
-              <SelectItem className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors" value="reports"> Meus Recursos ({myReports.length})</SelectItem>
+              <SelectItem
+                className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors"
+                value="tags"
+              >
+                Extrato de Pontos
+              </SelectItem>
+              <SelectItem
+                className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors"
+                value="solicitations"
+              >
+                Minhas Solicitações ({mySolicitations.length})
+              </SelectItem>
+              <SelectItem
+                className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors"
+                value="reports"
+              >
+                {" "}
+                Meus Recursos ({myReports.length})
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-             {activeTab === "tags" && (
-        <>
-          {isLoadingHistory ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-[#f5b719]" />
-            </div>
-          ) : (
-            <CustomTable<TagWithAction>
-              filterColumns={[
-                "areas",
-                "assigner",
-                "datePerformed",
-                "description",
-                "isFromAppeal",
-                "jrPointsVersion",
-                "value",
-              ]}
-              columns={tagColumns}
-              data={
-                Array.isArray(tagHistoryData)
-                  ? tagHistoryData
-                  : tagHistoryData?.tags || []
-              }
-              title={`Extrato (${selectedView === "current" ? "Atual" : selectedSnapshot?.semester})`}
-              type={selectedView === "current" ? "onlyDelete" : "onlyView"}
-              itemsPerPage={10}
-              onDelete={(row) => handleOpenDeleteModal(row as any, "tag")}
-            />
-          )}
-        </>
-      )}
+        {activeTab === "tags" && (
+          <>
+            {isLoadingHistory ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-[#f5b719]" />
+              </div>
+            ) : (
+              <CustomTable<TagWithAction>
+                filterColumns={[
+                  "areas",
+                  "assigner",
+                  "datePerformed",
+                  "description",
+                  "isFromAppeal",
+                  "jrPointsVersion",
+                  "value",
+                ]}
+                columns={tagColumns}
+                data={
+                  Array.isArray(tagHistoryData)
+                    ? tagHistoryData
+                    : tagHistoryData?.tags || []
+                }
+                title={`Extrato (${selectedView === "current" ? "Atual" : selectedSnapshot?.semester})`}
+                type={selectedView === "current" ? "onlyDelete" : "onlyView"}
+                itemsPerPage={10}
+                onDelete={(row) => handleOpenDeleteModal(row as any, "tag")}
+              />
+            )}
+          </>
+        )}
 
-      {activeTab === "solicitations" && (
-        <CustomTable
-          columns={solicitationColumns}
-          data={mySolicitations}
-          title="Minhas Solicitações"
-          filterColumns={["description", "status"]}
-          type="noSelection"
-          itemsPerPage={5}
-          onEdit={(item) => handleOpenEditModal(item, "solicitation")}
-          onDelete={(item) => handleOpenDeleteModal(item, "solicitation")}
-          isRowEditable={(row) =>
-            isDirector ? true : row.status === "PENDING"
-          }
-          isRowDeletable={(row) =>
-            isDirector ? true : row.status === "PENDING"
-          }
-        />
-      )}
+        {activeTab === "solicitations" && (
+          <CustomTable
+            columns={solicitationColumns}
+            data={mySolicitations}
+            title="Minhas Solicitações"
+            filterColumns={["description", "status"]}
+            type="noSelection"
+            itemsPerPage={5}
+            onEdit={(item) => handleOpenEditModal(item, "solicitation")}
+            onDelete={(item) => handleOpenDeleteModal(item, "solicitation")}
+            isRowEditable={(row) =>
+              isDirector ? true : row.status === "PENDING"
+            }
+            isRowDeletable={(row) =>
+              isDirector ? true : row.status === "PENDING"
+            }
+          />
+        )}
 
-      {activeTab === "reports" && (
-        <CustomTable
-          columns={reportColumns}
-          data={myReports}
-          title="Meus Recursos"
-          filterColumns={["description", "status"]}
-          type="noSelection"
-          itemsPerPage={5}
-          onEdit={(item) => handleOpenEditModal(item, "report")}
-          onDelete={(item) => handleOpenDeleteModal(item, "report")}
-          isRowEditable={(row) =>
-            isDirector ? true : row.status === "PENDING"
-          }
-          isRowDeletable={(row) =>
-            isDirector ? true : row.status === "PENDING"
-          }
-        />
-      )}
-
+        {activeTab === "reports" && (
+          <CustomTable
+            columns={reportColumns}
+            data={myReports}
+            title="Meus Recursos"
+            filterColumns={["description", "status"]}
+            type="noSelection"
+            itemsPerPage={5}
+            onEdit={(item) => handleOpenEditModal(item, "report")}
+            onDelete={(item) => handleOpenDeleteModal(item, "report")}
+            isRowEditable={(row) =>
+              isDirector ? true : row.status === "PENDING"
+            }
+            isRowDeletable={(row) =>
+              isDirector ? true : row.status === "PENDING"
+            }
+          />
+        )}
       </div>
-
-     
 
       <CustomModal
         isOpen={isModalOpen}

@@ -465,13 +465,13 @@ const EnterprisePageContent = ({
       header: "Data de Início",
       type: "date",
     },
-    { accessorKey: "endDate", header: "Data de Fim (Opcional)", type: "date" },
+    { accessorKey: "endDate", header: "Data de Fim", type: "date" },
   ];
 
   const semesterFields: FieldConfig<any>[] = [
     { accessorKey: "name", header: "Nome do Semestre (Ex: 2025.2)" },
     { accessorKey: "startDate", header: "Data de Início", type: "date" },
-    { accessorKey: "endDate", header: "Data de Fim (Opcional)", type: "date" },
+    { accessorKey: "endDate", header: "Data de Fim", type: "date" },
   ];
 
   const activeTagTemplates = useMemo(() => {

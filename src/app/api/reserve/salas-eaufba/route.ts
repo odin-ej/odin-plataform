@@ -111,7 +111,7 @@ export async function POST(req: Request) {
 
     const notification = await prisma.notification.create({
       data: {
-        link: `/salas-eaufba`,
+        link: `/central-de-reservas`,
         type: 'NEW_MENTION',
         notification: `Solicitação de reserva de sala EAUFBA: ${title} foi criada por ${authUser.name.split(" ")[0]}.`,
       }

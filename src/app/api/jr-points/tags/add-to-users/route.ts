@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, parse } from "date-fns";
 
 const addTagToUsersSchema = z.object({
   userIds: z.array(z.string()).min(1, "Selecione pelo menos um usuário."),
@@ -42,13 +42,16 @@ export async function POST(request: Request) {
     const { userIds, templateIds, datePerformed, description } =
       validation.data;
 
-    const formatedDate = new Date(datePerformed).toISOString();
-    if (!formatedDate) {
+    const parsedDate = parse(datePerformed, "dd/MM/yyyy", new Date());
+
+    if (isNaN(parsedDate.getTime())) {
       return NextResponse.json(
         { message: "Formato de data inválido. Use DD/MM/AAAA." },
         { status: 400 }
       );
     }
+
+    const formatedDate = parsedDate.toISOString();
 
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
               templateId: tagTemplate.id,
               userPointsId: userPoints.id,
               userSemesterScoreId: userSemesterScore.id,
-              jrPointsVersionId: activeVersion.id
+              jrPointsVersionId: activeVersion.id,
             },
           });
 
