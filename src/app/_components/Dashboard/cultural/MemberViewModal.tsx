@@ -10,6 +10,7 @@ import {
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { getInitials } from "@/lib/utils";
 import { LinkIcon } from "lucide-react";
+import { useMemo } from "react";
 
 interface MemberViewModalProps {
   user: MemberWithFullRoles | null;
@@ -22,6 +23,28 @@ const MemberViewModal = ({
   open,
   onOpenChange,
 }: MemberViewModalProps) => {
+  const groupedInterests = useMemo(() => {
+    if (
+      !user?.professionalInterests ||
+      user.professionalInterests.length === 0
+    ) {
+      return {};
+    }
+
+    // Usamos reduce para transformar o array em um objeto de { categoria: [interesses] }
+    return user.professionalInterests.reduce<Record<string, string[]>>(
+      (acc, interest) => {
+        const categoryName = interest.category.name;
+        if (!acc[categoryName]) {
+          acc[categoryName] = [];
+        }
+        acc[categoryName].push(interest.name);
+        return acc;
+      },
+      {}
+    );
+  }, [user?.professionalInterests]);
+
   if (!user) {
     return null;
   }
@@ -62,12 +85,11 @@ const MemberViewModal = ({
     semester: roleH.semester,
   }));
 
-
   const rolesWithoutSemester = user.roles
     .filter((role) => role.name !== "Outro")
     .map((role) => ({
       name: role.name,
-      semester: 'N/A', 
+      semester: "N/A",
     }));
 
   const rolesCombined = rolesWithoutSemester.concat(roleHistorys);
@@ -224,20 +246,52 @@ const MemberViewModal = ({
               </>
             )}
 
+            <div className="border-t border-white/10 pt-4 space-y-3">
+              <h4 className="text-base font-semibold text-zinc-300">
+                Interesses Profissionais
+              </h4>
+              {Object.keys(groupedInterests).length > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(groupedInterests).map(
+                    ([category, interests]) => (
+                      <div key={category}>
+                        <p className="text-sm font-medium text-zinc-400 mb-2">
+                          {category}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {interests.map((interest) => (
+                            <Badge
+                              key={interest}
+                              className="bg-teal-500/20 text-teal-300 text-xs font-medium px-2.5 py-1 rounded-md border border-teal-500/30"
+                            >
+                              {interest}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <span className="text-sm text-zinc-400">
+                  Nenhum interesse profissional registrado.
+                </span>
+              )}
+            </div>
+
             <div className="border-t border-white/10 pt-4">
               <h4 className="text-base font-semibold text-zinc-300 mb-2">
                 Cargos na EJ
               </h4>
               <div className="flex flex-wrap gap-2">
-                {rolesArray
-                  .map((role) => (
-                    <Badge
-                      className="bg-[#0126fb]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full"
-                      key={role.name}
-                      >
-                        {role.name}{" "}-{" "}{role.semester}
-                      </Badge>
-                  ))}
+                {rolesArray.map((role) => (
+                  <Badge
+                    className="bg-[#0126fb]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full"
+                    key={role.name}
+                  >
+                    {role.name} - {role.semester}
+                  </Badge>
+                ))}
                 {user.otherRole && (
                   <span className="bg-[#f5b719]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full">
                     {formatOtherRole(user.otherRole)}

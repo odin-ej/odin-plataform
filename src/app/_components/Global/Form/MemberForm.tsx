@@ -16,6 +16,7 @@ import z from "zod";
 import CustomCheckboxGroup from "../Custom/CustomCheckboxGroup";
 import ProfessionalInterestsManager from "../../Dashboard/usuarios/ProfessionalInterestsManager";
 import RoleHistoryManager from "../../Dashboard/usuarios/RoleHistoryManager";
+import { Label } from "@/components/ui/label";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface MemberFormProps<T extends z.ZodType<any, any, any>> {
@@ -95,7 +96,9 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
   const userRoles = roles.filter((role) => {
     return watchedRoles.includes(role.id);
   });
-
+  const roleFieldName = (
+    view === "profile" ? "currentRoleId" : "roleId"
+  ) as Path<z.infer<T>>;
   return (
     <Form {...form}>
       <form
@@ -175,18 +178,28 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
             form={form}
             placeholder="Ex: Administração"
           />
-          <CustomSelect
-            control={form.control}
-            name={
-              view === "profile"
-                ? ("currentRoleId" as Path<z.infer<T>>)
-                : ("roleId" as Path<z.infer<T>>)
-            }
-            label="Cargo Atual"
-            disabled={canChangeRole ? false : true}
-            placeholder="Selecione o seu cargo"
-            options={roleOptions}
-          />
+          {canChangeRole ? (
+            // Se PODE alterar, renderiza o CustomSelect editável.
+            <CustomSelect
+              control={form.control}
+              name={roleFieldName}
+              label="Cargo Atual"
+              placeholder="Selecione o seu cargo"
+              options={roleOptions}
+            />
+          ) : (
+            // Se NÃO PODE alterar, mostra o nome do cargo e envia o ID oculto.
+            <div className="w-full flex-1 space-y-2">
+              <Label>Cargo Atual</Label>
+              <p className="text-white/90 text-sm h-10 flex items-center px-3 rounded-md border border-input bg-background">
+                {/* Encontra o nome do cargo com base no ID que está no formulário */}
+                {roles.find((role) => role.id === form.getValues(roleFieldName))
+                  ?.name || "Não definido"}
+              </p>
+              {/* Este campo oculto garante que o ID seja enviado com o formulário */}
+              <input type="hidden" {...form.register(roleFieldName)} />
+            </div>
+          )}
         </div>
 
         {/* Redes sociais */}

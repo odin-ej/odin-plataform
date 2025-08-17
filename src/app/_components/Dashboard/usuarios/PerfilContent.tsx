@@ -47,7 +47,6 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     mutationFn: async (formData: MemberUpdateType | ExMemberUpdateType) => {
       let imageUrl = data?.user?.imageUrl;
       const { image, ...restOfData } = formData;
-
       if (image && image instanceof File) {
         // Lógica de upload para S3
         const presignedUrlRes = await axios.post("/api/s3-upload", {
@@ -117,9 +116,6 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
 
  const formInitialValues = useMemo(() => {
     if (!user) return undefined;
-    console.log(user.currentRoleId)
-    console.log(user)
-    console.log(authUser)
     return {
       name: user.name,
       email: user.email,
