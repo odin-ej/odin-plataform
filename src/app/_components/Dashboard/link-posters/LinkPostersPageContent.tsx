@@ -417,7 +417,7 @@ const LinkPostersPageContent = ({
         />
 
         <CustomTable<LinkPoster>
-          title="Pôsteres para Usuários"
+          title="Pôsteres Sem Páginas"
           columns={linkPostersColumns}
           data={onlyMembersAndExMembersPosters}
           filterColumns={["title", "link", "isActive"]}

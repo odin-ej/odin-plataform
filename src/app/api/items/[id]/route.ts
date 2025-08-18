@@ -23,7 +23,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
     revalidatePath('/central-de-reservas')
     return NextResponse.json(updatedItem);
-  } catch (error) {
+} catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Erro ao atualizar item." }, { status: 500 });
   }

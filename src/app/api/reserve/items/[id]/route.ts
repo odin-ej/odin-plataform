@@ -16,8 +16,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const validation = itemReservationSchema.partial().safeParse(body);
     if (!validation.success) return NextResponse.json({ message: "Dados inválidos", status: 400 });
 
-    const startDate = new Date(`${body.startDate}T${body.startTime}`);
-    const endDate = new Date(`${body.endDate}T${body.endTime}`);
+    const timezoneOffset = "-03:00";
+    const startDate = new Date(
+        `${validation.data.startDate}T${validation.data.startTime}:00${timezoneOffset}`
+    );
+    const endDate = new Date(
+        `${validation.data.endDate}T${validation.data.endTime}:00${timezoneOffset}`
+    );
 
     const item = await prisma.reservableItem.findUnique({
       where: { id: validation.data.itemId },

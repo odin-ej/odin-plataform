@@ -26,6 +26,7 @@ import {
 } from "@/lib/schemas/reservationsSchema";
 import { fromZonedTime } from "date-fns-tz";
 import { Box } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // --- TIPOS ---
 export type ItemWithRelations = ItemReservation & {
@@ -239,7 +240,18 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     {
       accessorKey: "user",
       header: "Reservado por",
-      cell: (row) => row.user.name,
+      cell: (row) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8 ">
+            <AvatarImage
+              className="object-cover"
+              src={row.user.imageUrl ?? undefined}
+            />
+            <AvatarFallback>{row.user.name.substring(0, 2)}</AvatarFallback>
+          </Avatar>
+          <span className="font-medium">{row.user.name}</span>
+        </div>
+      ),
     },
     {
       accessorKey: "startDate",
@@ -303,18 +315,18 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     { accessorKey: "endTime", header: "Hora de Devolução", type: "time" },
   ];
 
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   const handleInvalidSubmit = (errors: any) => {
-      console.error("Erros de validação do formulário:", errors);
-      // Pega a mensagem de erro do primeiro campo que falhou
-      //@ts-expect-error Erro esperado
-      const firstErrorMessage = Object.values(errors)[0].message;
-      toast.error("Formulário inválido", {
-        description:
-          (firstErrorMessage as string) ||
-          "Por favor, verifique os campos e tente novamente.",
-      });
-    };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleInvalidSubmit = (errors: any) => {
+    console.error("Erros de validação do formulário:", errors);
+    // Pega a mensagem de erro do primeiro campo que falhou
+    //@ts-expect-error Erro esperado
+    const firstErrorMessage = Object.values(errors)[0].message;
+    toast.error("Formulário inválido", {
+      description:
+        (firstErrorMessage as string) ||
+        "Por favor, verifique os campos e tente novamente.",
+    });
+  };
 
   return (
     <div>
