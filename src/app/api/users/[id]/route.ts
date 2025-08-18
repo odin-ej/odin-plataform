@@ -91,14 +91,19 @@ export async function PATCH(
         { status: 404 }
       );
     }
-    console.log(body)
+
+    const { roleId, isExMember, ...rest } = body;
+
+    const bodyToValidate = roleId ? { ...rest, currentRoleId: roleId } : rest;
+
     // A validação Zod usa o schema correto com base no status do usuário no banco
+  
     const validation = userToUpdate.isExMember
-      ? exMemberUpdateSchema.safeParse(body)
-      : memberUpdateSchema.safeParse(body);
+      ? exMemberUpdateSchema.safeParse(bodyToValidate)
+      : memberUpdateSchema.safeParse(bodyToValidate);
 
     if (!validation.success) {
-      console.error(validation.error.flatten().fieldErrors)
+      console.error(validation.error.flatten().fieldErrors);
       return NextResponse.json(
         {
           message: "Dados de atualização inválidos.",
@@ -107,7 +112,10 @@ export async function PATCH(
         { status: 400 }
       );
     }
+
     const validatedData = validation.data;
+
+
 
     // --- Inicia a transação do Prisma ---
     const updatedUser = await prisma.$transaction(async (tx) => {
@@ -128,9 +136,8 @@ export async function PATCH(
 
       if (validatedData.password) {
         updateData.password = await bcrypt.hash(validatedData.password, 10);
-        console.log(updateData.password)
       }
-      
+
       // Lógica de sincronização para Interesses e Histórico
       if (validatedData.professionalInterests) {
         updateData.professionalInterests = {
@@ -148,7 +155,9 @@ export async function PATCH(
 
       // Lógica específica para o tipo de membro
       if (userToUpdate.isExMember) {
-        const exMemberData = validatedData as z.infer<typeof exMemberUpdateSchema>;
+        const exMemberData = validatedData as z.infer<
+          typeof exMemberUpdateSchema
+        >;
         updateData.semesterLeaveEj = exMemberData.semesterLeaveEj;
         updateData.aboutEj = exMemberData.aboutEj;
         updateData.isWorking = exMemberData.isWorking === "Sim";
@@ -159,7 +168,17 @@ export async function PATCH(
       } else {
         const memberData = validatedData as z.infer<typeof memberUpdateSchema>;
         if (memberData.currentRoleId) {
-          updateData.currentRole = { connect: { id: memberData.currentRoleId } };
+          updateData.currentRole = {
+            connect: { id: memberData.currentRoleId },
+          };
+        }
+        if(isExMember === 'Sim' && !userToUpdate.isExMember){
+          updateData.currentRole ={
+            disconnect: {id: memberData.currentRoleId}
+          }
+          updateData.isExMember = true
+          const actualSemester = await prisma.semester.findFirst({where: {isActive: true}})
+          updateData.semesterLeaveEj = actualSemester?.name
         }
       }
 
@@ -200,9 +219,18 @@ export async function PATCH(
     }
 
     // Deleta imagem antiga do S3 se uma nova foi enviada
-    if (body.imageUrl && userToUpdate.imageUrl && body.imageUrl !== userToUpdate.imageUrl) {
+    if (
+      body.imageUrl &&
+      userToUpdate.imageUrl &&
+      body.imageUrl !== userToUpdate.imageUrl
+    ) {
       const oldKey = new URL(userToUpdate.imageUrl).pathname.substring(1);
-      await s3Client.send(new DeleteObjectCommand({ Bucket: process.env.AWS_S3_BUCKET_NAME!, Key: oldKey }));
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME!,
+          Key: oldKey,
+        })
+      );
     }
 
     revalidatePath(`/perfil`);

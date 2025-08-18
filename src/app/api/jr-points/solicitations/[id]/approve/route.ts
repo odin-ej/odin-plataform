@@ -210,7 +210,7 @@ export async function PATCH(
         data: {
           notification: `Solicitação aprovada: ${solicitation.description} por ${authUser.name}`,
           type: "POINTS_AWARDED",
-          link: "meus-pontos",
+          link: solicitation.isForEnterprise ? 'jr-points' : 'meus-pontos',
         },
       });
       if (solicitation.isForEnterprise) {

@@ -383,25 +383,63 @@ async function main() {
   //     roles: { connect: { id: diretorRole.id } },
   //   },
   // });
-  const gestao = await prisma.interestCategory.create({
-    data: { name: "Gestão & Estratégia" },
-  });
-  const tech = await prisma.interestCategory.create({
-    data: { name: "Tecnologia & Dados" },
-  });
+  // const gestao = await prisma.interestCategory.create({
+  //   data: { name: "Gestão & Estratégia" },
+  // });
+  // const tech = await prisma.interestCategory.create({
+  //   data: { name: "Tecnologia & Dados" },
+  // });
 
-  // Depois, criar os interesses, associando-os a uma categoria
-  await prisma.professionalInterest.createMany({
-    data: [
-      { name: "Gestão de Projetos (Agile, Scrum)", categoryId: gestao.id },
-      { name: "Consultoria Estratégica", categoryId: gestao.id },
+  // // Depois, criar os interesses, associando-os a uma categoria
+  // await prisma.professionalInterest.createMany({
+  //   data: [
+  //     { name: "Gestão de Projetos (Agile, Scrum)", categoryId: gestao.id },
+  //     { name: "Consultoria Estratégica", categoryId: gestao.id },
 
-      { name: "Análise de Dados (Business Intelligence)", categoryId: tech.id },
-      { name: "Desenvolvimento de Software", categoryId: tech.id },
-      { name: "Design de Produto (UX/UI)", categoryId: tech.id },
-      // ... e assim por diante
-    ],
-  });
+  //     { name: "Análise de Dados (Business Intelligence)", categoryId: tech.id },
+  //     { name: "Desenvolvimento de Software", categoryId: tech.id },
+  //     { name: "Design de Produto (UX/UI)", categoryId: tech.id },
+  //     // ... e assim por diante
+  //   ],
+  // });
+
+    const semesters = [];
+
+  const deletedSemester = await prisma.semester.deleteMany({})
+  if(deletedSemester.length > 1) console.log('Semestres deletados')
+
+  for (let year = 1989; year <= 2025; year++) {
+    // Primeiro semestre (1º de janeiro a 30 de junho)
+    semesters.push({
+      name: `${year}.1`,
+      startDate: new Date(year, 0, 1),   // 01/jan
+      endDate: new Date(year, 5, 30),    // 30/jun
+      isActive: false,
+    });
+
+    // Segundo semestre (1º de julho a 31 de dezembro)
+    // Obs: como você pediu só até 2025.1, não criaremos o 2025.2
+    if (year < 2025) {
+      semesters.push({
+        name: `${year}.2`,
+        startDate: new Date(year, 6, 1),   // 01/jul
+        endDate: new Date(year, 11, 31),   // 31/dez
+        isActive: false,
+      });
+    }
+  }
+
+  // Upsert para não duplicar caso já exista
+  for (const semester of semesters) {
+    await prisma.semester.upsert({
+      where: { name: semester.name },
+      update: {},
+      create: semester,
+    });
+  }
+
+  console.log(`✅ Criados/atualizados ${semesters.length} semestres`);
+
   console.log("Seed concluído com sucesso!");
 
   console.log("Seed concluído.");

@@ -7,20 +7,28 @@ import { cookies } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { Role } from "@prisma/client";
+import { InterestCategory, ProfessionalInterest, Role, Semester } from "@prisma/client";
 
 export const metadata = constructMetadata({ title: "Área Cultural" });
 
 export const dynamic = "force-dynamic";
 
-interface CulturePageProps {
+export interface MondayStats {
+  totalProjects: number;
+  details: { accountName: string; projectCount: number }[];
+}
+
+export interface CulturePageProps {
   estrategy: fullStrategy | null;
   allUsers: MemberWithFullRoles[] | null;
   mondayStats: {
     totalProjects: number;
     details: { accountName: string; projectCount: number }[];
   } | null;
-  roles: Role[]
+  roles: Role[];
+  interestCategories: InterestCategory[];
+  professionalInterests: ProfessionalInterest[];
+  semesters: Semester[]
 }
 
 async function getPageData(): Promise<CulturePageProps> {
@@ -28,13 +36,9 @@ async function getPageData(): Promise<CulturePageProps> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
-    const [estrategyPlanResponse, allUsersResponse, mondayResponse, rolesResponse] =
+    const [cultureResponse, mondayResponse] =
       await Promise.all([
         fetch(`${baseUrl}/api/culture`, {
-          next: { revalidate: 45 },
-          headers,
-        }),
-        fetch(`${baseUrl}/api/users`, {
           next: { revalidate: 45 },
           headers,
         }),
@@ -42,38 +46,20 @@ async function getPageData(): Promise<CulturePageProps> {
           next: { revalidate: 45 },
           headers,
         }),
-        fetch(`${baseUrl}/api/roles`, {
-          next: {revalidate:45},
-          headers
-        })
       ]);
 
-    if (!estrategyPlanResponse.ok) {
-      const errorText = await estrategyPlanResponse.text(); // Lê a resposta como texto para debug
+    if (!cultureResponse.ok) {
+      const errorText = await cultureResponse.text(); // Lê a resposta como texto para debug
       console.error(
         "Erro na resposta da API de plano estratégico:",
-        estrategyPlanResponse.status,
+        cultureResponse.status,
         errorText
       );
       throw new Error(
-        `Falha ao carregar plano estratégico: ${estrategyPlanResponse.statusText}`
+        `Falha ao carregar plano estratégico: ${cultureResponse.statusText}`
       );
     }
 
-    // Verifique se a resposta da API de usuários foi bem-sucedida
-    if (!allUsersResponse.ok) {
-      const errorText = await allUsersResponse.text();
-      console.error(
-        "Erro na resposta da API de usuários:",
-        allUsersResponse.status,
-        errorText
-      );
-      throw new Error(
-        `Falha ao carregar usuários: ${allUsersResponse.statusText}`
-      );
-    }
-
-    // Verifique se a resposta da API de estatísticas do Monday foi bem-sucedida
     if (!mondayResponse.ok) {
       const errorText = await mondayResponse.text();
       console.error(
@@ -86,47 +72,30 @@ async function getPageData(): Promise<CulturePageProps> {
       );
     }
 
-
-    if(!rolesResponse.ok) {
-      const errorText = await rolesResponse.text()
-      console.error(
-        "Erro na resposta da API de estatísticas do Monday:",
-        rolesResponse.status,
-        errorText
-      );
-      throw new Error(
-        `Falha ao carregar os cargos: ${rolesResponse.statusText}`
-      );
-    }
-
-    const estrategyPlanResult: fullStrategy =
-      await estrategyPlanResponse.json();
-    const estrategyPlan = Array.isArray(estrategyPlanResult)
-      ? estrategyPlanResult[0]
-      : null;
-    const allUsersJson = await allUsersResponse.json();
-    const allUsers: MemberWithFullRoles[] = allUsersJson.users;
+    const cultureJson = await cultureResponse.json()
     const mondayJson = await mondayResponse.json();
-    const rolesJson = await rolesResponse.json()
     const data = {
-      estrategy: estrategyPlan,
-      allUsers,
+      estrategy: cultureJson.estrategyRes[0],
+      allUsers: cultureJson.usersRes,
+      roles:  cultureJson.rolesRes,
       mondayStats: mondayJson,
-      roles:  rolesJson,
+      interestCategories: cultureJson.categoriesInterestRes,
+      professionalInterests: cultureJson.interestRes,
+      semesters: cultureJson.semestersRes
     };
     return data;
   } catch (error) {
-    return { estrategy: null, allUsers: null, mondayStats: null, roles: [] };
+    return { estrategy: null, allUsers: null, mondayStats: null, roles: [], professionalInterests: [], interestCategories: [], semesters: [] };
   }
 }
 
 const Page = async () => {
-  const { allUsers, estrategy, mondayStats, roles } = await getPageData();
+  const { allUsers, estrategy, mondayStats, roles, interestCategories, professionalInterests, semesters } = await getPageData();
   if (!allUsers || !estrategy || !mondayStats) return null;
   const user = await getAuthenticatedUser();
   const hasPermission = verifyAccess({ pathname: "/cultural", user: user! });
   if (!hasPermission) return <DeniedAccess />;
-  const initialData = { estrategy, allUsers, mondayStats, roles };
+  const initialData = { estrategy, allUsers, mondayStats, roles, interestCategories, professionalInterests, semesters };
   return (
     <div className="p-4 sm:p-8">
       <CulturalContent initialData={initialData} />

@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 
     const notification = await prisma.notification.create({
       data: {
-        link: `/reserva-salinhas`,
+        link: `/central-de-reservas`,
         notification:
           "Uma nova reserva foi criada. Clique no link para ver os detalhes.",
         type: "GENERAL_ALERT",
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     });
 
     revalidatePath("/");
-    revalidatePath("/reserva-salinhas");
+    revalidatePath("/central-de-reservas");
     return NextResponse.json(newReservation, { status: 201 });
   } catch (error) {
     console.error(error);

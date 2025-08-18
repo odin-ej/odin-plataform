@@ -191,7 +191,7 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
             // Se NÃO PODE alterar, mostra o nome do cargo e envia o ID oculto.
             <div className="w-full flex-1 space-y-2">
               <Label>Cargo Atual</Label>
-              <p className="text-white/90 text-sm h-10 flex items-center px-3 rounded-md border border-input bg-background">
+              <p className="text-white/90 text-sm h-10 flex items-center px-3 rounded-md border border-white bg-transparent">
                 {/* Encontra o nome do cargo com base no ID que está no formulário */}
                 {roles.find((role) => role.id === form.getValues(roleFieldName))
                   ?.name || "Não definido"}

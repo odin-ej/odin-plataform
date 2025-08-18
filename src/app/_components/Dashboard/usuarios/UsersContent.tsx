@@ -34,7 +34,8 @@ interface UsersContentProps {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
+//TO DO: TESTAR COMO FICAR A VISUALIZAÇÃO DE UM USUÁRIO QUE ANTES ERA MEMBRO MAS VIROU EX-MEMBRO
+//POIS O CURRENTROLE NÃO É ZERADO APÓS SELECIONAR COMO EX-MEMBRO NA MODAL, DEVERIA SER CRIADO ISSO TALV
 const ROLE_ID_OUTRO = process.env.OTHER_ROLE_ID as string;
 
 // Tipagem para os dados gerenciados pela query

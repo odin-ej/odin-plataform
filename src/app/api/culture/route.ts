@@ -14,15 +14,49 @@ export async function GET() {
   }
 
   try {
-    const estrategyPlan = await prisma.estrategyPlan.findMany({
-      include: {
-        values: true,
-        estrategyObjectives: true,
-      },
-    });
-    return NextResponse.json(estrategyPlan);
+    const [estrategyRes, usersRes, rolesRes, interestRes, categoriesInterestRes, semestersRes] = await Promise.all([
+      prisma.estrategyPlan.findMany({
+        include: {
+          values: true,
+          estrategyObjectives: true,
+        },
+      }),
+      prisma.user.findMany({
+        where: { id: { not: "f34cea1a-c091-709f-d7ae-ac6583665cbd" } },
+        include: {
+          roles: true,
+          currentRole: true,
+          roleHistory: { include: { role: true } },
+          professionalInterests: { include: { category: true } },
+        },
+        orderBy: {
+          name: "asc",
+        },
+      }),
+      prisma.role.findMany({
+        orderBy: {
+          name: "asc",
+        },
+      }),
+      prisma.professionalInterest.findMany({
+        orderBy: {
+          name: 'asc',
+        }
+      }),
+      prisma.interestCategory.findMany({
+        orderBy: {
+          name: 'asc'
+        }
+      }),
+      prisma.semester.findMany({
+        orderBy: {
+          endDate: 'desc'
+        }
+      })
+    ]);
+    return NextResponse.json({ estrategyRes, usersRes, rolesRes, interestRes, categoriesInterestRes,semestersRes });
   } catch (error) {
-    console.error("Erro ao buscar culturas:", error);
+    console.error("Erro ao buscar dados da pagina de cultura:", error);
     return NextResponse.json(
       { message: "Erro ao buscar culturas." },
       { status: 500 }

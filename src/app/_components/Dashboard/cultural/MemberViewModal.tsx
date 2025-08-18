@@ -90,20 +90,23 @@ const MemberViewModal = ({
       semester: roleH.semester,
     }));
 
-  const rolesWithoutSemester = user.roles
-    .filter((role) => role && role.name !== "Outro")
+  // 2. Cria um conjunto (Set) com os nomes dos cargos que já estão no histórico.
+  //    Isso serve para uma verificação rápida e eficiente.
+  const rolesInHistory = new Set(roleHistorys.map((h) => h.name));
+
+  // 3. Filtra a lista de cargos atuais (`user.roles`) para pegar apenas
+  //    aqueles que NÃO estão no histórico e mapeia para o formato desejado.
+  const currentRolesWithoutHistory = user.roles
+    .filter(
+      (role) => role && role.name !== "Outro" && !rolesInHistory.has(role.name)
+    )
     .map((role) => ({
       name: role.name,
       semester: "N/A",
     }));
 
-  const rolesCombined = rolesWithoutSemester.concat(roleHistorys);
-
-  const rolesArray = Array.from(
-    new Map(
-      rolesCombined.map((item) => [`${item.name}-${item.semester}`, item])
-    ).values()
-  );
+  // 4. Combina as duas listas: o histórico completo + os cargos atuais sem histórico.
+  const rolesArray = [...roleHistorys, ...currentRolesWithoutHistory];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
