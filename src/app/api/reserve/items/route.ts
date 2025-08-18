@@ -3,6 +3,7 @@ import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { itemReservationSchema } from "@/lib/schemas/reservationsSchema";
 import { revalidatePath } from "next/cache";
+import { fromZonedTime } from "date-fns-tz";
 
 // --- GET: Listar todas as reservas de itens ---
 export async function GET() {
@@ -49,8 +50,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const startDate = new Date(`${body.startDate}T${body.startTime}`);
-    const endDate = new Date(`${body.endDate}T${body.endTime}`);
+    const timeZone = "America/Sao_Paulo";
+    const startDate = fromZonedTime(
+      `${validation.data.startDate}T${validation.data.startTime}`,
+      timeZone
+    );
+    const endDate = fromZonedTime(
+      `${validation.data.endDate}T${validation.data.endTime}`,
+      timeZone
+    );
 
     const item = await prisma.reservableItem.findUnique({
       where: { id: validation.data.itemId },
