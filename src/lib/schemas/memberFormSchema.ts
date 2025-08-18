@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { User, Role, RegistrationRequest, UserRoleHistory, ProfessionalInterest, InterestCategory } from "@prisma/client";
+import {
+  User,
+  Role,
+  RegistrationRequest,
+  UserRoleHistory,
+  ProfessionalInterest,
+  InterestCategory,
+} from "@prisma/client";
 
 const baseMemberSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
@@ -51,12 +58,20 @@ export const userProfileSchema = baseMemberSchema
   .omit({
     image: true,
     roleId: true,
+    instagram: true,
+    linkedin: true,
   })
   .extend({
     id: z.string(),
     imageUrl: z.string().url().optional(),
     password: z.string().optional(),
     confPassword: z.string().optional(),
+    instagram: z.string().optional(),
+    linkedin: z
+      .string()
+      .url({ message: "Por favor, insira uma URL válida." })
+      .optional()
+      .or(z.literal("")),
     image: z
       .any()
       .optional()
@@ -107,7 +122,12 @@ export type MemberWithRoles = User & { roles: Role[] };
 type InterestWithCategory = ProfessionalInterest & {
   category: InterestCategory;
 };
-export type MemberWithFullRoles = User & { roles: Role[]; currentRole: Role; roleHistory: (UserRoleHistory & { role: { name: string } })[]; professionalInterests: InterestWithCategory[];};
+export type MemberWithFullRoles = User & {
+  roles: Role[];
+  currentRole: Role;
+  roleHistory: (UserRoleHistory & { role: { name: string } })[];
+  professionalInterests: InterestWithCategory[];
+};
 export type RegistrationRequestWithRoles = RegistrationRequest & {
   roles: Role[];
 };
