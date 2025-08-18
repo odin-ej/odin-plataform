@@ -157,7 +157,7 @@ function CustomTable<T extends { id: string | number }>({
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-[#f5b719]/10"
+            className="hover:!bg-[#f5b719]/10"
             onClick={(e) => {
               e.stopPropagation();
               onEdit?.(row);
@@ -168,7 +168,7 @@ function CustomTable<T extends { id: string | number }>({
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-red-500/10"
+            className="hover:!bg-red-500/10"
             onClick={(e) => {
               e.stopPropagation();
               onDelete?.(row);
@@ -195,7 +195,7 @@ function CustomTable<T extends { id: string | number }>({
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-red-500/10"
+              className="hover:!bg-red-500/10"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete?.(row);
@@ -220,7 +220,7 @@ function CustomTable<T extends { id: string | number }>({
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-[#f5b719]/10"
+              className="hover:!bg-[#f5b719]/10"
               disabled={isRowEditable ? !isRowEditable(row) : false}
               onClick={(e) => {
                 e.stopPropagation();
@@ -233,7 +233,7 @@ function CustomTable<T extends { id: string | number }>({
               variant="ghost"
               size="icon"
               disabled={isRowDeletable ? !isRowDeletable(row) : false}
-              className="hover:bg-red-500/10"
+              className="hover:!bg-red-500/10"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete?.(row);
@@ -258,7 +258,7 @@ function CustomTable<T extends { id: string | number }>({
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-[#f5b719]/10"
+              className="hover:!bg-[#f5b719]/10"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit?.(row);

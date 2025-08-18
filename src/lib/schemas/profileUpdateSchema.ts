@@ -12,7 +12,7 @@ const baseProfileSchema = z.object({
   about: z.string().optional(),
   image: z.any().optional(), // Para upload
   imageUrl: z.string().url().optional().or(z.literal("")),
-  linkedin: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal("")),
+  linkedin: z.string().optional().or(z.literal("")),
   instagram: z.string().optional(),
   professionalInterests: z.array(z.string()).optional(),
   roleHistory: z.array(

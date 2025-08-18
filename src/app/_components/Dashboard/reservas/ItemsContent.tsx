@@ -236,7 +236,12 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
   ];
 
   const reservationColumns: ColumnDef<ItemWithRelations>[] = [
-    { accessorKey: "item", header: "Item", cell: (row) => row.item.name },
+    { accessorKey: "item", header: "Item", cell: (row) => (
+        <div className="flex">
+          <Box className="mr-2 h-4 w-4" />
+          <span>{row.item.name}</span>
+        </div>
+      ),},
     {
       accessorKey: "user",
       header: "Reservado por",
