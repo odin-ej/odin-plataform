@@ -47,15 +47,20 @@ export async function GET() {
       }),
       prisma.jRPointsVersion.findMany({
         orderBy: { createdAt: "desc" },
-       include: {
-         _count: {
-          // Inclui a contagem de templates associados
-          select: { tagTemplates: true },
+        include: {
+          _count: {
+            // Inclui a contagem de templates associados
+            select: { tagTemplates: true },
+          },
         },
-       }
       }),
       prisma.semester.findMany({
         orderBy: { createdAt: "desc" },
+        where: {
+          startDate: {
+            gte: new Date("2025-01-01"),
+          },
+        },
       }),
     ]);
 

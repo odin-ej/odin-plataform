@@ -51,7 +51,7 @@ export async function GET() {
       prisma.semester.findMany({
         orderBy: {
           endDate: 'desc'
-        }
+        },
       })
     ]);
     return NextResponse.json({ estrategyRes, usersRes, rolesRes, interestRes, categoriesInterestRes,semestersRes });

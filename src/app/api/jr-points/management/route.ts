@@ -93,10 +93,15 @@ export async function GET() {
       }),
       prisma.semester.findMany({
         orderBy: { createdAt: "desc" },
+        where: {
+          startDate: {
+            gte: new Date("2025-01-01"),
+          },
+        },
       }),
       prisma.enterpriseSemesterScore.findMany({
-        orderBy: {createdAt: 'desc'}
-      })
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     // Mapeia os dados do ranking
@@ -122,7 +127,7 @@ export async function GET() {
       solicitations,
       jrPointsReports,
       allSemesters,
-      enterpriseSemesterScores
+      enterpriseSemesterScores,
     };
     return NextResponse.json(responseData);
   } catch (error) {
