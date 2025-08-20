@@ -29,6 +29,7 @@ export async function GET() {
         assigner: true,
         actionType: true,
         jrPointsVersion: true,
+        template:true
       },
       orderBy: { datePerformed: "desc" },
     });
@@ -41,6 +42,7 @@ export async function GET() {
         attachments: true,
         membersSelected: true,
         tags: true,
+        reviewer:true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -52,6 +54,7 @@ export async function GET() {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
         tag: { include: { assigner: true, actionType: true } },
         attachments: true,
+         reviewer:true,
       },
       orderBy: { createdAt: "desc" },
     });

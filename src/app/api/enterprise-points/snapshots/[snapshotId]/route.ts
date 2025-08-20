@@ -26,6 +26,7 @@ export async function GET(
               assigner: { select: { name: true } },
               actionType: { select: { name: true } },
               jrPointsVersion: { select: { versionName: true } },
+              template:true
             },
             orderBy: {
               datePerformed: "desc",

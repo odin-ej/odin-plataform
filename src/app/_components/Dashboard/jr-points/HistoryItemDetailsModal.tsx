@@ -289,7 +289,7 @@ const HistoryItemDetailsModal = ({
                 <DetailRow
                   icon={<Tag size={16} />}
                   label="Tag Contestada"
-                  value={data.tag.description ?? ""}
+                  value={data.tag.name ?? ""}
                 />
                 <DetailRow
                   icon={<Star size={16} />}

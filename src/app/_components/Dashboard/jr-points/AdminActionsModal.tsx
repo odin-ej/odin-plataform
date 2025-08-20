@@ -369,7 +369,7 @@ const AdminActionsModal = ({
                 >
                   <CustomTextArea
                     form={addTagForm}
-                    label="Descrição (Opcional)"
+                    label="Descrição"
                     field="description"
                     placeholder="Estou atribuindo essa tag por causa de..."
                   />
