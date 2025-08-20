@@ -87,7 +87,7 @@ const AdminActionsModal = ({
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("add-points");
   const [uploadableFiles, setUploadableFiles] = useState<UploadableFile[]>([]);
-  const [isUploadingFiles, setIsUploadingFiles] = useState(false)
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   // --- HOOKS DE FORMULÁRIO ATUALIZADOS ---
   const addTagForm = useForm<z.infer<typeof addTagToUsersSchema>>({
     resolver: zodResolver(addTagToUsersSchema),
@@ -133,7 +133,7 @@ const AdminActionsModal = ({
       const realUserIds = data.userIds.filter(
         (userId) => userId !== ENTERPRISE_USER_ID
       );
-      alert(data.userIds)
+      alert(data.userIds);
       const isEnterpriseTargeted = data.userIds.includes(ENTERPRISE_USER_ID);
 
       // 3. Se houver usuários reais selecionados, adicione a chamada de API deles à lista
@@ -227,7 +227,7 @@ const AdminActionsModal = ({
   const onAddTagSubmit = async (data: z.infer<typeof addTagToUsersSchema>) => {
     const toastId = toast.loading("Enviando arquivos, por favor aguarde...");
     try {
-      setIsUploadingFiles(true)
+      setIsUploadingFiles(true);
       const newFilesToUpload = uploadableFiles.filter(
         (f) => f.status === "pending"
       );
@@ -277,12 +277,11 @@ const AdminActionsModal = ({
       toast.loading("Atribuindo pontos...", { id: toastId });
       await addPointsMutation(finalPayload);
       toast.success("Operação concluída!", { id: toastId });
-      
     } catch (error) {
       toast.error("Falha no upload de um ou mais arquivos.", { id: toastId });
       console.error("Erro no processo de upload:", error);
     }
-    setIsUploadingFiles(false)
+    setIsUploadingFiles(false);
   };
 
   const onCreateTemplateSubmit: SubmitHandler<TagTemplateFormValues> = (
@@ -368,7 +367,12 @@ const AdminActionsModal = ({
                   onSubmit={addTagForm.handleSubmit(onAddTagSubmit)}
                   className="space-y-6"
                 >
-                  <TemplateSelect />
+                  <CustomTextArea
+                    form={addTagForm}
+                    label="Descrição (Opcional)"
+                    field="description"
+                    placeholder="Estou atribuindo essa tag por causa de..."
+                  />
                   <CustomInput
                     form={addTagForm}
                     field="datePerformed"
@@ -376,23 +380,20 @@ const AdminActionsModal = ({
                     placeholder="DD/MM/AAAA"
                     type="date"
                   />
-                  <UserMultiSelect />
-                  <CustomTextArea
-                    form={addTagForm}
-                    label="Descrição (Opcional)"
-                    field="description"
-                    placeholder="Estou atribuindo essa tag por causa de..."
-                  />
                   <FileUploadZone
                     uploadableFiles={uploadableFiles}
                     onFilesChange={setUploadableFiles}
                   />
+                  <TemplateSelect />
+                  <UserMultiSelect />
                   <Button
                     className="w-full bg-[#0126fb] hover:bg-[#0126fb]/80"
                     type="submit"
                     disabled={isAddingPoints || isUploadingFiles}
                   >
-                    {isUploadingFiles || isAddingPoints ? "Atribuindo..." : "Atribuir Pontos"}
+                    {isUploadingFiles || isAddingPoints
+                      ? "Atribuindo..."
+                      : "Atribuir Pontos"}
                   </Button>
                 </form>
               </Form>

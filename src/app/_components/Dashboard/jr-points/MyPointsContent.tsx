@@ -441,7 +441,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     {
       accessorKey: "isFromAppeal",
       header: "Recurso?",
-      cell: (row) => (row.isFromAppeal ? "Sim" : "Nao"),
+      cell: (row) => (row.isFromAppeal ? "Sim" : "Não"),
     },
     {
       accessorKey: "value",
