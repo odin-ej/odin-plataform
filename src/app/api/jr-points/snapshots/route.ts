@@ -2,6 +2,7 @@ import { prisma } from "@/db";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
 
@@ -122,6 +123,8 @@ export async function POST(request: Request) {
       })),
     });
 
+    revalidatePath('/jr-points')
+    revalidatePath('/gerenciar-jr-points')
     return NextResponse.json({
       message: `Snapshot para o semestre ${semesterToSnapshot.name} criado/atualizado para ${usersWithPoints.length} usuários.`,
     });

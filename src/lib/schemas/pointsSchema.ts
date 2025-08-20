@@ -45,6 +45,7 @@ export const addTagToUsersSchema = z.object({
   datePerformed: z.string().min(5, "A data de realização é obrigatória."),
   templateIds:  z.array(z.string()).min(1, "Selecione pelo menos uma tag."),
   description: z.string().optional(),
+  attachments: z.array(z.any()).optional(),
 });
 export type UserRankingInfo = User & {
   totalPoints: number;
@@ -65,7 +66,7 @@ export type TagTemplateWithAction = Prisma.TagTemplateGetPayload<{
   include: { actionType: true, jrPointsVersion: true  };
 }>;
 export type TagWithAction = Prisma.TagGetPayload<{
-  include: { actionType: true, jrPointsVersion: true, assigner: true,   };
+  include: { actionType: true, jrPointsVersion: true, assigner: true, template: true   };
 }>;;
 export type ActionTypeWithCount = ActionType & { _count: { tagTemplates: number } };
 

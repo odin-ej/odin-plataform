@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { Award, Loader2, Building } from "lucide-react";
+import { Award, Loader2, Building, Sparkles } from "lucide-react";
 import CustomCard from "../../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../../Global/Custom/CustomTable";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { checkUserPermission } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { Prisma } from "@prisma/client";
+import HistoryItemDetailsModal from "./HistoryItemDetailsModal";
+
+interface HistoryData {
+  tags: TagWithAction[];
+  solicitations: FullJRPointsSolicitation[];
+  reports: FullJRPointsReport[];
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 type FormDataType = SolicitationFormData | ReportFormData;
@@ -73,6 +79,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const [selectedView, setSelectedView] = useState<string>("current");
   const [activeTab, setActiveTab] = useState<string>("tags");
   const requestForm = useForm<FormDataType>();
+  const [viewingItem, setViewingItem] = useState<any>(null);
 
   // --- BUSCA DE DADOS ---
   const { data, isLoading, isError } = useQuery({
@@ -82,35 +89,20 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     enabled: !!userId,
   });
 
-  const { data: tagHistoryData, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ["pointHistoryDetails", userId, selectedView],
-    queryFn: async (): Promise<
-      | TagWithAction[]
-      | Prisma.UserSemesterScoreGetPayload<{
-          include: {
-            tags: {
-              include: {
-                assigner: true;
-                jrPointsVersion: true;
-                actionType: true;
-              };
-            };
-            user: true;
-          };
-        }>
-    > => {
-      if (selectedView === "current") {
-        const { data } = await axios.get(
-          `${API_URL}/api/users/${user!.id}/tags`
-        );
+  const { data: historyData, isLoading: isLoadingHistory } =
+    useQuery<HistoryData>({
+      queryKey: ["pointHistoryDetails", userId, selectedView],
+      queryFn: async () => {
+        const endpoint =
+          selectedView === "current"
+            ? `${API_URL}/api/users/${user!.id}/history`
+            : `${API_URL}/api/users/${user!.id}/snapshots/${selectedView}`;
+        const { data } = await axios.get(endpoint);
         return data;
-      }
-      const { data: snapshotTags } = await axios.get(
-        `${API_URL}/api/users/${user!.id}/snapshots/${selectedView}/tags`
-      );
-      return snapshotTags;
-    },
-  });
+      },
+      enabled: !!userId,
+      initialData: { tags: [], solicitations: [], reports: [] },
+    });
 
   // --- MUTATIONS ---
   const { mutateAsync: createRequest, isPending: isCreating } = useMutation({
@@ -177,8 +169,6 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     myPoints,
     allTagTemplates,
     allUsers,
-    mySolicitations,
-    myReports,
     mySemesterScores,
     enterpriseTags,
   } = data!;
@@ -365,6 +355,13 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     }
   };
 
+  const handleOpenViewModal = (
+    item: any,
+    type: "tag" | "solicitation" | "report"
+  ) => {
+    setViewingItem({ data: item, type });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "PENDING":
@@ -383,6 +380,22 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  const tagsWithStreakInfo = useMemo(() => {
+    if (!historyData?.tags || !allTagTemplates) return [];
+    return historyData.tags.map((tag) => {
+      const template = allTagTemplates.find((t) => t.id === tag.templateId);
+      if (
+        !template ||
+        !template.isScalable ||
+        tag.value === template.baseValue
+      ) {
+        return { ...tag, bonus: 0 };
+      }
+      const bonus = tag.value - template.baseValue;
+      return { ...tag, bonus };
+    });
+  }, [historyData?.tags, allTagTemplates]);
 
   // --- DEFINIÇÕES DE COLUNAS E CAMPOS DO FORMULÁRIO ---
   const targetColumn: ColumnDef<any> = {
@@ -403,6 +416,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   };
 
   const tagColumns: ColumnDef<TagWithAction>[] = [
+      { accessorKey: 'template', header: 'Título', cell: (row) => row.template?.name},
     { accessorKey: "description", header: "Descrição" },
     {
       accessorKey: "actionType",
@@ -433,6 +447,29 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       accessorKey: "value",
       header: "Pontos",
       className: "text-right font-semibold",
+      cell: (row) => (
+        <div className="flex flex-col items-end">
+          <span className="text-base text-white">{row.value}</span>
+          {row.template?.isScalable && row.template?.escalationValue && (
+            <div
+              className={`flex items-center text-xs ${
+                row.template?.escalationValue > 0
+                  ? "text-green-400"
+                  : "text-red-400"
+              }`}
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              <span>
+                (
+                {row.template?.escalationValue > 0
+                  ? `+${row.template?.escalationValue}`
+                  : row.template?.escalationValue}{" "}
+                streak)
+              </span>
+            </div>
+          )}
+        </div>
+      ),
     },
   ];
 
@@ -449,35 +486,34 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       accessorKey: "membersSelected",
       header: "Envolvidos",
       cell: (row) => {
-        if (row.isForEnterprise)
-          return (
-            <div className="flex gap-2">
-              {row.membersSelected.map((member) => (
-                <Avatar key={member.id} className="h-8 w-8">
-                  <AvatarImage
-                    src={member.imageUrl}
-                    alt={member.name}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-[#0126fb] text-xs">
-                    {member.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {row.isForEnterprise && (
-                <Avatar key={"enterprise-id"} className="h-8 w-8">
-                  <AvatarImage
-                    src={"/logo-amarela.png"}
-                    alt={"Logo da empresa"}
-                    className="object-cover"
-                  />
-                </Avatar>
-              )}
-            </div>
-          );
+        return (
+          <div className="flex gap-2">
+            {row.membersSelected.map((member) => (
+              <Avatar key={member.id} className="h-8 w-8">
+                <AvatarImage
+                  src={member.imageUrl}
+                  alt={member.name}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-[#0126fb] text-xs">
+                  {member.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {row.isForEnterprise && (
+              <Avatar key={"enterprise-id"} className="h-8 w-8">
+                <AvatarImage
+                  src={"/logo-amarela.png"}
+                  alt={"Logo da empresa"}
+                  className="object-cover"
+                />
+              </Avatar>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -486,9 +522,29 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       cell: (row) => getStatusBadge(row.status),
     },
     {
-      accessorKey: "directorsNotes",
-      header: "Notas da Diretoria",
-      cell: (row) => row.directorsNotes ?? "-",
+      accessorKey: "reviewer",
+      header: "Auditado por",
+      cell: (row) => {
+        if (!row.reviewer) return "Diretoria";
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar key={row.reviewer.id} className="h-8 w-8">
+              <AvatarImage
+                src={row.reviewer.imageUrl}
+                alt={row.reviewer.name}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-[#0126fb] text-xs">
+                {row.reviewer.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
+            </Avatar>
+            <span>{row.reviewer.name}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "createdAt",
@@ -502,6 +558,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     {
       accessorKey: "description",
       header: "Descrição",
+
       cell: (row) => (
         <p className="truncate max-w-[200px]">{row.description}</p>
       ),
@@ -512,9 +569,29 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       cell: (row) => row.tag.description,
     },
     {
-      accessorKey: "directorsNotes",
-      header: "Notas da Diretoria",
-      cell: (row) => row.directorsNotes ?? "-",
+      accessorKey: "reviewer",
+      header: "Auditador por",
+      cell: (row) => {
+        if (!row.reviewer) return "Diretoria";
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar key={row.reviewer.id} className="h-8 w-8">
+              <AvatarImage
+                src={row.reviewer.imageUrl}
+                alt={row.reviewer.name}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-[#0126fb] text-xs">
+                {row.reviewer.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
+            </Avatar>
+            <span>{row.reviewer.name}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "status",
@@ -607,7 +684,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     myPoints?.tags,
     uploadableFiles,
   ]);
-  if (isLoading || !data)
+  if (isLoading || !data || !historyData)
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
@@ -712,7 +789,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       </div>
       <div className="w-full sm:w-auto flex-shrink-0 mt-4">
         <label className="text-md font-semibold mb-2 text-[#f5b719]">
-          Ver Histórico de Pontos
+          Ver Histórico de JR Points
         </label>
         <Select value={selectedView} onValueChange={setSelectedView}>
           <SelectTrigger className="w-full sm:w-[240px] bg-[#00205e] border-[#0126fb] text-white">
@@ -720,7 +797,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
           </SelectTrigger>
           <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
             <SelectItem className="bg-transparent" value="current">
-              Placar Atual
+              JR Points Atual
             </SelectItem>
             {mySemesterScores?.map((score) => (
               <SelectItem key={score.id} value={score.id}>
@@ -748,13 +825,13 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
                 className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10"
                 value="solicitations"
               >
-                Minhas Solicitações ({mySolicitations.length})
+                Minhas Solicitações ({historyData.solicitations.length})
               </TabsTrigger>
               <TabsTrigger
                 className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10"
                 value="reports"
               >
-                Meus Recursos ({myReports.length})
+                Meus Recursos ({historyData.reports.length})
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -775,14 +852,14 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
                 className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors"
                 value="solicitations"
               >
-                Minhas Solicitações ({mySolicitations.length})
+                Minhas Solicitações ({historyData.solicitations.length})
               </SelectItem>
               <SelectItem
                 className=" !bg-[#00205e]/90 !text-white hover:!text-[#f5b719] transition-colors"
                 value="reports"
               >
                 {" "}
-                Meus Recursos ({myReports.length})
+                Meus Recursos ({historyData.reports.length})
               </SelectItem>
             </SelectContent>
           </Select>
@@ -806,28 +883,30 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
                   "value",
                 ]}
                 columns={tagColumns}
-                data={
-                  Array.isArray(tagHistoryData)
-                    ? tagHistoryData
-                    : tagHistoryData?.tags || []
-                }
+                data={tagsWithStreakInfo || []}
                 title={`Extrato (${selectedView === "current" ? "Atual" : selectedSnapshot?.semester})`}
-                type={selectedView === "current" ? "onlyDelete" : "onlyView"}
+                type={isDirector ? "onlyDelete" : "onlyView"}
                 itemsPerPage={10}
-                onDelete={(row) => handleOpenDeleteModal(row as any, "tag")}
+                onRowClick={(row) => handleOpenViewModal(row, "tag")}
+                onDelete={
+                  isDirector
+                    ? (row) => handleOpenDeleteModal(row, "tag")
+                    : undefined
+                }
               />
             )}
           </>
         )}
 
         {activeTab === "solicitations" && (
-          <CustomTable
+          <CustomTable<FullJRPointsSolicitation>
             columns={solicitationColumns}
-            data={mySolicitations}
+            data={historyData?.solicitations || []}
             title="Minhas Solicitações"
             filterColumns={["description", "status"]}
             type="noSelection"
             itemsPerPage={5}
+            onRowClick={(item) => handleOpenViewModal(item, "solicitation")}
             onEdit={(item) => handleOpenEditModal(item, "solicitation")}
             onDelete={(item) => handleOpenDeleteModal(item, "solicitation")}
             isRowEditable={(row) =>
@@ -840,13 +919,14 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         )}
 
         {activeTab === "reports" && (
-          <CustomTable
+          <CustomTable<FullJRPointsReport>
             columns={reportColumns}
-            data={myReports}
+            data={historyData?.reports || []}
             title="Meus Recursos"
             filterColumns={["description", "status"]}
             type="noSelection"
             itemsPerPage={5}
+            onRowClick={(item) => handleOpenViewModal(item, "report")}
             onEdit={(item) => handleOpenEditModal(item, "report")}
             onDelete={(item) => handleOpenDeleteModal(item, "report")}
             isRowEditable={(row) =>
@@ -885,6 +965,12 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
           description={`Tem certeza que deseja excluir? Esta ação não pode ser desfeita.`}
         />
       )}
+
+      <HistoryItemDetailsModal
+        isOpen={!!viewingItem}
+        onClose={() => setViewingItem(null)}
+        item={viewingItem}
+      />
     </>
   );
 };

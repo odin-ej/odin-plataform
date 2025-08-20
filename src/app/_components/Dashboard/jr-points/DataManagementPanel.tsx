@@ -81,6 +81,7 @@ const DataManagementPanel = ({
         await onImport(json);
       };
       reader.readAsArrayBuffer(file);
+      setFile(null)
     } catch (error: any) {
       toast.error("Falha ao ler o arquivo.", { description: error.message });
     } finally {

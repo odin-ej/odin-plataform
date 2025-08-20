@@ -21,15 +21,22 @@ export async function POST(request: Request) {
       where: { isActive: true },
     });
 
-    if (!activeVersion) {
+    const activeSemester = await prisma.semester.findFirst({
+      where: { isActive: true },
+    });
+
+    if (!activeVersion || !activeSemester) {
       return new NextResponse(
-        "Nenhuma versão ativa encontrada para associar as tags.",
+        "Nenhuma versão ou semestre ativo encontrada para associar as tags.",
         { status: 400 }
       );
     }
 
     const body = await request.json();
-    const formatedBody = body.map((tag: { areas: string; }) => ({...tag, areas: tag.areas.trim().split(',')}))
+    const formatedBody = body.map((tag: { areas: string }) => ({
+      ...tag,
+      areas: tag.areas.trim().split(","),
+    }));
     const templatesToCreate = importSchema.parse(formatedBody);
 
     const creationData = templatesToCreate.map((template) => ({

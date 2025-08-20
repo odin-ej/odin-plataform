@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Prisma } from "@prisma/client";
-import { Building, Inbox, User } from "lucide-react";
+import { Building, Inbox, Search, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import Pagination from "../../Global/Custom/Pagination";
 import RequestCard from "./RequestCard";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 export type FullJRPointsSolicitation = Prisma.JRPointsSolicitationGetPayload<{
   include: {
@@ -17,6 +18,14 @@ export type FullJRPointsSolicitation = Prisma.JRPointsSolicitationGetPayload<{
         email: true; // pode adicionar outros campos se precisar
       };
     };
+     reviewer: {
+       select: {
+        id: true;
+        name: true;
+        imageUrl: true;
+        email: true;
+      };
+    },
     attachments: true;
     membersSelected: true;
     tags: {
@@ -41,6 +50,14 @@ export type FullJRPointsReport = Prisma.JRPointsReportGetPayload<{
         email: true;
       };
     };
+    reviewer: {
+       select: {
+        id: true;
+        name: true;
+        imageUrl: true;
+        email: true;
+      };
+    },
     tag: {
       include: { assigner: true; actionType: true };
     };
@@ -66,7 +83,7 @@ const SolicitationsBoard = ({
     "all" | "user" | "enterprise"
   >("all");
   const [currentPage, setCurrentPage] = useState(1);
-
+const [searchTerm, setSearchTerm] = useState("");
   const allRequests = useMemo(
     () =>
       [
@@ -80,15 +97,42 @@ const SolicitationsBoard = ({
   );
 
   const filteredData = useMemo(() => {
-    setCurrentPage(1); // Reseta a página ao mudar o filtro
+    setCurrentPage(1); // Reset page when filters change
     let items = allRequests.filter((r) => r.status === activeTab);
+
     if (targetFilter === "user") {
       items = items.filter((r) => !r.isForEnterprise);
     } else if (targetFilter === "enterprise") {
       items = items.filter((r) => r.isForEnterprise);
     }
+
+    // Apply search term filter
+    if (searchTerm) {
+      const normalizedSearch = searchTerm
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      
+      items = items.filter((item) => {
+        const descriptionMatch = item.description
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .includes(normalizedSearch);
+
+        const userNameMatch = item.user.name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .includes(normalizedSearch);
+        
+        return descriptionMatch || userNameMatch;
+      });
+    }
+
     return items;
-  }, [allRequests, activeTab, targetFilter]);
+  }, [allRequests, activeTab, targetFilter, searchTerm]);
+
   // Pagina os dados filtrados
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -105,37 +149,50 @@ const SolicitationsBoard = ({
 
   return (
     <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-6 text-white shadow-lg mt-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold text-[#0126fb]">
+      <div className="flex flex-col md:flex-row justify-between sm:items-center gap-4 mb-6">
+        <h2 className="text-2xl text-center md:text-start font-bold text-[#0126fb]">
           Painel de Requisições
         </h2>
-        <div className="flex items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
-          <Button
-            size="sm"
-            onClick={() => setTargetFilter("all")}
-            variant={targetFilter === "all" ? "default" : "ghost"}
-            className={cn('bg-transparent hover:bg-[#f5b719]/90 disabled:bg-[#f5b719]/50 hover:text-white', targetFilter === "all" && 'bg-[#f5b719]')}
-          >
-            Todos
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setTargetFilter("user")}
-            variant={targetFilter === "user" ? "default" : "ghost"}
-            className={cn('bg-transparent hover:bg-[#0126fb]/90 disabled:bg-[#0126fb]/50 hover:text-white', targetFilter === "user" && 'bg-[#0126fb]')}
-          >
-            <User className="h-4 w-4 mr-2" /> Pessoais
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setTargetFilter("enterprise")}
-            variant={targetFilter === "enterprise" ? "default" : "ghost"}
-            className={cn("bg-transparent hover:bg-[#00205e]/90 disabled:bg-[#00205e]/50" ,
-              targetFilter === "enterprise" && 'bg-[#00205e]'
-            )}
-          >
-            <Building className="h-4 w-4 mr-2" /> Da Empresa
-          </Button>
+        <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+          {/* Search Input */}
+          <div className="relative flex-grow sm:flex-grow-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+                placeholder="Pesquisar por nome ou descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 bg-[#00205e]/50 border-gray-700 text-white placeholder:text-gray-500 pl-9 w-full sm:w-64"
+            />
+          </div>
+          {/* Target Filter Buttons */}
+          <div className="flex  items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
+            <Button
+              size="sm"
+              onClick={() => setTargetFilter("all")}
+              variant={targetFilter === "all" ? "default" : "ghost"}
+              className={cn('bg-transparent hover:bg-[#f5b719]/90 disabled:bg-[#f5b719]/50 hover:text-white', targetFilter === "all" && 'bg-[#f5b719]')}
+            >
+              Todos
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setTargetFilter("user")}
+              variant={targetFilter === "user" ? "default" : "ghost"}
+              className={cn('bg-transparent hover:bg-[#0126fb]/90 disabled:bg-[#0126fb]/50 hover:text-white', targetFilter === "user" && 'bg-[#0126fb]')}
+            >
+              <User className="h-4 w-4 mr-2" /> Pessoais
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setTargetFilter("enterprise")}
+              variant={targetFilter === "enterprise" ? "default" : "ghost"}
+              className={cn("bg-transparent hover:bg-[#00205e]/90 disabled:bg-[#00205e]/50" ,
+                targetFilter === "enterprise" && 'bg-[#00205e]'
+              )}
+            >
+              <Building className="h-4 w-4 mr-2" /> Da Empresa
+            </Button>
+          </div>
         </div>
       </div>
 

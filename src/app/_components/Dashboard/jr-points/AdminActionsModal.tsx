@@ -38,6 +38,13 @@ import axios, { AxiosResponse } from "axios";
 import { Switch } from "@/components/ui/switch";
 import CustomCheckboxGroup from "../../Global/Custom/CustomCheckboxGroup";
 import CommandMultiSelect from "../../Global/Custom/CommandMultiSelect";
+import FileUploadZone, { UploadableFile } from "../../Global/FileUploadZone";
+
+interface AttachmentPayload {
+  url: string;
+  fileName: string;
+  fileType: string;
+}
 
 interface AdminActionsModalProps {
   isOpen: boolean;
@@ -79,7 +86,8 @@ const AdminActionsModal = ({
 }: AdminActionsModalProps) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("add-points");
-
+  const [uploadableFiles, setUploadableFiles] = useState<UploadableFile[]>([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false)
   // --- HOOKS DE FORMULÁRIO ATUALIZADOS ---
   const addTagForm = useForm<z.infer<typeof addTagToUsersSchema>>({
     resolver: zodResolver(addTagToUsersSchema),
@@ -125,6 +133,7 @@ const AdminActionsModal = ({
       const realUserIds = data.userIds.filter(
         (userId) => userId !== ENTERPRISE_USER_ID
       );
+      alert(data.userIds)
       const isEnterpriseTargeted = data.userIds.includes(ENTERPRISE_USER_ID);
 
       // 3. Se houver usuários reais selecionados, adicione a chamada de API deles à lista
@@ -142,8 +151,10 @@ const AdminActionsModal = ({
       if (isEnterpriseTargeted) {
         // A rota da empresa espera um payload diferente (sem userIds)
         const enterprisePayload = {
-          templateIds: data.templateIds, // Nota: Verifique se o nome é 'templateIds' no seu schema
+          templateIds: data.templateIds,
           datePerformed: data.datePerformed,
+          description: data.description,
+          attachments: data.attachments,
         };
         apiCalls.push(
           axios.post(
@@ -165,6 +176,7 @@ const AdminActionsModal = ({
     onSuccess: () => {
       toast.success("Pontos atribuídos com sucesso!");
       addTagForm.reset();
+      setUploadableFiles([]);
       onClose();
       queryClient.invalidateQueries({
         queryKey: ["enterprisePointsData", "userPoints", "notifications"],
@@ -212,8 +224,67 @@ const AdminActionsModal = ({
     });
 
   // --- FUNÇÕES DE SUBMISSÃO ---
-  const onAddTagSubmit = (data: z.infer<typeof addTagToUsersSchema>) =>
-    addPointsMutation(data);
+  const onAddTagSubmit = async (data: z.infer<typeof addTagToUsersSchema>) => {
+    const toastId = toast.loading("Enviando arquivos, por favor aguarde...");
+    try {
+      setIsUploadingFiles(true)
+      const newFilesToUpload = uploadableFiles.filter(
+        (f) => f.status === "pending"
+      );
+      let uploadedAttachments: AttachmentPayload[] = [];
+
+      if (newFilesToUpload.length > 0) {
+        const uploadPromises = newFilesToUpload.map(
+          (fileToUpload) =>
+            new Promise<AttachmentPayload>(async (resolve, reject) => {
+              try {
+                // Obter URL pré-assinada
+                const { data: presignedData } = await axios.post(
+                  "/api/jr-points/upload",
+                  {
+                    fileName: fileToUpload.file.name,
+                    fileType: fileToUpload.file.type,
+                    fileSize: fileToUpload.file.size,
+                    subfolder: "solicitations", // Ou outra pasta, se aplicável
+                  }
+                );
+
+                // Fazer upload para o S3
+                await axios.put(presignedData.uploadUrl, fileToUpload.file, {
+                  headers: { "Content-Type": fileToUpload.file.type },
+                });
+
+                resolve({
+                  url: presignedData.s3Key, // Importante: envie a chave do S3, não a URL completa
+                  fileName: presignedData.fileName,
+                  fileType: presignedData.fileType,
+                });
+              } catch (uploadError) {
+                reject(uploadError);
+              }
+            })
+        );
+
+        uploadedAttachments = await Promise.all(uploadPromises);
+      }
+
+      // Combina os dados do formulário com os anexos enviados
+      const finalPayload = {
+        ...data,
+        attachments: uploadedAttachments,
+      };
+
+      toast.loading("Atribuindo pontos...", { id: toastId });
+      await addPointsMutation(finalPayload);
+      toast.success("Operação concluída!", { id: toastId });
+      
+    } catch (error) {
+      toast.error("Falha no upload de um ou mais arquivos.", { id: toastId });
+      console.error("Erro no processo de upload:", error);
+    }
+    setIsUploadingFiles(false)
+  };
+
   const onCreateTemplateSubmit: SubmitHandler<TagTemplateFormValues> = (
     data: z.infer<typeof tagTemplateSchema>
   ) => createTemplateMutation(data);
@@ -303,15 +374,25 @@ const AdminActionsModal = ({
                     field="datePerformed"
                     label="Data de Realização"
                     placeholder="DD/MM/AAAA"
-                    mask="date"
+                    type="date"
                   />
                   <UserMultiSelect />
+                  <CustomTextArea
+                    form={addTagForm}
+                    label="Descrição (Opcional)"
+                    field="description"
+                    placeholder="Estou atribuindo essa tag por causa de..."
+                  />
+                  <FileUploadZone
+                    uploadableFiles={uploadableFiles}
+                    onFilesChange={setUploadableFiles}
+                  />
                   <Button
                     className="w-full bg-[#0126fb] hover:bg-[#0126fb]/80"
                     type="submit"
-                    disabled={isAddingPoints}
+                    disabled={isAddingPoints || isUploadingFiles}
                   >
-                    {isAddingPoints ? "Atribuindo..." : "Atribuir Pontos"}
+                    {isUploadingFiles || isAddingPoints ? "Atribuindo..." : "Atribuir Pontos"}
                   </Button>
                 </form>
               </Form>

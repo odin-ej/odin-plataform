@@ -52,7 +52,7 @@ export interface FieldConfig<T> {
   disabled?: boolean;
   isMulti?: boolean;
   renderView?: (data: T) => React.ReactNode;
-    uploadableFiles?: UploadableFile[];
+  uploadableFiles?: UploadableFile[];
   onFilesChange?: (files: UploadableFile[]) => void;
 }
 
@@ -184,15 +184,16 @@ const CustomModal = <T extends FieldValues>({
           </style>
           <DialogHeader className="flex-col sm:flex-row items-center justify-between mt-2">
             <DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
-            {!isEditing && !onlyView && (
-              <Button
-                variant="ghost"
-                className="hover:bg-[#f5b719]/10 hover:text-[#f5b719] focus:border-none focus:bg-transparent focus:text-white"
-                onClick={() => setIsEditing(true)}
-              >
-                <Pencil className="h-4 w-4 mr-2 text-[#f5b719]" /> Editar
-              </Button>
-            )}
+            {page !== "userTagModal" ||
+              (!isEditing && !onlyView && (
+                <Button
+                  variant="ghost"
+                  className="hover:bg-[#f5b719]/10 hover:text-[#f5b719] focus:border-none focus:bg-transparent focus:text-white"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Pencil className="h-4 w-4 mr-2 text-[#f5b719]" /> Editar
+                </Button>
+              ))}
             <DialogClose asChild>
               <button className="pl-1 absolute !cursor-pointer right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
                 <X className="h-4 w-4 cursor-pointer" />
@@ -230,9 +231,7 @@ const CustomModal = <T extends FieldValues>({
                               return (
                                 <FileUploadZone
                                   uploadableFiles={fieldInfo.uploadableFiles!}
-        onFilesChange={fieldInfo.onFilesChange!}
-                              
-                                  
+                                  onFilesChange={fieldInfo.onFilesChange!}
                                 />
                               );
                             case "password":

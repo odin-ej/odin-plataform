@@ -72,7 +72,7 @@ export const generalLinks: Links[] = [
   },
 {
     name: 'Central de Reservas',
-    href: 'central-de-reservas',
+    href: '/central-de-reservas',
     icon: CalendarClock,
     exMemberCanAccess: false,
   }

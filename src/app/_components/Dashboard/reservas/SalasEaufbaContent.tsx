@@ -184,13 +184,14 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
       accessorKey: "applicant",
       header: "Solicitante",
       cell: (row) => (
-        <Avatar className="h-8 w-8">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
           <AvatarImage
             src={row.applicant.imageUrl}
             alt={row.applicant.name}
             className="object-cover"
           />
-          <span className="text-white p-1">{row.applicant.name}</span>
+          
           <AvatarFallback className="bg-[#0126fb] text-xs">
             {row.applicant.name
               .split(" ")
@@ -199,6 +200,8 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
               .toUpperCase()}
           </AvatarFallback>
         </Avatar>
+        <span className="text-white p-1">{row.applicant.name}</span>
+        </div>
       ),
     },
   ];

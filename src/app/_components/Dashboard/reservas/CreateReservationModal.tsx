@@ -235,21 +235,21 @@ const CreateReservationModal = ({
               }}
               className="w-full mt-4"
             >
-              <TabsList className="grid w-full grid-cols-3 bg-transparent text-[#f5b719] border-[#f5b719] border-2">
+              <TabsList className="grid w-full h-full grid-cols-1 sm:grid-cols-3 bg-transparent text-[#f5b719] border-[#f5b719] border-2">
                 <TabsTrigger
-                  className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10"
+                  className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10 data-[state=active]:text-white"
                   value="salinha"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" /> Salinhas
                 </TabsTrigger>
                 <TabsTrigger
-                  className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10"
+                  className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10 data-[state=active]:text-white"
                   value="eaufba"
                 >
                   <School className="mr-2 h-4 w-4" /> Salas EAUFBA
                 </TabsTrigger>
                 <TabsTrigger
-                  className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10"
+                  className="text-[#f5b719] data-[state=active]:!bg-[#f5b719]/10 data-[state=active]:text-white"
                   value="item"
                 >
                   <Box className="mr-2 h-4 w-4" /> Equipamentos
@@ -311,7 +311,7 @@ const CreateReservationModal = ({
                     label="Dia de Devolução"
                     type="date"
                   />
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <CustomInput
                       form={form}
                       field="startTime"

@@ -37,7 +37,7 @@ export async function GET() {
         where: { id: 1 },
         include: {
           tags: {
-            include: { actionType: true, assigner: { select: { name: true } } },
+            include: { actionType: true, assigner: { select: { name: true } }, jrPointsVersion: {select: {versionName: true}} },
             orderBy: { datePerformed: "desc" },
           },
         },

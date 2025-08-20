@@ -307,7 +307,7 @@ const EnterprisePageContent = ({
       action: () => snapshotMutation(semesterId),
       title: "Confirmar Criação de Snapshot",
       description:
-        "Esta ação criará uma cópia de segurança das pontuações atuais. Não pode ser desfeita.",
+        "Esta ação criará uma cópia de segurança do JR Points atual e reiniciará ele por completo. Não pode ser desfeita. Você realmente deseja fazer isso?",
     });
   };
 
@@ -548,7 +548,7 @@ const EnterprisePageContent = ({
         icon={JrPointIconBlue}
         className="mt-6"
       />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:gap-6 lg:grid-cols-2">
         <CustomCard
           type="link"
           title="Pontuação da Empresa"
@@ -699,6 +699,7 @@ const EnterprisePageContent = ({
         onClose={() => setIsUserTagsModalOpen(false)}
         user={selectedUser}
         snapshots={usersSemesterScore}
+        allTagTemplates={allTagTemplates}
       />
 
       {editingItem && (

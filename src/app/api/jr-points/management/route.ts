@@ -81,7 +81,8 @@ export async function GET() {
           user: { select: { id: true, name: true, imageUrl: true } },
           attachments: true,
           membersSelected: true,
-          tags: { include: { actionType: true } },
+          tags: { include: { actionType: true, } },
+          reviewer:true,
         },
       }),
       prisma.jRPointsReport.findMany({
@@ -89,6 +90,8 @@ export async function GET() {
         include: {
           user: { select: { id: true, name: true, imageUrl: true } },
           tag: { include: { assigner: true, actionType: true } },
+          attachments:true,
+          reviewer:true,
         },
       }),
       prisma.semester.findMany({

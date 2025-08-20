@@ -6,13 +6,14 @@ import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { differenceInDays, parse } from "date-fns";
+import { differenceInDays } from "date-fns";
 
 const addTagToUsersSchema = z.object({
   userIds: z.array(z.string()).min(1, "Selecione pelo menos um usuário."),
   templateIds: z.array(z.string()).min(1, "Selecione pelo menos uma tag."),
   datePerformed: z.string().min(5, "A data de realização é obrigatória."),
   description: z.string().optional(), // Descrição customizada para esta atribuição específica
+  attachments: z.array(z.any()).optional(),
 });
 
 export async function POST(request: Request) {
@@ -39,19 +40,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { userIds, templateIds, datePerformed, description } =
+    const { userIds, templateIds, datePerformed, description, attachments } =
       validation.data;
 
-    const parsedDate = parse(datePerformed, "dd/MM/yyyy", new Date());
-
-    if (isNaN(parsedDate.getTime())) {
+    const performedDateObject = new Date(datePerformed);
+    if (isNaN(performedDateObject.getTime())) {
       return NextResponse.json(
-        { message: "Formato de data inválido. Use DD/MM/AAAA." },
+        { message: "Formato de data inválido. Use o formato AAAA-MM-DD." },
         { status: 400 }
       );
     }
-
-    const formatedDate = parsedDate.toISOString();
 
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
@@ -79,30 +77,60 @@ export async function POST(request: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
+      await tx.jRPointsSolicitation.create({
+        data: {
+          userId: authUser.id,
+          isForEnterprise: false,
+          description:
+            description ||
+            `Atribuição de ${templateIds.length} tag(s) para ${userIds.length} membro(s).`,
+          datePerformed: performedDateObject,
+          status: "APPROVED",
+          directorsNotes:
+            "Aprovado automaticamente via painel de administração.",
+          tags: { connect: templateIds.map((id) => ({ id })) },
+          membersSelected: { connect: userIds.map((id) => ({ id })) },
+          attachments: attachments ? { create: attachments } : undefined,
+          jrPointsVersionId: activeVersion.id,
+          area: "DIRETORIA",
+          reviewerId: authUser.id
+        },
+      });
+
       for (const userId of userIds) {
-        for (const tagTemplate of tagTemplates) {
+        for (const templateId of templateIds) {
+          const tagTemplate = await tx.tagTemplate.findUnique({
+            where: { id: templateId },
+          });
+          if (!tagTemplate) {
+            throw new Error(
+              `O modelo de tag com ID ${templateId} não foi encontrado.`
+            );
+          }
+
           let finalValue = tagTemplate.baseValue;
 
+          // Lógica de Streak
           if (
             tagTemplate.isScalable &&
             tagTemplate.escalationValue != null &&
             tagTemplate.escalationStreakDays != null
           ) {
             const lastInstance = await tx.tag.findFirst({
-              where: {
-                userPoints: { userId: userId },
-                templateId: tagTemplate.id,
-              },
+              where: { userPoints: { userId: userId }, templateId: templateId },
               orderBy: { datePerformed: "desc" },
             });
-
             if (lastInstance) {
               const daysSinceLast = differenceInDays(
-                formatedDate,
+                performedDateObject,
                 lastInstance.datePerformed
               );
               if (daysSinceLast <= tagTemplate.escalationStreakDays) {
-                finalValue = lastInstance.value + tagTemplate.escalationValue;
+                const bonus =
+                  tagTemplate.baseValue >= 0
+                    ? Math.abs(tagTemplate.escalationValue)
+                    : -Math.abs(tagTemplate.escalationValue);
+                finalValue = lastInstance.value + bonus;
               }
             }
           }
@@ -110,11 +138,9 @@ export async function POST(request: Request) {
           const userPoints = await tx.userPoints.upsert({
             where: { userId },
             update: { totalPoints: { increment: finalValue } },
-            create: {
-              userId,
-              totalPoints: finalValue,
-            },
+            create: { userId, totalPoints: finalValue },
           });
+
           const userSemesterScore = await tx.userSemesterScore.upsert({
             where: {
               userId_semesterPeriodId: {
@@ -133,46 +159,35 @@ export async function POST(request: Request) {
 
           await tx.tag.create({
             data: {
-              description: description || tagTemplate.description,
+              description: tagTemplate.description,
               value: finalValue,
               assignerId: authUser.id,
-              datePerformed: formatedDate,
-              areas: tagTemplate.areas,
+              datePerformed: performedDateObject,
               actionTypeId: tagTemplate.actionTypeId,
               templateId: tagTemplate.id,
-              userPointsId: userPoints.id,
-              userSemesterScoreId: userSemesterScore.id,
               jrPointsVersionId: activeVersion.id,
-            },
-          });
-
-          const assigner = await tx.user.findUnique({
-            where: { id: authUser.id },
-            select: { name: true },
-          });
-
-          // 3. Cria a notificação para o usuário
-          const notification = await tx.notification.create({
-            data: {
-              notification: `Você recebeu ${finalValue} pontos por: "${tagTemplate.name}"! Por: ${assigner?.name}`,
-              type: "POINTS_AWARDED",
-              link: "/meus-pontos",
-            },
-          });
-
-          await tx.notificationUser.create({
-            data: {
-              notificationId: notification.id,
-              userId,
+              userPointsId: userPoints.id, // Conecta ao placar geral
+              userSemesterScoreId: userSemesterScore.id, // Conecta ao placar do semestre
             },
           });
         }
       }
     });
 
-    // --- FIM DA NOVA LÓGICA ---
+    const notification = await prisma.notification.create({
+      data: {
+        link: 'meu-pontos',
+        type: 'REQUEST_APPROVED',
+        notification: `Você recebeu nova(s) tag(s) de JR Points. Atribuída(s) por: ${authUser.name}`,
+      }
+    })
 
-    // 1. Garante que o registro de pontos do usuário existe e atualiza o total de pontos.
+    await prisma.notificationUser.createMany({
+      data: userIds.map((id) => ({
+        userId: id,
+        notificationId: notification.id,
+      })),
+    })
 
     revalidatePath("/gerenciar-jr-points");
     revalidatePath("/jr-points");

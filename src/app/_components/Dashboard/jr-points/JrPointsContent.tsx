@@ -167,6 +167,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     allSemesters,
     initialIsHidden: isHidden,
   } = data || initialData;
+  console.log(enterpriseTags, enterprisePoints)
   const handleToggleRankingVisibility = () => toggleVisibility(!isHidden);
 
   const rankingColumns: ColumnDef<RankingItem>[] = [

@@ -206,33 +206,35 @@ model User {
   isWorking         Boolean?
   workplace         String?
 
-  conversations               Conversation[]
-  roles                       Role[]                       @relation("UserRoles")
-  points                      UserPoints?
-  tasksResponsibleFor         Task[]                       @relation("TaskResponsibles")
-  projectsResponsibleFor      Project[]                    @relation("ProjectResponsibles")
-  reportsSent                 Report[]                     @relation("ReportReferent")
-  reportsReceived             Report[]                     @relation("ReportRecipientUser")
-  squadsLed                   Squad[]                      @relation("SquadLeader")
-  squadsAsMember              Squad[]                      @relation("SquadMembers")
-  roomReservation             RoomReservation[]
-  tasksAuthor                 Task[]
-  usefulLinks                 UsefulLink[]
-  assignedTags                Tag[]                        @relation("AssignedTags")
-  madeConnectionRequests      ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
-  roleHistory                 UserRoleHistory[]
-  semesterScores              UserSemesterScore[]
-  jrPointsSolicitations       JRPointsSolicitation[]
-  jrPointsReports             JRPointsReport[]
-  posts                       Post[]
-  comments                    Comment[]
-  likedPosts                  Post[]                       @relation("PostLikes")
-  likedComments               Comment[]                    @relation("CommentLikes")
-  solicitationsAsMember       JRPointsSolicitation[]       @relation("SolicitationMembers")
-  notifications               NotificationUser[]
-  professionalInterests       ProfessionalInterest[]
-  profileCompletionNotifiedAt DateTime?
-  ItemReservation             ItemReservation[]
+  conversations                 Conversation[]
+  roles                         Role[]                       @relation("UserRoles")
+  points                        UserPoints?
+  tasksResponsibleFor           Task[]                       @relation("TaskResponsibles")
+  projectsResponsibleFor        Project[]                    @relation("ProjectResponsibles")
+  reportsSent                   Report[]                     @relation("ReportReferent")
+  reportsReceived               Report[]                     @relation("ReportRecipientUser")
+  squadsLed                     Squad[]                      @relation("SquadLeader")
+  squadsAsMember                Squad[]                      @relation("SquadMembers")
+  roomReservation               RoomReservation[]
+  tasksAuthor                   Task[]
+  usefulLinks                   UsefulLink[]
+  assignedTags                  Tag[]                        @relation("AssignedTags")
+  madeConnectionRequests        ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
+  roleHistory                   UserRoleHistory[]
+  semesterScores                UserSemesterScore[]
+  jrPointsSolicitations         JRPointsSolicitation[]       @relation("SolicitationUser")
+  jrPointsReports               JRPointsReport[]             @relation("SolicitationUser")
+  posts                         Post[]
+  comments                      Comment[]
+  likedPosts                    Post[]                       @relation("PostLikes")
+  likedComments                 Comment[]                    @relation("CommentLikes")
+  solicitationsAsMember         JRPointsSolicitation[]       @relation("SolicitationMembers")
+  notifications                 NotificationUser[]
+  professionalInterests         ProfessionalInterest[]
+  profileCompletionNotifiedAt   DateTime?
+  ItemReservation               ItemReservation[]
+  reviewedSolicitationsJRPoints JRPointsSolicitation[]       @relation("SolicitationReviewer")
+  reviewedReportsJRPoints       JRPointsReport[]             @relation("SolicitationReviewer")
 }
 
 model UserRoleHistory {
@@ -484,7 +486,7 @@ model JRPointsSolicitation {
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
   userId                    String
-  user                      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                      User                       @relation("SolicitationUser", fields: [userId], references: [id], onDelete: Cascade)
   membersSelected           User[]                     @relation("SolicitationMembers")
   tags                      TagTemplate[]              @relation("SolicitationTagTemplates")
   attachments               FileAttachment[]
@@ -493,6 +495,8 @@ model JRPointsSolicitation {
   isForEnterprise           Boolean                    @default(false)
   enterpriseSemesterScore   EnterpriseSemesterScore?   @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
   enterpriseSemesterScoreId String?
+  reviewerId                String?
+  reviewer                  User?                      @relation("SolicitationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
 }
 
 model JRPointsReport {
@@ -507,7 +511,7 @@ model JRPointsReport {
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   userId                    String
-  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                      User                     @relation("SolicitationUser", fields: [userId], references: [id], onDelete: Cascade)
   tagId                     String
   directorsNotes            String?                  @db.Text
   userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
@@ -515,6 +519,8 @@ model JRPointsReport {
   isForEnterprise           Boolean                  @default(false)
   enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
   enterpriseSemesterScoreId String?
+  reviewerId                String?
+  reviewer                  User?                    @relation("SolicitationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
 }
 
 // -----------------------------------------------------------------
@@ -624,7 +630,7 @@ model Squad {
 model Room {
   id           String            @id @default(uuid())
   name         String            @unique
-  reservations RoomReservation[]         
+  reservations RoomReservation[]
 }
 
 model RoomReservation {
@@ -693,26 +699,26 @@ model ReserveRequestToConections {
 }
 
 model ReservableItem {
-  id          String     @id @default(uuid())
-  name        String     @unique // Ex: "Notebook Dell Vostro", "Câmera Canon T5i"
-  description String     @db.Text
-  imageUrl    String?
-  status      ItemStatus @default(AVAILABLE)
-  areas       ItemAreas[]
+  id           String            @id @default(uuid())
+  name         String            @unique // Ex: "Notebook Dell Vostro", "Câmera Canon T5i"
+  description  String            @db.Text
+  imageUrl     String?
+  status       ItemStatus        @default(AVAILABLE)
+  areas        ItemAreas[]
   reservations ItemReservation[] // Um item pode ter várias reservas
 }
 
 // NOVO MODELO para as reservas dos itens
 model ItemReservation {
-  id        String   @id @default(uuid())
-  title String
+  id        String         @id @default(uuid())
+  title     String
   startDate DateTime // Data e hora de início
   endDate   DateTime // Data e hora de fim
-  itemId String
-  item   ReservableItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  itemId    String
+  item      ReservableItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
 }
 
 model NotificationUser {

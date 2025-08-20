@@ -43,7 +43,7 @@ export async function PATCH(
     if (status === "REJECTED") {
       const updatedReport = await prisma.jRPointsReport.update({
         where: { id },
-        data: { status, directorsNotes },
+        data: { status, directorsNotes, reviewerId: authUser.id },
       });
 
       const notification = await prisma.notification.create({
@@ -67,7 +67,7 @@ export async function PATCH(
     await prisma.$transaction(async (tx) => {
       await tx.jRPointsReport.update({
         where: { id },
-        data: { status, directorsNotes },
+        data: { status, directorsNotes, reviewerId: authUser.id },
       });
 
       const originalTag = report.tag;

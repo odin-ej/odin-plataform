@@ -16,6 +16,7 @@ import {
   Loader2,
   Paperclip,
   Pencil,
+  Sparkles,
   User,
 } from "lucide-react";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
@@ -56,6 +57,8 @@ interface RequestReviewModalProps {
   isReviewing: boolean;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const reviewFormSchema = z.object({
   directorsNotes: z
     .string()
@@ -71,6 +74,8 @@ const RequestReviewModal = ({
   onReview,
   isReviewing,
 }: RequestReviewModalProps) => {
+  const [streakValues, setStreakValues] = useState<Record<string, number>>({});
+  const [isLoadingStreaks, setIsLoadingStreaks] = useState(false);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [loadingSignedUrls, setLoadingSignedUrls] = useState(false);
   const form = useForm<ReviewFormData>({
@@ -81,6 +86,55 @@ const RequestReviewModal = ({
       newValue: undefined,
     },
   });
+
+  useEffect(() => {
+    const fetchStreakValues = async () => {
+      if (!request || request.type !== "solicitation" || !request.tags.length) {
+        setStreakValues({});
+        return;
+      }
+
+      setIsLoadingStreaks(true);
+
+      const members = request.isForEnterprise
+        ? []
+        : [...request.membersSelected];
+      const uniqueUserIds = Array.from(new Set(members.map((m) => m.id)));
+
+      // Se for para a empresa, não há usuários para calcular streak individual
+      if (request.isForEnterprise) {
+        setIsLoadingStreaks(false);
+        return;
+      }
+
+      const calculationRequests = uniqueUserIds.flatMap((userId) =>
+        request.tags.map((tag) => ({
+          userId,
+          tagTemplateId: tag.id,
+        }))
+      );
+
+      try {
+        const { data } = await axios.post(
+          `${API_URL}/api/jr-points/calculate-streaks`,
+          {
+            requests: calculationRequests,
+            datePerformed: new Date(request.datePerformed).toISOString(),
+          }
+        );
+        setStreakValues(data);
+      } catch (error) {
+        console.error("Erro ao calcular valores de streak:", error);
+      } finally {
+        setIsLoadingStreaks(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchStreakValues();
+    }
+  }, [request, isOpen]);
+
   useEffect(() => {
     const fetchSignedUrls = async () => {
       if (!request || !request.attachments?.length) return;
@@ -92,7 +146,7 @@ const RequestReviewModal = ({
         request.attachments.map(async (file) => {
           try {
             const res = await axios.get(`/api/s3-get-signed-url`, {
-              params: { key: file.url }, 
+              params: { key: file.url },
             });
             urls[file.id] = res.data.url;
           } catch (err) {
@@ -151,7 +205,10 @@ const RequestReviewModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#010d26] text-white border-2 border-[#0126fb] max-w-[750px]">
+      <DialogContent
+        className="bg-[#010d26] text-white border-2 border-[#0126fb] w-[80vw] max-w-[80vw] sm:max-w-[80vw] 
+    max-h-[90vh]"
+      >
         <Form {...form}>
           <DialogHeader>
             <div className="flex items-center gap-4">
@@ -216,14 +273,14 @@ const RequestReviewModal = ({
                     field="newValue"
                     label="Novo Valor (Pontos)"
                     type="number"
-                    disabled={request.status !== 'PENDING'}
+                    disabled={request.status !== "PENDING"}
                   />
                   <div className="sm:col-span-2">
                     <CustomInput
                       form={form}
                       field="newDescription"
                       label="Nova Descrição da Tag"
-                      disabled={request.status !== 'PENDING'}
+                      disabled={request.status !== "PENDING"}
                     />
                   </div>
                 </div>
@@ -248,33 +305,68 @@ const RequestReviewModal = ({
                     <div className="flex flex-wrap gap-2">
                       {request.tags.map((t) => (
                         <Badge
-                          key={t.id}
+                          key={t.id+'-tag'}
                           variant="outline"
                           className="bg-[#0126fb]/80 border-[#0126fb] text-white "
                         >
-                          {t.name}
+                          {t.name} | {t.baseValue} pts
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
-                {request.membersSelected.length > 0 && (
-                  <div>
-                    <p className="font-medium text-sm mb-2">
-                      Membros Envolvidos:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {request.membersSelected.map((m) => (
-                        <Badge
-                          className="bg-[#0126fb]/80 border-[#0126fb] text-white"
-                          key={m.id}
-                        >
-                          {m.name}
-                        </Badge>
-                      ))}
+                {!request.isForEnterprise &&
+                  request.membersSelected.length > 0 && (
+                    <div>
+                      <p className="font-medium text-sm mb-2 mt-4">
+                        Membros Envolvidos e Pontuação Prevista:
+                      </p>
+                      <div className="space-y-2">
+                        {isLoadingStreaks ? (
+                          <div className="flex items-center text-xs text-gray-400">
+                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />{" "}
+                            Calculando bônus de streak...
+                          </div>
+                        ) : (
+                          [request.user, ...request.membersSelected]
+                            .filter(
+                              (value, index, self) =>
+                                self.findIndex((v) => v.id === value.id) ===
+                                index
+                            ) // Garante usuários únicos
+                            .map((m) => (
+                              <div key={m.id + "-streak"} className="text-sm">
+                                <span className="font-semibold">{m.name}:</span>
+                                <div className="flex flex-wrap gap-2 pl-4 pt-1">
+                                  {request.tags.map((t) => {
+                                    const key = `${m.id}-${t.id}`;
+                                    const finalValue =
+                                      streakValues[key] ?? t.baseValue;
+                                    const bonus = finalValue - t.baseValue;
+                                    return (
+                                      <Badge
+                                        key={key}
+                                        className="bg-gray-700 font-normal"
+                                      >
+                                        {t.name}: {finalValue} pts
+                                        {bonus !== 0 && (
+                                          <span
+                                            className={`ml-1.5 flex items-center ${bonus > 0 ? "text-green-400" : "text-red-400"}`}
+                                          >
+                                            <Sparkles className="h-3 w-3 mr-1" />
+                                            ({bonus > 0 ? `+${bonus}` : bonus})
+                                          </span>
+                                        )}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             ) : (
               <div className="p-4 bg-[#00205e]/30 rounded-lg border border-gray-700">
@@ -301,7 +393,7 @@ const RequestReviewModal = ({
                 <h4 className="font-semibold mb-2 text-[#f5b719]">Anexos</h4>
                 <div className="space-y-2">
                   {request.attachments.map((file) => (
-                    <>
+                    <div key={file.id+-'div'}>
                       <a
                         href={signedUrls[file.id] || "#"}
                         target="_blank"
@@ -317,7 +409,7 @@ const RequestReviewModal = ({
                           Carregando URLs...
                         </p>
                       )}
-                    </>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -328,7 +420,7 @@ const RequestReviewModal = ({
               field="directorsNotes"
               label="Justificativa da Decisão (Obrigatório)"
               placeholder="Adicione uma nota para o membro..."
-              disabled={request.status !== 'PENDING'}
+              disabled={request.status !== "PENDING"}
             />
           </div>
 
@@ -336,7 +428,7 @@ const RequestReviewModal = ({
             <Button
               variant="destructive"
               onClick={form.handleSubmit(handleSubmit("REJECTED"))}
-              disabled={isReviewing || request.status !== 'PENDING'} 
+              disabled={isReviewing || request.status !== "PENDING"}
             >
               <Loader2
                 className={`animate-spin mr-2 ${!isReviewing && "hidden"}`}
@@ -347,7 +439,7 @@ const RequestReviewModal = ({
             <Button
               className="bg-green-600 hover:bg-green-700"
               onClick={form.handleSubmit(handleSubmit("APPROVED"))}
-              disabled={isReviewing || request.status !== 'PENDING'}
+              disabled={isReviewing || request.status !== "PENDING"}
             >
               <Loader2
                 className={`animate-spin mr-2 ${!isReviewing && "hidden"}`}

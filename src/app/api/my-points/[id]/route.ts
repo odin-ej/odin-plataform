@@ -25,8 +25,6 @@ export async function GET(
       points,
       allTagTemplates,
       allUsers,
-      mySolicitations,
-      myReports,
       mySemesterScores,
       enterprisePoints,
     ] = await Promise.all([
@@ -38,6 +36,8 @@ export async function GET(
             include: {
               actionType: { select: { name: true } },
               assigner: { select: { name: true } },
+              jrPointsVersion: { select: { versionName: true } },
+              template:true
             },
             orderBy: { datePerformed: "desc" },
           },
@@ -60,27 +60,6 @@ export async function GET(
         orderBy: { name: "asc" },
         select: { id: true, name: true },
       }),
-      // 4. Busca as solicitações do usuário
-      prisma.jRPointsSolicitation.findMany({
-        where: { userId: id },
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          attachments: true,
-          membersSelected: true,
-          tags: true,
-        },
-      }),
-      // 5. Busca os recursos (reports) do usuário
-      prisma.jRPointsReport.findMany({
-        where: { userId: id },
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          tag: true,
-          attachments: true,
-        },
-      }),
       prisma.userSemesterScore.findMany({
         where: { userId: id },
         orderBy: { semester: "desc" },
@@ -98,8 +77,6 @@ export async function GET(
       myPoints: myPointsData,
       allTagTemplates,
       allUsers,
-      mySolicitations,
-      myReports,
       mySemesterScores,
       enterpriseTags: enterprisePoints?.tags || [],
     });

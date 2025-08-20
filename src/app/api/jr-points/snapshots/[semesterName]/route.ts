@@ -5,7 +5,10 @@ import { checkUserPermission } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function DELETE(request: NextRequest, {params}: {params: Promise<{semesterName: string}>}) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ semesterName: string }> }
+) {
   try {
     const authUser = await getAuthenticatedUser();
     if (!authUser)
@@ -14,22 +17,24 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{s
     if (!isDirector)
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
 
-    const {semesterName} = await params
+    const { semesterName } = await params;
 
-  const [userScoresResult, enterpriseScoreResult] = await prisma.$transaction([
-      // 1. Deleta todos os placares de usuários daquele semestre
-      prisma.userSemesterScore.deleteMany({
-        where: {
-          semester: semesterName,
-        },
-      }),
-      // 2. Deleta o placar da empresa daquele semestre
-      prisma.enterpriseSemesterScore.deleteMany({
-        where: {
+    const [userScoresResult, enterpriseScoreResult] = await prisma.$transaction(
+      [
+        // 1. Deleta todos os placares de usuários daquele semestre
+        prisma.userSemesterScore.deleteMany({
+          where: {
             semester: semesterName,
-        }
-      })
-    ]);
+          },
+        }),
+        // 2. Deleta o placar da empresa daquele semestre
+        prisma.enterpriseSemesterScore.deleteMany({
+          where: {
+            semester: semesterName,
+          },
+        }),
+      ]
+    );
 
     const totalCount = userScoresResult.count + enterpriseScoreResult.count;
 
@@ -54,12 +59,15 @@ export async function DELETE(request: NextRequest, {params}: {params: Promise<{s
     });
 
     await prisma.notificationUser.createMany({
-      data: allDirectorsId.filter((user) => user.id !== authUser.id).map((user) => ({
-        notificationId: notification.id,
-        userId: user.id,
-      })),
-    })
-    revalidatePath('/gerenciar-jr-points')
+      data: allDirectorsId
+        .filter((user) => user.id !== authUser.id)
+        .map((user) => ({
+          notificationId: notification.id,
+          userId: user.id,
+        })),
+    });
+    revalidatePath("/jr-points");
+    revalidatePath("/gerenciar-jr-points");
     return NextResponse.json({
       message: `Snapshot do semestre ${semesterName} deletado com sucesso. ${totalCount} registros removidos.`,
     });

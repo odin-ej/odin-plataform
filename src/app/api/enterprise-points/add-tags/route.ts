@@ -14,6 +14,8 @@ const addTagsToEnterpriseSchema = z.object({
     .array(z.string())
     .min(1, "Selecione pelo menos um modelo de tag."),
   datePerformed: z.string().min(5, "A data de realização é obrigatória."),
+  description: z.string().optional(),
+  attachments: z.array(z.any()).optional()
 });
 
 export async function POST(request: Request) {
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { templateIds, datePerformed } = validation.data;
+    const { templateIds, datePerformed, description, attachments } = validation.data;
 
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
@@ -55,18 +57,35 @@ export async function POST(request: Request) {
       );
     }
 
-    const formatedDate = new Date(datePerformed).toISOString();;
-    if (!formatedDate) {
+    const performedDateObject = new Date(datePerformed);
+    // Verifica se a data criada é válida. `getTime()` retorna NaN para datas inválidas.
+    if (isNaN(performedDateObject.getTime())) {
       return NextResponse.json(
-        { message: "Formato de data inválido. Use DD/MM/AAAA." },
+        { message: "Formato de data inválido. Use o formato AAAA-MM-DD." },
         { status: 400 }
       );
     }
 
     await prisma.$transaction(async (tx) => {
+      await tx.jRPointsSolicitation.create({
+        data: {
+          userId: authUser.id,
+          isForEnterprise: true,
+          description: description || `Atribuição de ${templateIds.length} tag(s) para a empresa.`,
+          datePerformed: performedDateObject,
+          status: 'APPROVED', // Status já definido como aprovado
+          directorsNotes: "Aprovado automaticamente via painel de gerenciamento.",
+          tags: { connect: templateIds.map(id => ({ id })) },
+          attachments: attachments ? { create: attachments } : undefined,
+          jrPointsVersionId: activeVersion.id,
+          area: 'DIRETORIA',
+          reviewerId: authUser.id
+        }
+      });
       let totalValueToAdd = 0;
 
       for (const templateId of templateIds) {
+
         const tagTemplate = await tx.tagTemplate.findUnique({ where: { id: templateId } });
         if (!tagTemplate) {
           throw new Error(`O modelo de tag com ID ${templateId} não foi encontrado.`);
@@ -82,7 +101,7 @@ export async function POST(request: Request) {
           });
 
           if (lastInstance) {
-            const daysSinceLast = differenceInDays(formatedDate, lastInstance.datePerformed);
+            const daysSinceLast = differenceInDays(performedDateObject, lastInstance.datePerformed);
             if (daysSinceLast <= tagTemplate.escalationStreakDays) {
               finalValue = lastInstance.value + tagTemplate.escalationValue;
             }
@@ -93,8 +112,9 @@ export async function POST(request: Request) {
           data: {
             description: tagTemplate.description,
             value: finalValue,
-            datePerformed: formatedDate,
+            datePerformed: performedDateObject,
             actionTypeId: tagTemplate.actionTypeId,
+            jrPointsVersionId: activeVersion.id,
             templateId: tagTemplate.id,
             enterprisePointsId: 1,
             assignerId: authUser.id,

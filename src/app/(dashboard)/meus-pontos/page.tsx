@@ -7,7 +7,6 @@ import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { verifyAccess } from "@/lib/utils";
 import { constructMetadata } from "@/lib/metadata";
 import MyPointsContent from "@/app/_components/Dashboard/jr-points/MyPointsContent";
-import { FullJRPointsReport, FullJRPointsSolicitation } from "@/app/_components/Dashboard/jr-points/SolicitationsBoard";
 
 
 export const dynamic = "force-dynamic";
@@ -17,8 +16,6 @@ export const metadata = constructMetadata({ title: "Meus Pontos" });
 // Tipagem completa para todos os dados que a página precisa
 export interface MyPointsData {
   myPoints: (UserPoints & { tags: TagWithAction[] }) | null;
-  mySolicitations: FullJRPointsSolicitation[];
-  myReports: FullJRPointsReport[];
   allTagTemplates: TagTemplateWithAction[];
   allUsers: Pick<User, 'id' | 'name'>[];
   mySemesterScores: UserSemesterScore[];
@@ -44,8 +41,6 @@ async function getMyPoints({ id }: { id: string }): Promise<MyPointsData> {
     // Retorna um objeto completo com valores padrão em caso de erro
     return { 
         myPoints: null,
-        mySolicitations: [],
-        myReports: [],
         allTagTemplates: [],
         allUsers: [],
         mySemesterScores: [],

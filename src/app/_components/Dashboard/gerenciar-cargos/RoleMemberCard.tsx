@@ -91,7 +91,7 @@ const RoleMemberCard = ({
   const roleAreas = user.currentRole?.area || [];
 
   return (
-    <Card onClick={onClick ? () => onClick(user) : undefined}  className={cn("bg-[#02102E] border-blue-900/50 text-white overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 flex flex-col h-full", onClick && 'cursor-pointer')}>
+    <Card onClick={onClick ? () => onClick(user) : undefined}  className={cn("bg-[#02102E] md:max-w-md lg:max-w-none border-blue-900/50 text-white overflow-hidden transform transition-all w-full duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 flex flex-col h-full", onClick && 'cursor-pointer')}>
       <CardHeader className="p-0 text-center">
         {/* Fundo decorativo */}
         <div className="h-16 bg-gradient-to-r from-sky-900 to-blue-900" />

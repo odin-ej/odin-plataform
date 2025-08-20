@@ -33,6 +33,8 @@ export async function GET(
             include: {
               assigner: { select: { name: true } },
               actionType: { select: { name: true } },
+              template: true,
+              jrPointsVersion: true,
             },
             orderBy: { datePerformed: "desc" },
           },
