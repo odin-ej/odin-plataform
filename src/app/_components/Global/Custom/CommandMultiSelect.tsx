@@ -93,11 +93,15 @@ const CommandMultiSelect = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-2 border-[#0126fb] bg-[#00205e] text-white">
-                <Command className="bg-[#00205e]">
+                <Command className="bg-[#00205e] max-h-[250px]">
                   <CommandInput placeholder="Procurar..." />
-                  <CommandList className="max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                  <CommandList>
                     <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
-                    <CommandGroup>
+                    <CommandGroup
+                      className="max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
+                      // Impede que o evento de rolagem "vaze" para o modal
+                      onWheel={e => e.stopPropagation()}
+                    >
                       {options.map((option) => (
                         <CommandItem
                           key={option.value}

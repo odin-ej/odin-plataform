@@ -76,7 +76,7 @@ export async function GET(
     return NextResponse.json({
       myPoints: myPointsData,
       allTagTemplates,
-      allUsers,
+      allUsers: allUsers.filter(u => u.id !== 'f34cea1a-c091-709f-d7ae-ac6583665cbd'),
       mySemesterScores,
       enterpriseTags: enterprisePoints?.tags || [],
     });
