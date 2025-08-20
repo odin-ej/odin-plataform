@@ -93,7 +93,7 @@ const HistoryItemDetailsModal = ({
     switch (status) {
       case "APPROVED":
         return (
-          <Badge className="bg-[#f5b719] hover:bg-green-700">
+          <Badge className="bg-green-600 hover:bg-green-700">
             <CheckCircle2 className="h-3 w-3 mr-1.5" />
             Aprovado
           </Badge>
@@ -114,7 +114,6 @@ const HistoryItemDetailsModal = ({
         );
     }
   };
-  console.log(data);
   const renderContent = () => {
     switch (type) {
       case "tag":
