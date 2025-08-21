@@ -93,10 +93,9 @@ export async function PATCH(
               if (daysSinceLast <= tagTemplate.escalationStreakDays) {
                 // ✅ CORREÇÃO: Usa Math.abs no escalationValue para garantir que o bônus/pena
                 // seja sempre aplicado na mesma "direção" da pontuação base.
-                const bonus =
-                  tagTemplate.baseValue >= 0
-                    ? Math.abs(tagTemplate.escalationValue)
-                    : -Math.abs(tagTemplate.escalationValue);
+                const bonus = tagTemplate.baseValue >= 0 
+                  ? Math.abs(tagTemplate.escalationValue) 
+                  : -Math.abs(tagTemplate.escalationValue);
                 finalValue = lastInstance.value + bonus;
               }
             }
@@ -106,14 +105,14 @@ export async function PATCH(
             data: { value: { increment: finalValue } },
           });
           const enterpriseScore = await tx.enterpriseSemesterScore.upsert({
-            where: { semesterPeriodId: activeSemester.id },
-            update: { value: { increment: finalValue } },
-            create: {
-              semester: activeSemester.name,
-              value: finalValue,
-              semesterPeriodId: activeSemester.id,
-            },
-          });
+             where: { semesterPeriodId: activeSemester.id },
+             update: { value: { increment: finalValue } },
+             create: {
+               semester: activeSemester.name,
+               value: finalValue,
+               semesterPeriodId: activeSemester.id,
+             },
+           });
           await tx.tag.create({
             data: {
               description: tagTemplate.description,
@@ -135,7 +134,7 @@ export async function PATCH(
             ...solicitation.membersSelected,
           ];
           const uniqueUsersMap = new Map();
-          allUsersWithPossibleDuplicates.forEach((user) => {
+          allUsersWithPossibleDuplicates.forEach(user => {
             if (user) {
               uniqueUsersMap.set(user.id, user);
             }
@@ -163,10 +162,9 @@ export async function PATCH(
                 );
                 if (daysSinceLast <= tagTemplate.escalationStreakDays) {
                   // ✅ CORREÇÃO: Lógica de bônus/pena consistente aplicada aqui também
-                  const bonus =
-                    tagTemplate.baseValue >= 0
-                      ? Math.abs(tagTemplate.escalationValue)
-                      : -Math.abs(tagTemplate.escalationValue);
+                   const bonus = tagTemplate.baseValue >= 0 
+                    ? Math.abs(tagTemplate.escalationValue) 
+                    : -Math.abs(tagTemplate.escalationValue);
                   finalValue = lastInstance.value + bonus;
                 }
               }
@@ -211,7 +209,7 @@ export async function PATCH(
         data: {
           notification: `Solicitação aprovada: ${solicitation.description} por ${authUser.name}`,
           type: "POINTS_AWARDED",
-          link: solicitation.isForEnterprise ? "jr-points" : "meus-pontos",
+          link: solicitation.isForEnterprise ? 'jr-points' : 'meus-pontos',
         },
       });
       if (solicitation.isForEnterprise) {
@@ -238,8 +236,8 @@ export async function PATCH(
         });
       }
     });
-    revalidatePath("/jr-points");
-    revalidatePath("/gerenciar-jr-points");
+        revalidatePath('/jr-points')
+        revalidatePath('/gerenciar-jr-points')
     revalidatePath("/meus-pontos");
     return NextResponse.json({ message: "Solicitação aprovada com sucesso!" });
   } catch (error) {

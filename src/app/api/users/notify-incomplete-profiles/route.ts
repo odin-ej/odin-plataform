@@ -4,13 +4,15 @@ import { addDays } from "date-fns";
 import { sesClient } from "@/lib/aws"; // Supondo que você tenha um cliente SES configurado
 import { completeProfileEmailCommand } from "@/lib/email";
 
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  if (searchParams.get("secret") !== CRON_SECRET) {
-    return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json(
+      { message: "Acesso não autorizado." },
+      { status: 401 }
+    );
   }
+  await prisma.$connect();
 
   try {
     const threeDaysAgo = addDays(new Date(), -3);
@@ -18,7 +20,6 @@ export async function GET(request: Request) {
     // 1. Encontra usuários com perfil incompleto que não foram notificados na última semana
     const usersToNotify = await prisma.user.findMany({
       where: {
-        isExMember: false, // Notificar apenas membros ativos, por exemplo
         AND: [
           {
             OR: [
