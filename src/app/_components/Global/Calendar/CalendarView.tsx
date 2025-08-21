@@ -4,6 +4,7 @@ import { Clock, LogIn, LogOut } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
+import { endOfMonth, startOfMonth } from "date-fns";
 
 // --- Tipagem para os dados do evento ---
 interface CalendarEvent {
@@ -36,6 +37,10 @@ const CalendarView = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date()
   );
+  
+  // ✅ NOVO ESTADO: Armazena o mês que está sendo exibido no calendário
+  const [displayMonth, setDisplayMonth] = useState(new Date());
+
   useEffect(() => {
     const storedToken = localStorage.getItem("google_calendar_token");
     const storedExpiry = localStorage.getItem("google_calendar_token_expiry");
@@ -48,18 +53,19 @@ const CalendarView = ({
       setToken(storedToken);
     }
   }, []);
+
   // Efeito para inicializar o cliente OAuth do Google
   useEffect(() => {
     if (clientId && (window as any).google && (window as any).google.accounts) {
       const client = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: "https://www.googleapis.com/auth/calendar.readonly",
-        // CORREÇÃO: O callback agora recebe a resposta completa para guardar o tempo de expiração
         callback: (tokenResponse: {
           access_token: string;
-          expires_in: number;
+          expires_in: number; // O token do Google expira em 3600 segundos (1 hora)
         }) => {
           if (tokenResponse && tokenResponse.access_token) {
+            // O tempo máximo de expiração é de 1 hora, definido pelo Google.
             const expiryTime = Date.now() + tokenResponse.expires_in * 1000;
             localStorage.setItem(
               "google_calendar_token",
@@ -87,52 +93,52 @@ const CalendarView = ({
 
   const handleLogout = () => {
     if (token && (window as any).google) {
-      // Revoga o token no lado do Google para uma segurança extra
       (window as any).google.accounts.oauth2.revoke(token, () => {
         console.log("Token revogado com sucesso.");
       });
     }
-    // Limpa o token do localStorage e do estado do componente
     localStorage.removeItem("google_calendar_token");
     localStorage.removeItem("google_calendar_token_expiry");
     setToken(null);
-    setEvents([]); // Limpa os eventos da tela
+    setEvents([]);
   };
 
-  // Efeito para buscar eventos quando o token de acesso é obtido
+  // ✅ EFEITO ATUALIZADO: Busca eventos quando o token ou o mês de exibição mudam
   useEffect(() => {
     if (!token || !calendarId) return;
 
     const fetchEvents = async () => {
       setLoading(true);
       setError(null);
-      const timeMin = new Date().toISOString();
-      const apiUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?timeMin=${timeMin}&orderBy=startTime&singleEvents=true&maxResults=250`;
+
+      // Define o período de busca para o mês inteiro que está sendo exibido
+      const timeMin = startOfMonth(displayMonth).toISOString();
+      const timeMax = endOfMonth(displayMonth).toISOString();
+
+      const apiUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?timeMin=${timeMin}&timeMax=${timeMax}&orderBy=startTime&singleEvents=true&maxResults=250`;
 
       try {
         const response = await fetch(apiUrl, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!response.ok)
-          throw new Error(`Erro ao buscar eventos: ${response.statusText}`);
+        if (!response.ok) {
+            // Se o token expirou (erro 401), desloga o usuário para que ele possa logar novamente
+            if (response.status === 401) {
+                handleLogout();
+                setError("Sua sessão expirou. Por favor, conecte-se novamente.");
+                return;
+            }
+            throw new Error(`Erro ao buscar eventos: ${response.statusText}`);
+        }
 
         const data = await response.json();
-
-        // --- CORREÇÃO APLICADA AQUI ---
-        // Mapeamos os eventos para criar uma propriedade de data interna e corrigida.
         const correctedEvents = (data.items || []).map((event: any) => {
           let internalDate;
-          // Se for um evento de dia inteiro (ex: "2025-08-01")
           if (event.start.date) {
-            // Criamos a data adicionando um horário (meio-dia) para forçar a
-            // interpretação no fuso horário local e evitar o "shift" para o dia anterior.
             internalDate = new Date(event.start.date + "T12:00:00");
-          }
-          // Se for um evento com hora marcada
-          else if (event.start.dateTime) {
+          } else if (event.start.dateTime) {
             internalDate = new Date(event.start.dateTime);
           }
-
           return { ...event, _internalDate: internalDate };
         });
 
@@ -145,10 +151,10 @@ const CalendarView = ({
     };
 
     fetchEvents();
-  }, [token, calendarId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, calendarId, displayMonth]); // Dispara a busca ao mudar o mês
 
   const formatTime = (start: CalendarEvent["start"]) => {
-    // Esta lógica já estava correta: se não tem dateTime, é um evento de dia inteiro.
     if (!start.dateTime) return "Dia inteiro";
     return new Date(start.dateTime).toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -156,17 +162,14 @@ const CalendarView = ({
     });
   };
 
-  // CORREÇÃO: O filtro agora usa a propriedade _internalDate, que já está corrigida.
   const selectedDayEvents = events.filter((event) => {
     if (!event._internalDate || !selectedDate) return false;
     return event._internalDate.toDateString() === selectedDate.toDateString();
   });
 
-  // CORREÇÃO: O mapeamento para os dias com eventos agora usa a propriedade _internalDate.
   const eventDays = events
     .map((event) => event._internalDate)
     .filter(Boolean) as Date[];
-
   return (
     <div
       className={cn(
@@ -230,6 +233,8 @@ const CalendarView = ({
           }}
           modifiers={{ event: eventDays }}
           modifiersClassNames={{ event: "event-day", today: "today-style" }}
+          month={displayMonth} // Controla o mês exibido
+          onMonthChange={setDisplayMonth} // Atualiza o estado quando o usuário navega
         />
       </div>
 
