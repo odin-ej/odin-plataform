@@ -83,7 +83,7 @@ const LoginForm = () => {
         className="mt-6 flex flex-col gap-4"
         onSubmit={form.handleSubmit(handleSignIn)}
       >
-        <CustomInput label="E-mail" field="email" form={form} />
+        <CustomInput label="E-mail Pessoal" field="email" form={form} />
         <CustomInput
           label="Senha"
           type="password"

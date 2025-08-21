@@ -74,7 +74,7 @@ export const solicitationSchema = z.object({
   description: z.string().min(10, "A descrição precisa ter pelo menos 10 caracteres."),
   datePerformed: z.string().min(10, "A data é obrigatória."),
   tags: z.array(z.string()).optional(),
-  membersSelected: z.array(z.string()).optional(),
+  membersSelected: z.array(z.string()),
   attachments: z.array(z.any()).optional(), // Adicionado
 });
 

@@ -10,7 +10,7 @@ const solicitationCreateSchema = z.object({
   datePerformed: z.string(), // Frontend envia como string 'YYYY-MM-DD' ou 'DD/MM/YYYY'
   isForEnterprise: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  membersSelected: z.array(z.string()).optional(),
+  membersSelected: z.array(z.string()),
   attachments: z
     .array(
       z.object({
