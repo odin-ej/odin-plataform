@@ -29,6 +29,8 @@ import {
   TrendingUp,
   CircleUser,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 interface HistoryItemDetailsModalProps {
   isOpen: boolean;
@@ -85,8 +87,47 @@ const HistoryItemDetailsModal = ({
   onClose,
   item,
 }: HistoryItemDetailsModalProps) => {
-  if (!item) return null;
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [loadingSignedUrls, setLoadingSignedUrls] = useState(false);
+  
+  useEffect(() => {
+    const fetchSignedUrls = async () => {
+      if (!item || !item.data.attachments?.length) {
+        setSignedUrls({});
+        return;
+      }
 
+      setLoadingSignedUrls(true);
+      const urls: Record<string, string> = {};
+
+      await Promise.all(
+        item.data.attachments.map(async (file: any) => {
+          try {
+            // Supondo que 'file.url' contém a chave do S3
+            const res = await axios.get(`/api/s3-get-signed-url`, {
+              params: { key: file.url },
+            });
+            urls[file.id] = res.data.url;
+          } catch (err) {
+            console.error(
+              "Erro ao buscar signed URL para o anexo:",
+              file.fileName,
+              err
+            );
+            urls[file.id] = "#"; // Define um link que não leva a lugar nenhum em caso de erro
+          }
+        })
+      );
+
+      setSignedUrls(urls);
+      setLoadingSignedUrls(false);
+    };
+
+    if (isOpen) {
+      fetchSignedUrls();
+    }
+  }, [item, isOpen]);
+  if (!item) return null;
   const { type, data } = item;
 
   const getStatusBadge = (status: string) => {
@@ -139,7 +180,7 @@ const HistoryItemDetailsModal = ({
                 <DetailRow
                   icon={<PencilLine size={16} />}
                   label="Título"
-                  value={template.name ?? '-'}
+                  value={template.name ?? "-"}
                 />
                 <DetailRow
                   icon={<PencilLine size={16} />}
@@ -327,18 +368,22 @@ const HistoryItemDetailsModal = ({
                 Anexos
               </h4>
               <div className="space-y-2">
-                {item.data.attachments.map((file: any) => (
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    key={file.id}
-                    className="flex items-center gap-2 text-sm text-blue-400 hover:underline p-2 rounded-md bg-[#00205e]/50 hover:bg-[#00205e]"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                    {file.fileName}
-                  </a>
-                ))}
+                {loadingSignedUrls ? (
+                  <p className="text-sm text-gray-500">Carregando links...</p>
+                ) : (
+                  item.data.attachments.map((file: any) => (
+                    <a
+                      href={signedUrls[file.id] || "#"} // Usa a URL do estado
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      key={file.id}
+                      className="flex items-center gap-2 text-sm text-blue-400 hover:underline p-2 rounded-md bg-[#00205e]/50 hover:bg-[#00205e]"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      {file.fileName}
+                    </a>
+                  ))
+                )}
               </div>
             </div>
           )}
