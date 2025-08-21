@@ -272,7 +272,7 @@ const DataManagementPanel = ({
               }
               onSnapshot(selectedSnapshotSemesterId);
             }}
-            disabled={!selectedSnapshotSemesterId}
+            disabled={true}
             className="w-full bg-[#0126fb] hover:bg-[#0126fb]/80"
           >
             <History className="mr-2 h-4 w-4" /> Salvar Snapshot e Zerar Pontos
