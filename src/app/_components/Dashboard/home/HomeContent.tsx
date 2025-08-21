@@ -221,7 +221,7 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <CustomCard
               type="link"
-              title="Minhas pendências"
+              title="Minhas Pendências"
               value={numberOfTasks}
               icon={Clock}
               href="/minhas-pendencias"
