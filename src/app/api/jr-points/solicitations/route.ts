@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       data: {
         link: `/gerenciar-jr-points`,
         type: "NEW_MENTION",
-        notification: `Nova solicitação de pontos (${isForEnterprise ? "Empresa" : "Pessoal"}) enviada por ${authUser.name}.`,
+        notification: `Nova solicitação de pontos (${isForEnterprise ? "Empresa" : "Membros"}) enviada por ${authUser.name}.`,
       },
     });
 

@@ -237,7 +237,7 @@ const RequestReviewModal = ({
                     ) : (
                       <User className="h-3 w-3 mr-1.5" />
                     )}
-                    Alvo: {request.isForEnterprise ? "Empresa" : "Pessoal"}
+                    Alvo: {request.isForEnterprise ? "Empresa" : "Membros"}
                   </Badge>
                 </DialogDescription>
               </div>
