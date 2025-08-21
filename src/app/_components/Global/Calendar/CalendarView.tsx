@@ -242,7 +242,7 @@ const CalendarView = ({
       <div className="w-full flex flex-col">
         <div className="flex items-center justify-center relative mb-4">
           <h2 className="text-xl md:text-2xl mt-2 md:mt-0 font-bold text-center mb-4 text-[#0126fb]">
-            Eventos do dia
+            Eventos do Dia
           </h2>
           {/* CORREÇÃO: Botão de Logout aparece se o usuário estiver logado */}
           {token && (
