@@ -694,7 +694,7 @@ model ReserveRequestToConections {
   applicantId String
   applicant   User          @relation("ConnectionRequestApplicant", fields: [applicantId], references: [id])
   roleId      String
-  role        Role          @relation("ConnectionRequestRole", fields: [roleId], references: [id])
+role        Role          @relation("ConnectionRequestRole", fields: [roleId], references: [id])
   status      RequestStatus @default(PENDING)
 }
 

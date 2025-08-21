@@ -30,7 +30,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import CreateReservationModal from "./CreateReservationModal"; // Modal genérico para criação
 import { toast } from "sonner";
-import { EaufbaReservationFormValues, ItemForm, RoomReservationFormValues } from "@/lib/schemas/reservationsSchema";
+import {
+  EaufbaReservationFormValues,
+  ItemForm,
+  RoomReservationFormValues,
+} from "@/lib/schemas/reservationsSchema";
+import DailyScheduleView from "./DailyScheduleView";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -58,52 +63,56 @@ const ReservationsContent = ({
     initialData,
   });
 
-  const {eaufbaRequests, itemReservations, reservableItems, roomReservations, rooms} = data || {};
-  console.log(reservableItems)
+  const {
+    eaufbaRequests,
+    itemReservations,
+    reservableItems,
+    roomReservations,
+    rooms,
+  } = data || {};
   // --- Mutations para criação ---
   const { mutate: createReservation, isPending: isCreatingReservation } =
     useMutation({
-      mutationFn: async (formData: RoomReservationFormValues) => axios.post("/api/reserve", formData),
-    onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["reservationsData"] })
-        toast.success('Reserva realizada com sucesso!')
-        setIsModalOpen(false)
+      mutationFn: async (formData: RoomReservationFormValues) =>
+        axios.post("/api/reserve", formData),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
+        toast.success("Reserva realizada com sucesso!");
+        setIsModalOpen(false);
       },
       onError: (error: any) => {
-        toast.error('Houve um erro ao realizar a reserva: ', error.message)
-      }
-      
+        toast.error("Houve um erro ao realizar a reserva: ", error.message);
+      },
     });
 
   const { mutate: createEaufba, isPending: isCreatingEaufba } = useMutation({
     mutationFn: async (formData: EaufbaReservationFormValues) =>
       axios.post("/api/reserve/salas-eaufba", formData),
     onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["reservationsData"] })
-        toast.success('Reserva realizada com sucesso!')
-        setIsModalOpen(false)
-      },
-      onError: (error: any) => {
-        toast.error('Houve um erro ao realizar a reserva: ', error.message)
-      }
+      queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
+      toast.success("Reserva realizada com sucesso!");
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error("Houve um erro ao realizar a reserva: ", error.message);
+    },
   });
 
   const { mutate: createItem, isPending: isCreatingItem } = useMutation({
     mutationFn: async (formData: ItemForm) =>
       axios.post("/api/reserve/items", formData),
     onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["reservationsData"] })
-        toast.success('Reserva realizada com sucesso!')
-        setIsModalOpen(false)
-      },
-      onError: (error: any) => {
-        toast.error('Houve um erro ao realizar a reserva: ', error.message)
-      }
+      queryClient.invalidateQueries({ queryKey: ["reservationsData"] });
+      toast.success("Reserva realizada com sucesso!");
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error("Houve um erro ao realizar a reserva: ", error.message);
+    },
   });
 
-  
   const allEvents = useMemo((): CalendarEvent[] => {
-    if(!roomReservations || !eaufbaRequests || !itemReservations) return []
+    if (!roomReservations || !eaufbaRequests || !itemReservations) return [];
     const roomEvents = roomReservations.map((r) => ({
       id: r.id,
       title: r.title || r.room.name,
@@ -113,7 +122,8 @@ const ReservationsContent = ({
       color: "#0126fb",
       original: r,
     }));
-    const eaufbaEvents = eaufbaRequests.filter((r) => r.status === "APPROVED")
+    const eaufbaEvents = eaufbaRequests
+      .filter((r) => r.status === "APPROVED")
       .map((r) => ({
         id: r.id,
         title: r.title,
@@ -151,16 +161,29 @@ const ReservationsContent = ({
     );
     setIsModalOpen(true);
   };
-  console.log({eaufbaRequests, itemReservations, reservableItems, roomReservations, rooms})
-  if(!eaufbaRequests || !itemReservations || !reservableItems || !roomReservations || !rooms) {
-    return (
-      <div className='w-full h-full flex items-center justify-center'>
-        <Loader2 className='h-12 w-12 text-[#f5b719] animate-spin' />
-      </div>
-    )
-  }
 
-  
+  const allReservations = useMemo(() => {
+    if (!roomReservations || !itemReservations || !eaufbaRequests) return [];
+    return [
+      ...roomReservations.map((r) => ({ ...r, type: "salinha" as const })),
+      ...itemReservations.map((r) => ({ ...r, type: "item" as const })),
+      ...eaufbaRequests.map((r) => ({ ...r, type: "eaufba" as const })),
+    ];
+  }, [roomReservations, itemReservations, eaufbaRequests]);
+
+  if (
+    !eaufbaRequests ||
+    !itemReservations ||
+    !reservableItems ||
+    !roomReservations ||
+    !rooms
+  ) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2 className="h-12 w-12 text-[#f5b719] animate-spin" />
+      </div>
+    );
+  }
 
   // Conteúdos "burros", apenas exibição
   const roomsContent = (
@@ -197,7 +220,12 @@ const ReservationsContent = ({
         description="Gerencie todas as reservas em um único lugar."
       />
 
-      <div className="mt-6">
+      <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <DailyScheduleView
+          rooms={rooms}
+          items={reservableItems}
+          reservations={allReservations as any}
+        />
         <UnifiedCalendar
           events={allEvents}
           onDateClick={handleDateClick}

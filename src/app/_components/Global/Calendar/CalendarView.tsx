@@ -272,7 +272,7 @@ const CalendarView = ({
           </div>
         )}
         {token && (
-          <div className="flex-1 h-full min-h-[300px]">
+          <div className="flex-1 h-full min-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
             {loading && (
               <p className="text-center pt-16">Carregando eventos...</p>
             )}

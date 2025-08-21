@@ -296,7 +296,7 @@ const RoomsContent = ({ initialData, isDirector }: RoomsContentProps) => {
           data={processedAllReservations}
           columns={createColumns(false)}
           filterColumns={["roomName", "userName", "formattedDate"]}
-          title="Últimas Reservas"
+          title="Todas as Reservas"
           itemsPerPage={5}
           type="onlyView"
         />

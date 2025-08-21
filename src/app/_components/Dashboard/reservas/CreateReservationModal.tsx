@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -17,7 +17,7 @@ import CustomInput from "../../Global/Custom/CustomInput";
 import CustomSelect from "../../Global/Custom/CustomSelect";
 import { areIntervalsOverlapping, format } from "date-fns";
 import { Room, ReservableItem, RoomStatus, ItemAreas } from "@prisma/client";
-import { Box, CalendarIcon, Loader2, School } from "lucide-react";
+import { AlertCircle, Box, CalendarIcon, CheckCircle, Loader2, School } from "lucide-react";
 import {
   ExtendedReservation,
   ReservationFormValues,
@@ -96,19 +96,134 @@ const CreateReservationModal = ({
   items,
   isLoading,
   existingRoomReservations,
-  existingItemReservations
+  existingItemReservations,
 }: CreateReservationModalProps) => {
   const [activeTab, setActiveTab] = useState<"salinha" | "item" | "eaufba">(
     "salinha"
   );
 
   const { user } = useAuth();
-
+  const timeZone = 'America/Sao_Paulo'
   const form = useForm<ReservationFormValues>({
     // O resolver muda dinamicamente com a aba
     resolver: zodResolver(reservationSchema),
     defaultValues: getDefaultValuesByType("salinha", selectedDate),
   });
+
+  const watchDate = form.watch("date");
+  const watchStart = form.watch("hourEnter");
+  const watchEnd = form.watch("hourLeave");
+  const watchRoom = form.watch("roomId");
+
+  const watchItemId = form.watch("itemId");
+  const watchItemStartDate = form.watch("startDate");
+  const watchItemEndDate = form.watch("endDate");
+  const watchItemStartTime = form.watch("startTime");
+  const watchItemEndTime = form.watch("endTime");
+
+  // ⚡ Verifica se há conflito em tempo real
+  const conflictRoomInfo = useMemo(() => {
+    if (!watchDate || !watchStart || !watchEnd || !watchRoom) return null;
+
+    const newInterval = {
+      start: fromZonedTime(`${watchDate} ${watchStart}`, "America/Sao_Paulo"),
+      end: fromZonedTime(`${watchDate} ${watchEnd}`, "America/Sao_Paulo"),
+    };
+
+    if (newInterval.start >= newInterval.end) {
+      return {
+        type: "invalid",
+        message: "Horário inicial deve ser antes do final.",
+      };
+    }
+
+    const hasConflict = existingRoomReservations.some((reservation) => {
+      if (reservation.roomId !== watchRoom) return false;
+      return areIntervalsOverlapping(newInterval, {
+        start: new Date(reservation.hourEnter),
+        end: new Date(reservation.hourLeave),
+      });
+    });
+
+    if (hasConflict) {
+      return { type: "conflict", message: "Já existe reserva nesse horário." };
+    }
+
+    return { type: "free", message: "Horário disponível!" };
+  }, [watchDate, watchStart, watchEnd, watchRoom, existingRoomReservations]);
+
+  const occupiedRoomTimes = useMemo(() => {
+    if (!watchDate || !watchRoom) return [];
+    return existingRoomReservations
+      .filter(
+        (r) =>
+          r.roomId === watchRoom &&
+          format(new Date(r.hourEnter), "yyyy-MM-dd") === watchDate
+      )
+      .map((r) => ({
+        start: format(new Date(r.hourEnter), "HH:mm"),
+        end: format(new Date(r.hourLeave), "HH:mm"),
+      })).sort((a, b) => (a.start > b.start ? 1 : -1));;
+  }, [watchDate, watchRoom, existingRoomReservations]);
+
+  const conflictItemInfo = useMemo(() => {
+    if (
+      !watchItemId ||
+      !watchItemStartDate ||
+      !watchItemEndDate ||
+      !watchItemStartTime ||
+      !watchItemEndTime
+    )
+      return null;
+
+    const newInterval = {
+      start: fromZonedTime(
+        `${watchItemStartDate} ${watchItemStartTime}`,
+        timeZone
+      ),
+      end: fromZonedTime(`${watchItemEndDate} ${watchItemEndTime}`, timeZone),
+    };
+
+    if (newInterval.start >= newInterval.end) {
+      return {
+        type: "invalid",
+        message: "Data/hora inicial deve ser antes da final.",
+      };
+    }
+
+    const hasConflict = existingItemReservations.some((reservation) => {
+      if (reservation.itemId !== watchItemId) return false;
+      return areIntervalsOverlapping(newInterval, {
+        start: new Date(reservation.startDate),
+        end: new Date(reservation.endDate),
+      });
+    });
+
+    if (hasConflict)
+      return {
+        type: "conflict",
+        message: "Este item já está reservado nesse período.",
+      };
+    return { type: "free", message: "Item disponível!" };
+  }, [
+    watchItemId,
+    watchItemStartDate,
+    watchItemEndDate,
+    watchItemStartTime,
+    watchItemEndTime,
+    existingItemReservations,
+  ]);
+
+  // 🕒 Lista de períodos já reservados do item
+  const occupiedItemTimes = useMemo(() => {
+    if (!watchItemId) return [];
+    return existingItemReservations
+      .filter((r) => r.itemId === watchItemId)
+      .map((r) => ({
+        start: format(new Date(r.startDate), "dd/MM HH:mm"),
+        end: format(new Date(r.endDate), "dd/MM HH:mm"),
+      }));
+  }, [watchItemId, existingItemReservations]).sort((a, b) => (a.start > b.start ? 1 : -1));;
 
   const onSubmit = (data: ReservationFormValues) => {
     const timeZone = "America/Sao_Paulo";
@@ -216,7 +331,7 @@ const CreateReservationModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#010d26] max-w-none scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent w-[70%] max-h-[80vh] scrollb text-white border-2 border-[#0126fb]">
+      <DialogContent className="bg-[#010d26] max-w-none sm:w-[%50] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent w-[70%] max-h-[80vh] text-white border-2 border-[#0126fb]">
         <DialogHeader>
           <DialogTitle>Criar Nova Reserva</DialogTitle>
         </DialogHeader>
@@ -290,6 +405,32 @@ const CreateReservationModal = ({
                       type="time"
                     />
                   </div>
+
+                  {conflictRoomInfo && (
+                    <p
+                      className={`flex items-center gap-2 text-sm ${conflictRoomInfo.type === "free" ? "text-green-500" : "text-red-500"}`}
+                    >
+                      {conflictRoomInfo.type === "free" ? (
+                        <CheckCircle size={16} />
+                      ) : (
+                        <AlertCircle size={16} />
+                      )}
+                      {conflictRoomInfo.message}
+                    </p>
+                  )}
+
+                  {occupiedRoomTimes.length > 0 && (
+                    <div className="text-xs text-gray-400 mt-2">
+                      <p>Horários já reservados neste dia:</p>
+                      <ul className="list-disc ml-4">
+                        {occupiedRoomTimes.map((t, idx) => (
+                          <li key={idx}>
+                            {t.start} - {t.end}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </TabsContent>
                 <TabsContent value="item" className="space-y-4">
                   <CustomSelect
@@ -325,6 +466,32 @@ const CreateReservationModal = ({
                       type="time"
                     />
                   </div>
+
+                  {conflictItemInfo && (
+                    <p
+                      className={`flex items-center gap-2 text-sm ${conflictItemInfo.type === "free" ? "text-green-500" : "text-red-500"}`}
+                    >
+                      {conflictItemInfo.type === "free" ? (
+                        <CheckCircle size={16} />
+                      ) : (
+                        <AlertCircle size={16} />
+                      )}
+                      {conflictItemInfo.message}
+                    </p>
+                  )}
+
+                  {occupiedItemTimes.length > 0 && (
+                    <div className="text-xs text-gray-400 mt-2">
+                      <p>Reservas já feitas para este item:</p>
+                      <ul className="list-disc ml-4">
+                        {occupiedItemTimes.map((t, idx) => (
+                          <li key={idx}>
+                            {t.start} → {t.end}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </TabsContent>
                 <TabsContent value="eaufba" className="space-y-4">
                   <CustomInput
