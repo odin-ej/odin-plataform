@@ -295,7 +295,7 @@ const RequestReviewModal = ({
                 </h4>
                 <p className="text-sm">
                   <strong>Data da Realização:</strong>{" "}
-                  {format(new Date(request.datePerformed), "dd/MM/yyyy")}
+                  {format(request.datePerformed, "dd/MM/yyyy")}
                 </p>
                 {request.tags.length > 0 && (
                   <div>

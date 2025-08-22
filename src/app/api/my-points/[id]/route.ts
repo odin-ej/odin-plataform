@@ -57,6 +57,7 @@ export async function GET(
       }),
       // 3. Busca todos os outros usuários para o modal de solicitação
       prisma.user.findMany({
+        where: {isExMember: false},
         orderBy: { name: "asc" },
         select: { id: true, name: true },
       }),

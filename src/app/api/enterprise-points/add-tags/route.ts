@@ -7,6 +7,7 @@ import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { differenceInDays } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 // Schema agora espera um array de IDs de TagTemplate
 const addTagsToEnterpriseSchema = z.object({
@@ -15,7 +16,7 @@ const addTagsToEnterpriseSchema = z.object({
     .min(1, "Selecione pelo menos um modelo de tag."),
   datePerformed: z.string().min(5, "A data de realização é obrigatória."),
   description: z.string().optional(),
-  attachments: z.array(z.any()).optional()
+  attachments: z.array(z.any()).optional(),
 });
 
 export async function POST(request: Request) {
@@ -34,14 +35,15 @@ export async function POST(request: Request) {
     const validation = addTagsToEnterpriseSchema.safeParse(body);
 
     if (!validation.success) {
-      console.error(validation.error.flatten().fieldErrors)
+      console.error(validation.error.flatten().fieldErrors);
       return NextResponse.json(
         { message: "Dados inválidos.", errors: validation.error.flatten() },
         { status: 400 }
       );
     }
 
-    const { templateIds, datePerformed, description, attachments } = validation.data;
+    const { templateIds, datePerformed, description, attachments } =
+      validation.data;
 
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
@@ -57,7 +59,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const performedDateObject = new Date(datePerformed);
+    const performedDateObject = fromZonedTime(
+      datePerformed,
+      "America/Sao_Paulo"
+    );
     // Verifica se a data criada é válida. `getTime()` retorna NaN para datas inválidas.
     if (isNaN(performedDateObject.getTime())) {
       return NextResponse.json(
@@ -65,49 +70,62 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
+    console.log(validation.data.datePerformed, performedDateObject);
     await prisma.$transaction(async (tx) => {
       await tx.jRPointsSolicitation.create({
         data: {
           userId: authUser.id,
           isForEnterprise: true,
-          description: description || `Atribuição de ${templateIds.length} tag(s) para a empresa.`,
+          description:
+            description ||
+            `Atribuição de ${templateIds.length} tag(s) para a empresa.`,
           datePerformed: performedDateObject,
-          status: 'APPROVED', // Status já definido como aprovado
-          directorsNotes: "Aprovado automaticamente via painel de gerenciamento.",
-          tags: { connect: templateIds.map(id => ({ id })) },
+          status: "APPROVED", // Status já definido como aprovado
+          directorsNotes:
+            "Aprovado automaticamente via painel de gerenciamento.",
+          tags: { connect: templateIds.map((id) => ({ id })) },
           attachments: attachments ? { create: attachments } : undefined,
           jrPointsVersionId: activeVersion.id,
-          area: 'DIRETORIA',
-          reviewerId: authUser.id
-        }
+          area: "DIRETORIA",
+          reviewerId: authUser.id,
+        },
       });
       let totalValueToAdd = 0;
 
       for (const templateId of templateIds) {
-
-        const tagTemplate = await tx.tagTemplate.findUnique({ where: { id: templateId } });
+        const tagTemplate = await tx.tagTemplate.findUnique({
+          where: { id: templateId },
+        });
         if (!tagTemplate) {
-          throw new Error(`O modelo de tag com ID ${templateId} não foi encontrado.`);
+          throw new Error(
+            `O modelo de tag com ID ${templateId} não foi encontrado.`
+          );
         }
 
         let finalValue = tagTemplate.baseValue;
 
         // --- LÓGICA DE ESCALONAMENTO E STREAK PARA A EMPRESA ---
-        if (tagTemplate.isScalable && tagTemplate.escalationValue != null && tagTemplate.escalationStreakDays != null) {
+        if (
+          tagTemplate.isScalable &&
+          tagTemplate.escalationValue != null &&
+          tagTemplate.escalationStreakDays != null
+        ) {
           const lastInstance = await tx.tag.findFirst({
             where: { enterprisePointsId: 1, templateId: templateId }, // Procura a última tag da empresa deste template
             orderBy: { datePerformed: "desc" },
           });
 
           if (lastInstance) {
-            const daysSinceLast = differenceInDays(performedDateObject, lastInstance.datePerformed);
+            const daysSinceLast = differenceInDays(
+              performedDateObject,
+              lastInstance.datePerformed
+            );
             if (daysSinceLast <= tagTemplate.escalationStreakDays) {
               finalValue = lastInstance.value + tagTemplate.escalationValue;
             }
           }
         }
-        
+
         await tx.tag.create({
           data: {
             description: tagTemplate.description,
@@ -120,10 +138,10 @@ export async function POST(request: Request) {
             assignerId: authUser.id,
           },
         });
-        
+
         totalValueToAdd += finalValue;
       }
-      
+
       // Atualiza os placares uma única vez no final
       if (totalValueToAdd !== 0) {
         await tx.enterprisePoints.update({
@@ -134,7 +152,11 @@ export async function POST(request: Request) {
         await tx.enterpriseSemesterScore.upsert({
           where: { semesterPeriodId: activeSemester.id },
           update: { value: { increment: totalValueToAdd } },
-          create: { semester: activeSemester.name, semesterPeriodId: activeSemester.id, value: totalValueToAdd },
+          create: {
+            semester: activeSemester.name,
+            semesterPeriodId: activeSemester.id,
+            value: totalValueToAdd,
+          },
         });
       }
     });
@@ -152,11 +174,13 @@ export async function POST(request: Request) {
     });
 
     await prisma.notificationUser.createMany({
-      data: allMembersId.filter((member) => member.id !== authUser.id).map((member) => ({
-        notificationId: notification.id,
-        userId: member.id,
-        isRead: false,
-      })),
+      data: allMembersId
+        .filter((member) => member.id !== authUser.id)
+        .map((member) => ({
+          notificationId: notification.id,
+          userId: member.id,
+          isRead: false,
+        })),
     });
 
     revalidatePath("/gerenciar-jr-points");

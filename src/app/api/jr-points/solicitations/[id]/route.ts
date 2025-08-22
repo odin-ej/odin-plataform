@@ -2,15 +2,14 @@ import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
 
 const solicitationEditSchema = z.object({
   description: z.string().min(1),
-  datePerformed: z.coerce.date({
-    errorMap: () => ({ message: "A data deve estar no formato AAAA-MM-DD." }),
-  }), // ou z.coerce.date() se quiser forçar Date
+  datePerformed: z.string(), // ou z.coerce.date() se quiser forçar Date
   membersSelected: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   attachments: z
@@ -80,6 +79,14 @@ export async function PATCH(
         await Promise.all(deletePromises);
       }
 
+      const performedDateObject = fromZonedTime(validation.data.datePerformed, 'America/Sao_Paulo');
+      if (isNaN(performedDateObject.getTime())) {
+        return NextResponse.json(
+          { message: "A data deve estar no formato AAAA-MM-DD." },
+          { status: 400 }
+        );
+      }
+      console.log(validation.data.datePerformed, performedDateObject)
       const attachmentsToCreate =
         validation.data.attachments?.filter(
           (a) => !solicitation.attachments.some((oa) => oa.url === a.url)
@@ -90,7 +97,7 @@ export async function PATCH(
         where: { id },
         data: {
           description: validation.data.description,
-          datePerformed: validation.data.datePerformed, // Agora é um objeto Date, tratado corretamente pelo Prisma
+          datePerformed: performedDateObject, // Agora é um objeto Date, tratado corretamente pelo Prisma
 
           // CORREÇÃO 1: Tratar campos opcionais explicitamente
           // Se 'membersSelected' não for enviado, define a relação como vazia.

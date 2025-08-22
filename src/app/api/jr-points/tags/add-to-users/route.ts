@@ -7,6 +7,7 @@ import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { differenceInDays } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 const addTagToUsersSchema = z.object({
   userIds: z.array(z.string()).min(1, "Selecione pelo menos um usuário."),
@@ -43,14 +44,14 @@ export async function POST(request: Request) {
     const { userIds, templateIds, datePerformed, description, attachments } =
       validation.data;
 
-    const performedDateObject = new Date(datePerformed);
+    const performedDateObject = fromZonedTime(datePerformed, 'America/Sao_Paulo');
     if (isNaN(performedDateObject.getTime())) {
       return NextResponse.json(
         { message: "Formato de data inválido. Use o formato AAAA-MM-DD." },
         { status: 400 }
       );
     }
-
+console.log(datePerformed, performedDateObject)
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
     });

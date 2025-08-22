@@ -1,6 +1,7 @@
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { Prisma } from "@prisma/client";
+import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
@@ -72,7 +73,10 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
+    
+    const performedDateObject = fromZonedTime(datePerformed, 'America/Sao_Paulo');
+    
+    console.log(datePerformed, performedDateObject)
     const newSolicitation = await prisma.$transaction(async (tx) => {
       // Objeto de dados base para a nova solicitação
       // 1. Lógica condicional para associar ao placar correto e montar o objeto 'data'
@@ -90,7 +94,7 @@ export async function POST(request: Request) {
         });
         data = {
           description,
-          datePerformed: new Date(datePerformed).toISOString(),
+          datePerformed: performedDateObject,
           area: "DIRETORIA",
           user: { connect: { id: authUser.id } },
           jrPointsVersion: { connect: { id: activeVersion.id } },
@@ -127,7 +131,7 @@ export async function POST(request: Request) {
         });
         data = {
           description,
-          datePerformed: new Date(datePerformed).toISOString(),
+          datePerformed: performedDateObject,
           area: "DIRETORIA",
           user: { connect: { id: authUser.id } },
           jrPointsVersion: { connect: { id: activeVersion.id } },
