@@ -133,7 +133,6 @@ const AdminActionsModal = ({
       const realUserIds = data.userIds.filter(
         (userId) => userId !== ENTERPRISE_USER_ID
       );
-      alert(data.userIds);
       const isEnterpriseTargeted = data.userIds.includes(ENTERPRISE_USER_ID);
 
       // 3. Se houver usuários reais selecionados, adicione a chamada de API deles à lista

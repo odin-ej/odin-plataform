@@ -305,7 +305,7 @@ const RequestReviewModal = ({
                     <div className="flex flex-wrap gap-2">
                       {request.tags.map((t) => (
                         <Badge
-                          key={t.id+'-tag'}
+                          key={t.id + "-tag"}
                           variant="outline"
                           className="bg-[#0126fb]/80 border-[#0126fb] text-white "
                         >
@@ -328,7 +328,7 @@ const RequestReviewModal = ({
                             Calculando bônus de streak...
                           </div>
                         ) : (
-                          [request.user, ...request.membersSelected]
+                          request.membersSelected
                             .filter(
                               (value, index, self) =>
                                 self.findIndex((v) => v.id === value.id) ===
@@ -393,7 +393,7 @@ const RequestReviewModal = ({
                 <h4 className="font-semibold mb-2 text-[#f5b719]">Anexos</h4>
                 <div className="space-y-2">
                   {request.attachments.map((file) => (
-                    <div key={file.id+-'div'}>
+                    <div key={file.id + -"div"}>
                       <a
                         href={signedUrls[file.id] || "#"}
                         target="_blank"
