@@ -15,8 +15,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
-import { Value } from "@prisma/client";
-
+import { Value, EstrategyObjective } from "@prisma/client";
 
 interface UpdateStrategyContentProps {
   estrategyObjectives: EstrategyObjectiveWithGoals[];
@@ -32,28 +31,33 @@ enum Item {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const fetchStrategyData = async (): Promise<UpdateStrategyContentProps> => {
+  const response = await axios.get(`${API_URL}/api/update-strategy`);
 
-  const [objectivesRes, strategyRes] = await Promise.all([
-    fetch(`${API_URL}/api/house-goals`, { cache: "no-store" }),
-    fetch(`${API_URL}/api/culture`, { cache: "no-store" }),
-  ]);
+  if (!response.data) {
+    throw new Error("Falha ao buscar os dados da página.");
+  }
 
-  const estrategyObjectivesData = objectivesRes.ok ? await objectivesRes.json() : [];
-  const strategyData = strategyRes.ok ? await strategyRes.json() : {}; // Pode ser um objeto vazio se falhar
-
-  // Se a API /api/culture retorna um array, pegue o primeiro item
-  const fullStrategyData = Array.isArray(strategyData) ? strategyData[0] : strategyData;
+  const data = await response.data;
 
   const result = {
-    estrategyObjectives: estrategyObjectivesData,
-    fullStrategy: fullStrategyData,
+    estrategyObjectives:
+      data.estrategyObjectives as EstrategyObjectiveWithGoals[],
+    fullStrategy: {
+      values: data.values as Value[],
+      estrategyObjectives: data.estrategyObjectives as EstrategyObjective[],
+      id: data.id,
+      propose: data.propose,
+      mission: data.mission,
+      vision: data.vision,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    } as fullStrategyType,
   };
-
+  console.log(result);
   // CRÍTICO: Retorne uma CÓPIA PROFUNDA para o initialData
   // Isso impede que qualquer mutação posterior no servidor ou cliente afete o objeto original.
   return structuredClone(result); // OU JSON.parse(JSON.stringify(result));
-}
-
+};
 
 const UpdateStrategyContent = ({
   estrategyObjectives,
@@ -107,7 +111,7 @@ const UpdateStrategyContent = ({
       toast.error("Erro ao atualizar", { description: errorMessage });
     },
   });
-
+  console.log(data);
   // Mostra o estado de carregamento se o TanStack Query estiver buscando os dados
   if (isLoading) return <div>Carregando estratégia...</div>;
   if (isError) return <div>Erro ao carregar os dados.</div>;

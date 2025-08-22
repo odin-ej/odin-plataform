@@ -29,7 +29,6 @@ export function StrategySection({ field, label, value, onUpdate, isUpdating }: S
     defaultValues: { [field]: value },
     mode: "onBlur",
   });
-
   const handleUpdate = async () => {
     const isValid = await form.trigger(field);
     if (!isValid) return;

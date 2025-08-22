@@ -20,7 +20,7 @@ export type fullStrategy = EstrategyPlan & {
 };
 
 interface MetasPageProps {
-  estrategyObjectives: EstrategyObjectiveWithGoals[] | null;
+  estrategyObjectives: EstrategyObjectiveWithGoals[];
   fullStrategy: fullStrategy | null;
 }
 
@@ -29,37 +29,44 @@ async function getPageData(): Promise<MetasPageProps> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const cookiesStore = await cookies();
     const headers = { Cookie: cookiesStore.toString() };
-    const [estrategyObjectivesResponse, fullStrategyResponse] =
-      await Promise.all([
-        fetch(`${baseUrl}/api/house-goals`, {
-          next: { revalidate: 45 },
-          headers,
-        }),
-        fetch(`${baseUrl}/api/culture`, {
-          next: { revalidate: 45 },
-          headers,
-        }),
-      ]);
+    const response = await fetch(`${baseUrl}/api/update-strategy`, {
+      next: { revalidate: 45 },
+      headers,
+    });
+    if (!response.ok) {
+      throw new Error("Falha ao buscar os dados da página.");
+    }
 
-    const estrategyObjectives: EstrategyObjectiveWithGoals[] =
-      await estrategyObjectivesResponse.json();
-    const fullStrategyResult: fullStrategy = await fullStrategyResponse.json();
-    const fullStrategy = Array.isArray(fullStrategyResult)
-      ? fullStrategyResult[0]
-      : null;
+    const data = await response.json();
 
-    return { estrategyObjectives, fullStrategy };
+    return {
+      estrategyObjectives:
+        data.estrategyObjectives as EstrategyObjectiveWithGoals[],
+      fullStrategy: {
+        values: data.values as Value[],
+        estrategyObjectives: data.estrategyObjectives as EstrategyObjective[],
+        id: data.id,
+        propose: data.propose,
+        mission: data.mission,
+        vision: data.vision,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
+      } as fullStrategy,
+    };
   } catch (error) {
     console.error("Falha ao buscar os dados da página.", error);
-    return { estrategyObjectives: null, fullStrategy: null };
+    return { estrategyObjectives: [], fullStrategy: null };
   }
 }
 
 const Page = async () => {
   const { estrategyObjectives, fullStrategy } = await getPageData();
-      const user = await getAuthenticatedUser();
-    const hasPermission = verifyAccess({ pathname: "/atualizar-estrategia", user: user! });
-    if (!hasPermission) return <DeniedAccess />;
+  const user = await getAuthenticatedUser();
+  const hasPermission = verifyAccess({
+    pathname: "/atualizar-estrategia",
+    user: user!,
+  });
+  if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">
       <UpdateStrategyContent
