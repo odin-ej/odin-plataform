@@ -1,4 +1,5 @@
 import { SendEmailCommand } from "@aws-sdk/client-ses";
+import { Prisma } from "@prisma/client";
 
 export const welcomeEmailCommand = ({
   email,
@@ -108,6 +109,102 @@ export const completeProfileEmailCommand = ({
                         </div>
                     </body>
                    </html>`,
+        },
+      },
+    },
+  });
+};
+
+export const newRegistrationRequestCommand = ({
+  email,
+  name,
+  newUser,
+}: {
+  email: string;
+  name: string;
+  newUser: Prisma.RegistrationRequestGetPayload<{ include: { roles: true } }>;
+}) => {
+    const detailsHtml = `
+    <li style="margin-bottom: 8px;"><strong>Nome:</strong> ${newUser.name}</li>
+    <li style="margin-bottom: 8px;"><strong>Email Pessoal:</strong> ${newUser.email}</li>
+    <li style="margin-bottom: 8px;"><strong>Email EJ:</strong> ${newUser.emailEJ}</li>
+    <li style="margin-bottom: 8px;"><strong>Curso:</strong> ${newUser.course || 'Não informado'}</li>
+    <li style="margin-bottom: 8px;"><strong>Semestre de Entrada:</strong> ${newUser.semesterEntryEj}</li>
+    ${newUser.isExMember ? `
+      <li style="margin-bottom: 8px;"><strong>Tipo de Cadastro:</strong> Ex-Membro</li>
+      <li style="margin-bottom: 8px;"><strong>Semestre de Saída:</strong> ${newUser.semesterLeaveEj || 'Não informado'}</li>
+      <li style="margin-bottom: 8px;"><strong>Local de Trabalho:</strong> ${newUser.workplace || 'Não informado'}</li>
+      <li style="margin-bottom: 8px;"><strong>É Alumni Dreamer?</strong> ${newUser.alumniDreamer ? 'Sim' : 'Não'}</li>
+      <li style="margin-bottom: 8px;"><strong>Está trabalhando?</strong> ${newUser.isWorking ? 'Sim' : 'Não'}</li>
+    ` : `
+      <li style="margin-bottom: 8px;"><strong>Tipo de Cadastro:</strong> Membro</li>
+    `}
+    ${newUser.roles.length > 0 ? `
+      <li style="margin-bottom: 8px;">
+        <strong>Cargo(s) Solicitado(s):</strong>
+        <ul style="margin-top: 5px; padding-left: 20px;">
+          ${newUser.roles.map(role => `<li style="margin-bottom: 5px;">${role.name}</li>`).join('')}
+        </ul>
+      </li>
+    ` : ''}
+  `;
+
+  return new SendEmailCommand({
+    Source: "plataforma@empresajr.org", // Seu e-mail verificado no SES
+    Destination: { ToAddresses: [email] },
+    Message: {
+      Subject: {
+        Data: `Olá, ${name}! Chegou uma nova solicitação de cadastro.`,
+        Charset: "UTF-8",
+      },
+      Body: {
+        Html: {
+          Charset: "UTF-8",
+          Data: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Solicitação de Cadastro</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd;">
+        
+        <div style="margin-bottom: 30px; background-color: #f8f9fa; padding: 20px; text-align: center;">
+            <img src="${process.env.NEXT_PUBLIC_API_URL}/logo-azul.png" alt="Logotipo da Empresa JR" style="max-width: 150px; height: auto;"/>
+        </div>
+        
+        <div style="padding: 0 30px 30px 30px; text-align: center;">
+            <h1 style="color: #0126fb; font-size: 24px; margin-bottom: 20px;">Chegou uma nova solicitação de cadastro!</h1>
+            
+            <p style="font-size: 16px; line-height: 1.6; text-align: left;">Olá, ${name}!</p>
+            <p style="font-size: 16px; line-height: 1.6; text-align: left;">
+                Uma <strong>nova solicitação de cadastro</strong> foi enviada e aguarda sua aprovação.
+            </p>
+            
+            <div style="background-color: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: left;">
+                <h3 style="margin-top: 0; color: #333;">Detalhes da Solicitação</h3>
+                <ul style="padding-left: 0; list-style-type: none;">
+                    ${detailsHtml}
+                </ul>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; text-align: left;">
+                Talvez hajam outras solicitações pendentes além dessa, então, verifique-as o mais rápido possível e realize as ações necessárias.
+            </p>
+            
+            <a href="${process.env.NEXT_PUBLIC_API_URL}/aprovacao-cadastro" style="display: inline-block; background-color: #0126fb; color: #ffffff; font-weight: bold; padding: 14px 28px; margin: 20px 0; text-decoration: none; border-radius: 8px; font-size: 16px;">Verificar Agora</a>
+            
+            <p style="font-size: 14px; color: #555;">Leva só alguns minutos!</p>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; font-size: 12px; color: #777; border-top: 1px solid #ddd; text-align: center;">
+            <p style="margin: 0;">Empresa JR &copy; 2025</p>
+            <p style="margin: 5px 0 0 0;">Este é um e-mail automático, por favor não responda.</p>
+        </div>
+    </div>
+</body>
+</html>`,
         },
       },
     },

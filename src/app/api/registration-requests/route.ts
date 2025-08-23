@@ -1,4 +1,6 @@
 import { prisma } from "@/db";
+import { sesClient } from "@/lib/aws";
+import { newRegistrationRequestCommand } from "@/lib/email";
 import { parseBrazilianDate } from "@/lib/utils";
 import { NextResponse } from "next/server";
 
@@ -147,7 +149,7 @@ export async function POST(request: Request) {
     const rolesToConnect = finalRoleIds.map((id) => ({ id }));
 
     // CORREÇÃO 3: Usar a data convertida (`parsedBirthDate`) ao criar o registro.
-    await prisma.registrationRequest.create({
+    const newUser = await prisma.registrationRequest.create({
       data: {
         name,
         email,
@@ -173,6 +175,7 @@ export async function POST(request: Request) {
           connect: rolesToConnect,
         }, // << USANDO A LÓGICA DE CONEXÃO CORRETA
       },
+      include: {roles: true}
     });
     const allDirectorsID = await prisma.user.findMany({
       where: { currentRole: { area: { has: "DIRETORIA" } } },
@@ -180,7 +183,7 @@ export async function POST(request: Request) {
     });
     const notification = await prisma.notification.create({
       data: {
-        link: "/minhas-pendencias",
+        link: "/aprovacao-cadastro",
         type: "NEW_MENTION",
         notification: `O utilizador ${name} fez uma nova solicitação de registo.`,
       },
@@ -191,7 +194,25 @@ export async function POST(request: Request) {
         notificationId: notification.id,
         userId: user.id,
       })),
-    })
+    });
+
+    const president = await prisma.user.findFirst({
+      where: {
+        currentRole: {
+          name: "Diretor(a) Presidente",
+        },
+      },
+    });
+
+    if(president){
+      await sesClient.send(
+        newRegistrationRequestCommand({
+          email: president.emailEJ,
+          name: president.name,
+          newUser
+        })
+      );
+    }
 
     return NextResponse.json(
       { message: "Pedido de registo enviado com sucesso!" },
