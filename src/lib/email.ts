@@ -131,11 +131,11 @@ export const newRegistrationRequestCommand = ({
     <li style="margin-bottom: 8px;"><strong>Curso:</strong> ${newUser.course || 'Não informado'}</li>
     <li style="margin-bottom: 8px;"><strong>Semestre de Entrada:</strong> ${newUser.semesterEntryEj}</li>
     ${newUser.isExMember ? `
-      <li style="margin-bottom: 8px;"><strong>Tipo de Cadastro:</strong> Ex-Membro</li>
       <li style="margin-bottom: 8px;"><strong>Semestre de Saída:</strong> ${newUser.semesterLeaveEj || 'Não informado'}</li>
-      <li style="margin-bottom: 8px;"><strong>Local de Trabalho:</strong> ${newUser.workplace || 'Não informado'}</li>
+      <li style="margin-bottom: 8px;"><strong>Tipo de Cadastro:</strong> Ex-Membro</li>
       <li style="margin-bottom: 8px;"><strong>É Alumni Dreamer?</strong> ${newUser.alumniDreamer ? 'Sim' : 'Não'}</li>
       <li style="margin-bottom: 8px;"><strong>Está trabalhando?</strong> ${newUser.isWorking ? 'Sim' : 'Não'}</li>
+      <li style="margin-bottom: 8px;"><strong>Local de Trabalho:</strong> ${newUser.workplace || 'Não informado'}</li>
     ` : `
       <li style="margin-bottom: 8px;"><strong>Tipo de Cadastro:</strong> Membro</li>
     `}
