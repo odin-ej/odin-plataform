@@ -19,30 +19,70 @@ export async function DELETE(
 
     const { semesterName } = await params;
 
-    const [userScoresResult, enterpriseScoreResult] = await prisma.$transaction(
-      [
-        // 1. Deleta todos os placares de usuários daquele semestre
-        prisma.userSemesterScore.deleteMany({
-          where: {
-            semester: semesterName,
-          },
-        }),
-        // 2. Deleta o placar da empresa daquele semestre
-        prisma.enterpriseSemesterScore.deleteMany({
-          where: {
-            semester: semesterName,
-          },
-        }),
-      ]
-    );
-
-    const totalCount = userScoresResult.count + enterpriseScoreResult.count;
-
-    if (totalCount === 0) {
-      return NextResponse.json({
-        message: `Nenhum snapshot encontrado.`,
+    const userScoresToDelete = await prisma.userSemesterScore.findMany({
+      where: { semester: semesterName },
+      select: { id: true, user: {select: {id: true}} },
+    });
+    const enterpriseScoreToDelete =
+      await prisma.enterpriseSemesterScore.findFirst({
+        where: { semester: semesterName },
+        select: { id: true },
       });
-    }
+
+    const userScoreIds = userScoresToDelete.map((s) => s.id);
+    const enterpriseScoreId = enterpriseScoreToDelete?.id;
+
+    await prisma.$transaction(async (tx) => {
+      // 2a. Deleta todas as relações filhas PRIMEIRO
+
+      // Deleta tags associadas aos placares de usuário e empresa
+      await tx.tag.deleteMany({
+        where: {
+          OR: [
+            { userSemesterScoreId: { in: userScoreIds } },
+            { enterpriseSemesterScoreId: enterpriseScoreId },
+          ],
+        },
+      });
+
+      // Deleta solicitações associadas
+      await tx.jRPointsSolicitation.deleteMany({
+        where: {
+          OR: [
+            { userSemesterScoreId: { in: userScoreIds } },
+            { enterpriseSemesterScoreId: enterpriseScoreId },
+          ],
+        },
+      });
+
+      // Deleta recursos associados
+      await tx.jRPointsReport.deleteMany({
+        where: {
+          OR: [
+            { userSemesterScoreId: { in: userScoreIds } },
+            { enterpriseSemesterScoreId: enterpriseScoreId },
+          ],
+        },
+      });
+      await tx.userPoints.updateMany({
+        where: { userId: { in: userScoresToDelete.map((s) => s.user.id) } },
+        data: { totalPoints: 0 },
+      });
+
+      await tx.enterprisePoints.update({
+        where: { id: 1 },
+        data: { value: 0 },
+      });
+
+      await tx.userSemesterScore.deleteMany({
+        where: { id: { in: userScoreIds } },
+      });
+      if (enterpriseScoreId) {
+        await tx.enterpriseSemesterScore.deleteMany({
+          where: { id: enterpriseScoreId },
+        });
+      }
+    });
 
     const allDirectorsId = await prisma.user.findMany({
       where: { currentRole: { area: { has: "DIRETORIA" } } },
@@ -69,7 +109,7 @@ export async function DELETE(
     revalidatePath("/jr-points");
     revalidatePath("/gerenciar-jr-points");
     return NextResponse.json({
-      message: `Snapshot do semestre ${semesterName} deletado com sucesso. ${totalCount} registros removidos.`,
+      message: `Snapshot do semestre '${semesterName}' e todas as suas relações foram deletados com sucesso.`,
     });
   } catch (error) {
     console.error("[SNAPSHOT_DELETE_ERROR]", error);

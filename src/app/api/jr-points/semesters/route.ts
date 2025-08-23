@@ -3,6 +3,7 @@ import { prisma } from "@/db";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { checkUserPermission } from "@/lib/utils";
+import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import z from "zod";
@@ -18,7 +19,7 @@ const semesterCreateSchema = z.object({
   startDate: z.coerce.date({
     required_error: "A data de início é obrigatória.",
   }),
-  endDate: z.coerce.date().optional().nullable(),
+  endDate: z.coerce.date(),
 });
 
 // --- CRIAR UM NOVO SEMESTRE (POST) ---
@@ -45,11 +46,14 @@ export async function POST(request: Request) {
       ); // 409 Conflict
     }
 
+    const performedStartDateObject = fromZonedTime(validatedData.startDate, 'America/Sao_Paulo');
+    const performedEndDateObject = fromZonedTime(validatedData.endDate, 'America/Sao_Paulo');
+
     const newSemester = await prisma.semester.create({
       data: {
         name: validatedData.name,
-        startDate: validatedData.startDate,
-        endDate: validatedData.endDate,
+        startDate: performedStartDateObject,
+        endDate: performedEndDateObject,
         isActive: false, // Novos semestres são criados como inativos por padrão
       },
     });

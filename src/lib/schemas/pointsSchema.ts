@@ -55,7 +55,7 @@ export type UserRankingInfo = User & {
 
 // Adicione este novo tipo para representar a empresa
 export type EnterpriseInfo = {
-  id: 'enterprise'; // ID fixo para fácil identificação
+  id: 'enterprise-points-id'; // ID fixo para fácil identificação
   name: string;
   totalPoints: number;
   tagsCount: number;

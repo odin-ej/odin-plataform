@@ -36,7 +36,7 @@ export async function GET() {
 
     // Fetches all solicitations made for the enterprise.
     const solicitations = await prisma.jRPointsSolicitation.findMany({
-      where: { isForEnterprise: true },
+      where: { isForEnterprise: true, enterpriseSemesterScore: { semesterPeriodId: activeSemester.id } },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
         attachments: true,
@@ -49,7 +49,7 @@ export async function GET() {
 
     // Fetches all reports made for the enterprise.
     const reports = await prisma.jRPointsReport.findMany({
-      where: { isForEnterprise: true },
+      where: { isForEnterprise: true, enterpriseSemesterScore: { semesterPeriodId: activeSemester.id } },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
         tag: { include: { assigner: true, actionType: true } },

@@ -450,10 +450,10 @@ model Tag {
   enterprisePointsId Int?
   enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)
 
-  userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id])
+  userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id], onDelete:  Cascade)
   userSemesterScoreId       String?
   jRPointsReport            JRPointsReport[]
-  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id])
+  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete:  Cascade)
   enterpriseSemesterScoreId String?
 
   jrPointsVersionId String?

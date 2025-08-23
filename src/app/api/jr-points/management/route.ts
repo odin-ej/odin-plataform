@@ -73,7 +73,7 @@ export async function GET() {
       prisma.jRPointsVersion.findMany({ orderBy: { createdAt: "desc" } }),
       prisma.userSemesterScore.findMany({
         orderBy: { createdAt: "desc" },
-        include: { user: true, tags: { include: { assigner: true } } },
+        include: { user: true, tags: { include: { assigner: true, actionType: true, template: true} } },
       }),
       prisma.jRPointsSolicitation.findMany({
         orderBy: { createdAt: "desc" },
@@ -104,6 +104,7 @@ export async function GET() {
       }),
       prisma.enterpriseSemesterScore.findMany({
         orderBy: { createdAt: "desc" },
+        include: {  tags: { include: { assigner: true, actionType: true , template: true} } },
       }),
     ]);
 
@@ -113,7 +114,7 @@ export async function GET() {
       name: item.user.name,
       imageUrl: item.user.imageUrl,
       totalPoints: item.totalPoints,
-      tagsCount: item._count.tags,
+      tagsCount: item.tags.length,
       tags: item.tags,
     }));
 

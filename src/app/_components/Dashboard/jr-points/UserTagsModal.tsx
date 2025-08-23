@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Prisma, TagTemplate } from "@prisma/client";
-import { UserRankingInfo } from "@/lib/schemas/pointsSchema";
+import { EnterpriseInfo, UserRankingInfo } from "@/lib/schemas/pointsSchema";
 import {
   Dialog,
   DialogContent,
@@ -30,17 +30,13 @@ import {
 } from "./SolicitationsBoard";
 import { format } from "date-fns";
 import HistoryItemDetailsModal from "./HistoryItemDetailsModal";
+import { GenericSnapshot } from "./EnterprisePageContent";
 
 interface UserTagsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: UserRankingInfo | null;
-  snapshots: Prisma.UserSemesterScoreGetPayload<{
-    include: {
-      tags: { include: { assigner: true; actionType: true } };
-      user: true;
-    };
-  }>[];
+  target: UserRankingInfo | EnterpriseInfo | null;
+  snapshots: GenericSnapshot[];
   allTagTemplates: TagTemplate[];
 }
 
@@ -65,7 +61,7 @@ const ENTERPRISE_USER_ID = "enterprise-points-id";
 const UserTagsModal = ({
   isOpen,
   onClose,
-  user,
+  target,
   snapshots,
   allTagTemplates,
 }: UserTagsModalProps) => {
@@ -73,15 +69,15 @@ const UserTagsModal = ({
   const [selectedView, setSelectedView] = useState("current");
   const [viewingItem, setViewingItem] = useState<any>(null);
 
-  const userSnapshots = useMemo(
-    () => snapshots?.filter((s) => s.userId === user?.id) || [],
-    [snapshots, user]
+  const targetSnapshots = useMemo(
+    () => snapshots.filter(s => s.targetId === target?.id),
+    [snapshots, target?.id]
   );
 
   const { data: historyData, isLoading } = useQuery<HistoryData>({
-    queryKey: ["userHistoryDetails", user?.id, selectedView],
+    queryKey: ["userHistoryDetails", target?.id, selectedView],
     queryFn: async () => {
-      const isEnterprise = user?.id === ENTERPRISE_USER_ID;
+      const isEnterprise = target?.id === ENTERPRISE_USER_ID;
       let endpoint = "";
 
       if (isEnterprise) {
@@ -92,13 +88,13 @@ const UserTagsModal = ({
       } else {
         endpoint =
           selectedView === "current"
-            ? `${API_URL}/api/users/${user!.id}/history`
-            : `${API_URL}/api/users/${user!.id}/snapshots/${selectedView}`;
+            ? `${API_URL}/api/users/${target!.id}/history`
+            : `${API_URL}/api/users/${target!.id}/snapshots/${selectedView}`;
       }
       const { data } = await axios.get(endpoint);
       return data;
     },
-    enabled: isOpen && !!user?.id,
+    enabled: isOpen && !!target?.id,
     initialData: { tags: [], solicitations: [], reports: [] },
   });
 
@@ -108,7 +104,7 @@ const UserTagsModal = ({
     onSuccess: () => {
       toast.success("Tag desvinculada com sucesso!");
       queryClient.invalidateQueries({
-        queryKey: ["userHistoryDetails", user?.id, "current"],
+        queryKey: ["userHistoryDetails", target?.id, "current"],
       });
       queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
     },
@@ -277,11 +273,8 @@ const UserTagsModal = ({
     },
   ];
 
-  const selectedSnapshot = userSnapshots.find((s) => s.id === selectedView);
-  const totalPoints =
-    selectedView === "current"
-      ? user?.totalPoints
-      : selectedSnapshot?.totalPoints;
+ const selectedSnapshot = targetSnapshots.find(s => s.id === selectedView);
+  const totalPoints = selectedView === "current" ? target?.totalPoints : selectedSnapshot?.totalPoints;
 
   return (
     <>
@@ -296,14 +289,14 @@ const UserTagsModal = ({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={user?.imageUrl || undefined} />
+                    <AvatarImage src={target?.imageUrl || undefined} />
                     <AvatarFallback>
-                      {user?.name.substring(0, 2)}
+                      {target?.name.substring(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <DialogTitle className="text-2xl font-bold">
-                      {user?.name}
+                      {target?.name}
                     </DialogTitle>
                     <p className="text-sm text-gray-400">
                       Total de Pontos:{" "}
@@ -319,7 +312,7 @@ const UserTagsModal = ({
                   </SelectTrigger>
                   <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
                     <SelectItem value="current">Pontos Atuais</SelectItem>
-                    {userSnapshots.map((snap) => (
+                    {targetSnapshots.map((snap) => (
                       <SelectItem key={snap.id} value={snap.id}>
                         Snapshot - {snap.semester}
                       </SelectItem>

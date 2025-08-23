@@ -246,14 +246,13 @@ const DataManagementPanel = ({
         {/* --- SEÇÃO DE SNAPSHOT ATUALIZADA --- */}
         <div className="space-y-4 p-4 border border-gray-700 rounded-lg flex flex-col">
           <h3 className="font-semibold text-lg flex items-center">
-            <History className="mr-2 h-5 w-5" /> Finalizar Semestre (Snapshot)
+            <History className="mr-2 h-5 w-5" /> Inicializar Semestre (Snapshot)
           </h3>
           <p className="text-sm text-gray-400 flex-grow">
-            Selecione um semestre para salvar o placar final de todos os membros
-            e zerar a pontuação geral. Esta ação não pode ser desfeita.
+            Selecione um semestre para iniciar o JR Points. Os dados do semestre anterior serão salvos. Lembre-se de <strong>ativar</strong> o semestre escolhido, desativando o anterior.
           </p>
           <CustomSelect
-            placeholder="Selecione um semestre para finalizar..."
+            placeholder="Selecione um semestre para iniciar..."
             options={semesterForSnapshotOptions}
             value={selectedSnapshotSemesterId}
             onValueChange={(newValue) => {
@@ -272,7 +271,7 @@ const DataManagementPanel = ({
               }
               onSnapshot(selectedSnapshotSemesterId);
             }}
-            disabled={true}
+            disabled={!!!selectedSnapshotSemesterId}
             className="w-full bg-[#0126fb] hover:bg-[#0126fb]/80"
           >
             <History className="mr-2 h-4 w-4" /> Salvar Snapshot e Zerar Pontos

@@ -44,14 +44,17 @@ export async function POST(request: Request) {
     const { userIds, templateIds, datePerformed, description, attachments } =
       validation.data;
 
-    const performedDateObject = fromZonedTime(datePerformed, 'America/Sao_Paulo');
+    const performedDateObject = fromZonedTime(
+      datePerformed,
+      "America/Sao_Paulo"
+    );
     if (isNaN(performedDateObject.getTime())) {
       return NextResponse.json(
         { message: "Formato de data inválido. Use o formato AAAA-MM-DD." },
         { status: 400 }
       );
     }
-console.log(datePerformed, performedDateObject)
+    console.log(datePerformed, performedDateObject);
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
     });
@@ -78,6 +81,21 @@ console.log(datePerformed, performedDateObject)
     }
 
     await prisma.$transaction(async (tx) => {
+      const directorSemesterScore = await tx.userSemesterScore.upsert({
+        where: {
+          userId_semesterPeriodId: {
+            userId: authUser.id,
+            semesterPeriodId: activeSemester.id,
+          },
+        },
+        update: {},
+        create: {
+          userId: authUser.id,
+          semester: activeSemester.name,
+          totalPoints: 0,
+          semesterPeriodId: activeSemester.id,
+        },
+      });
       await tx.jRPointsSolicitation.create({
         data: {
           userId: authUser.id,
@@ -90,11 +108,12 @@ console.log(datePerformed, performedDateObject)
           directorsNotes:
             "Aprovado automaticamente via painel de administração.",
           tags: { connect: templateIds.map((id) => ({ id })) },
+          userSemesterScoreId: directorSemesterScore.id,
           membersSelected: { connect: userIds.map((id) => ({ id })) },
           attachments: attachments ? { create: attachments } : undefined,
           jrPointsVersionId: activeVersion.id,
           area: "DIRETORIA",
-          reviewerId: authUser.id
+          reviewerId: authUser.id,
         },
       });
 
@@ -177,18 +196,18 @@ console.log(datePerformed, performedDateObject)
 
     const notification = await prisma.notification.create({
       data: {
-        link: 'meu-pontos',
-        type: 'REQUEST_APPROVED',
+        link: "meu-pontos",
+        type: "REQUEST_APPROVED",
         notification: `Você recebeu nova(s) tag(s) de JR Points. Atribuída(s) por: ${authUser.name}`,
-      }
-    })
+      },
+    });
 
     await prisma.notificationUser.createMany({
       data: userIds.map((id) => ({
         userId: id,
         notificationId: notification.id,
       })),
-    })
+    });
 
     revalidatePath("/gerenciar-jr-points");
     revalidatePath("/jr-points");

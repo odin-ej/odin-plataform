@@ -28,6 +28,7 @@ import {
   Clock,
   TrendingUp,
   CircleUser,
+  Building,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -89,7 +90,7 @@ const HistoryItemDetailsModal = ({
 }: HistoryItemDetailsModalProps) => {
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [loadingSignedUrls, setLoadingSignedUrls] = useState(false);
-  
+
   useEffect(() => {
     const fetchSignedUrls = async () => {
       if (!item || !item.data.attachments?.length) {
@@ -215,10 +216,16 @@ const HistoryItemDetailsModal = ({
                   label="Tipo"
                   value={data.actionType?.name}
                 />
+
                 <DetailRow
                   icon={<Calendar size={16} />}
                   label="Data da Ação"
                   value={format(new Date(data.datePerformed), "dd/MM/yyyy")}
+                />
+                <DetailRow
+                  icon={<Building size={16} />}
+                  label="É para a empresa?"
+                  value={data.isForEnterprise ? "Sim" : 'Não'}
                 />
                 <DetailRow
                   icon={<User size={16} />}
@@ -263,6 +270,11 @@ const HistoryItemDetailsModal = ({
                   value={
                     format(new Date(data.datePerformed), "dd/MM/yyyy") ?? ""
                   }
+                />
+                <DetailRow
+                  icon={<Building size={16} />}
+                  label="É para a empresa?"
+                  value={data.isForEnterprise ? "Sim" : 'Não'}
                 />
                 <DetailRow
                   label="Tags Solicitadas"

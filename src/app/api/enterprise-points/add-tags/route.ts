@@ -70,8 +70,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    console.log(validation.data.datePerformed, performedDateObject);
+
     await prisma.$transaction(async (tx) => {
+       const enterpriseSemesterScore = await tx.enterpriseSemesterScore.upsert({
+        where: { semesterPeriodId: activeSemester.id },
+        update: {},
+        create: { semester: activeSemester.name, value: 0, semesterPeriodId: activeSemester.id },
+      });
       await tx.jRPointsSolicitation.create({
         data: {
           userId: authUser.id,
@@ -88,6 +93,7 @@ export async function POST(request: Request) {
           jrPointsVersionId: activeVersion.id,
           area: "DIRETORIA",
           reviewerId: authUser.id,
+          enterpriseSemesterScoreId: enterpriseSemesterScore.id
         },
       });
       let totalValueToAdd = 0;
@@ -135,6 +141,7 @@ export async function POST(request: Request) {
             jrPointsVersionId: activeVersion.id,
             templateId: tagTemplate.id,
             enterprisePointsId: 1,
+            enterpriseSemesterScoreId: enterpriseSemesterScore.id,
             assignerId: authUser.id,
           },
         });

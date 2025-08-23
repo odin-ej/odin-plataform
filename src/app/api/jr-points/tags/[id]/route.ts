@@ -9,13 +9,14 @@ import { NextResponse } from "next/server";
 import z from "zod";
 
 // Schema para atualizar um TagTemplate
-const tagUpdateSchema = z.object({
-  description: z.string().min(5).optional(),
-  value: z.number().int().optional(),
-  datePerformed: z.string().datetime().optional(), // Espera uma string no formato ISO 8601
-  areas: z.array(z.nativeEnum(TagAreas)).optional(),
-}).partial();
-
+const tagUpdateSchema = z
+  .object({
+    description: z.string().min(5).optional(),
+    value: z.number().int().optional(),
+    datePerformed: z.string().datetime().optional(), // Espera uma string no formato ISO 8601
+    areas: z.array(z.nativeEnum(TagAreas)).optional(),
+  })
+  .partial();
 
 export async function PATCH(
   request: Request,
@@ -43,19 +44,22 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    
+
     // Converte a data se ela for fornecida
     const dataToUpdate: any = { ...validation.data };
     if (validation.data.datePerformed) {
       dataToUpdate.datePerformed = new Date(validation.data.datePerformed);
     }
-    
+
     const originalTag = await prisma.tag.findUnique({
       where: { id },
     });
-    
+
     if (!originalTag) {
-      return NextResponse.json({ message: "Tag não encontrada." }, { status: 404 });
+      return NextResponse.json(
+        { message: "Tag não encontrada." },
+        { status: 404 }
+      );
     }
 
     // LÓGICA PRINCIPAL: Usa uma transação para garantir consistência
@@ -77,13 +81,12 @@ export async function PATCH(
         where: { id },
         data: dataToUpdate,
       });
-      
+
       return newTagData;
     });
 
     revalidatePath("/gerenciar-jr-points");
     return NextResponse.json(updatedTag);
-
   } catch (error: any) {
     console.error("Erro ao atualizar a tag:", error);
     return NextResponse.json(
@@ -92,7 +95,6 @@ export async function PATCH(
     );
   }
 }
-
 
 export async function DELETE(
   request: Request,
@@ -109,7 +111,7 @@ export async function DELETE(
   }
   const { id } = await params;
   try {
-    const tagToDelete = await prisma.tag.findUnique({ where: { id } });
+    const tagToDelete = await prisma.tag.findUnique({ where: { id }, include: {userSemesterScore: true, enterpriseSemesterScore: true} });
     if (!tagToDelete) {
       return NextResponse.json(
         { message: "Tag não encontrada." },
@@ -123,6 +125,18 @@ export async function DELETE(
           where: { id: tagToDelete.userPointsId },
           data: { totalPoints: { decrement: tagToDelete.value } },
         });
+        if(tagToDelete.userSemesterScore){
+          await tx.userSemesterScore.update({
+            where: { id: tagToDelete.userSemesterScore.id },
+            data: { totalPoints: { decrement: tagToDelete.value } },
+          });
+        }
+        if(tagToDelete.enterpriseSemesterScore){
+          await tx.enterpriseSemesterScore.update({
+            where: { id: tagToDelete.enterpriseSemesterScore.id },
+            data: { value: { decrement: tagToDelete.value } },
+          });
+        }
       }
       await tx.tag.delete({ where: { id } });
     });

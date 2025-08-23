@@ -76,7 +76,6 @@ export async function POST(request: Request) {
     
     const performedDateObject = fromZonedTime(datePerformed, 'America/Sao_Paulo');
     
-    console.log(datePerformed, performedDateObject)
     const newSolicitation = await prisma.$transaction(async (tx) => {
       // Objeto de dados base para a nova solicitação
       // 1. Lógica condicional para associar ao placar correto e montar o objeto 'data'

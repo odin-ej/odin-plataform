@@ -10,7 +10,7 @@ import {
 } from "@/lib/schemas/pointsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
-import {  EnterpriseSemesterScore, JRPointsVersion, Prisma, Semester, User, } from "@prisma/client";
+import {  JRPointsVersion, Prisma, Semester, User, } from "@prisma/client";
 import { cookies } from "next/headers";
 
 export const metadata = constructMetadata({ title: "Gerenciar JR Points" });
@@ -31,7 +31,9 @@ export interface JrEnterprisePointsPageData {
   solicitations: FullJRPointsSolicitation[],
   jrPointsReports: FullJRPointsReport[];
   allSemesters: Semester[];
-  enterpriseSemesterScores: EnterpriseSemesterScore[]
+  enterpriseSemesterScores: Prisma.EnterpriseSemesterScoreGetPayload<{
+    include: { tags: { include: { assigner: true, actionType: true  }}};
+  }>[];
 }
 
 async function getPageData(): Promise<JrEnterprisePointsPageData> {

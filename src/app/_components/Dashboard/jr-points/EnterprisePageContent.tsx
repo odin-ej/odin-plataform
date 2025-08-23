@@ -9,6 +9,7 @@ import React, { useMemo, useState } from "react";
 import AdminActionsModal, { getLabelForArea } from "./AdminActionsModal";
 import {
   ActionTypeWithCount,
+  EnterpriseInfo,
   TagTemplateWithAction,
   UserRankingInfo,
 } from "@/lib/schemas/pointsSchema";
@@ -16,7 +17,7 @@ import UserTagsModal from "./UserTagsModal";
 import CustomModal, { FieldConfig } from "../../Global/Custom/CustomModal";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Plus, CheckCircle, X } from "lucide-react";
+import { Loader2, Plus, CheckCircle, X, Building } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, UseFormReturn } from "react-hook-form";
 import ModalConfirm from "../../Global/ModalConfirm";
@@ -32,12 +33,12 @@ import { format } from "date-fns";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-/**
- * TO DO:
- * 2. Realizar união das reservas e emprétismo de itens em um só lugar, "Reservas e Empréstimos"
- * 3. Adicionar sistema de lembrete de cadastro com amazon SES
- * 4. Adicionar itens de interesse e semestre dos cargos no exMemberForm do Meu Perfil
- */
+export type GenericSnapshot = {
+  id: string;
+  semester: string;
+  totalPoints: number; // Campo unificado para a pontuação
+  targetId: string; // 'enterprise-points-id' ou o ID do usuário
+};
 
 // --- COMPONENTE PRINCIPAL DA PÁGINA ---
 const EnterprisePageContent = ({
@@ -56,7 +57,7 @@ const EnterprisePageContent = ({
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [reviewingRequest, setReviewingRequest] = useState<any>(null);
-  const [selectedUser, setSelectedUser] = useState<UserRankingInfo | null>(
+  const [selectedUser, setSelectedUser] = useState<UserRankingInfo | EnterpriseInfo | null>(
     null
   );
   const [itemToDelete, setItemToDelete] = useState<{
@@ -249,7 +250,7 @@ const EnterprisePageContent = ({
           status,
           directorsNotes,
           newValue,
-          newDescription
+          newDescription,
         }),
       onSuccess: () => {
         toast.success("Status atualizado!");
@@ -324,6 +325,7 @@ const EnterprisePageContent = ({
     allActionTypes,
     allVersions,
     usersSemesterScore,
+    enterpriseSemesterScores,
     solicitations,
     jrPointsReports,
     allSemesters,
@@ -366,7 +368,7 @@ const EnterprisePageContent = ({
     },
   ];
 
-  const rankingColumns: ColumnDef<UserRankingInfo>[] = [
+  const rankingColumns: ColumnDef<UserRankingInfo | EnterpriseInfo>[] = [
     {
       accessorKey: "name",
       header: "Nome",
@@ -374,7 +376,14 @@ const EnterprisePageContent = ({
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={row.imageUrl ?? undefined} />
-            <AvatarFallback>{row.name.substring(0, 2)}</AvatarFallback>
+            <AvatarFallback>
+              {" "}
+              {row.id === "enterprise-points-id" ? (
+                <Building size={16} />
+              ) : (
+                row.name.substring(0, 2)
+              )}
+            </AvatarFallback>
           </Avatar>
           <span className="font-medium">{row.name}</span>
         </div>
@@ -382,12 +391,12 @@ const EnterprisePageContent = ({
     },
     {
       accessorKey: "tagsCount",
-      header: "Tags Recebidas",
+      header: "Tags Totais Recebidas",
       className: "text-center",
     },
     {
       accessorKey: "totalPoints",
-      header: "Total de Pontos",
+      header: "Pontos Atuais",
       className: "text-right text-[#f5b719] font-bold",
     },
   ];
@@ -488,49 +497,41 @@ const EnterprisePageContent = ({
     );
   }, [allTagTemplates]);
 
-  const usersRankingWithEnterprise = useMemo(() => {
+ const { usersRankingWithEnterprise, allSnapshots } = useMemo(() => {
     // 1. Cria o objeto "fake" para a empresa
-    const enterpriseUser: UserRankingInfo = {
-      id: "enterprise-points-id", // ID único e fixo
+    const enterpriseInfo: EnterpriseInfo = {
+      id: "enterprise-points-id",
       name: "Pontuação da Empresa",
-      totalPoints: enterprisePoints?.value || 0, // Usa a pontuação da empresa
-      tagsCount: enterprisePoints?.tags.length || 0,
-      imageUrl: "/logo-amarela.png", // Use um caminho para o logo da sua empresa
-      // Preencha outros campos do tipo User com valores padrão se necessário
-      about: "",
-      aboutEj: "",
-      alumniDreamer: false,
-      isExMember: false,
-      course: "Administração",
-      currentRoleId: "cargo-master",
-      dailyMessageCount: 40,
-      isWorking: false,
-      instagram: "donosdesonhos",
-      lastMessageDate: new Date(),
-      createdAt: new Date(),
-      linkedin: "",
-      otherRole: "",
-      password: "",
-      semesterLeaveEj: "",
-      profileCompletionNotifiedAt: new Date(),
-      tags: enterprisePoints?.tags || [],
-      updatedAt: new Date(),
-      workplace: "",
-      email: "",
-      emailEJ: "",
-      birthDate: new Date(),
-      phone: "",
-      semesterEntryEj: "",
+      totalPoints: enterprisePoints?.value  ?? 0,
+      tagsCount: enterprisePoints?.tags.length  ?? 0, 
+      imageUrl: "/logo-amarela.png", 
     };
+    
+    // 2. Cria o ranking combinado
+    const sortedUserRanking = [...(usersRanking || [])].sort((a, b) => b.totalPoints - a.totalPoints);
+    const combinedRanking = [enterpriseInfo, ...sortedUserRanking];
 
-    // 2. Ordena o ranking de usuários normalmente
-    const sortedUserRanking = [...usersRanking].sort(
-      (a, b) => b.totalPoints - a.totalPoints
-    );
+    // 3. Formata e combina os snapshots
+    const userSnapshotsFormatted = (usersSemesterScore || []).map(s => ({
+      id: s.id,
+      semester: s.semester,
+      totalPoints: s.totalPoints,
+      targetId: s.userId,
+    }));
 
-    // 3. Adiciona a empresa no topo da lista
-    return [enterpriseUser, ...sortedUserRanking];
-  }, [usersRanking, enterprisePoints]);
+    const enterpriseSnapshotsFormatted = (enterpriseSemesterScores || []).map(s => ({
+      id: s.id,
+      semester: s.semester,
+      totalPoints: s.value, // <-- A MÁGICA: renomeia 'value' para 'totalPoints'
+      targetId: 'enterprise-points-id',
+    }));
+
+    return {
+      usersRankingWithEnterprise: combinedRanking,
+      allSnapshots: [...userSnapshotsFormatted, ...enterpriseSnapshotsFormatted],
+    };
+  }, [usersRanking, enterprisePoints, usersSemesterScore, enterpriseSemesterScores]);
+
   if (isLoadingData) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -613,7 +614,7 @@ const EnterprisePageContent = ({
                     isScalable: true,
                     escalationValue: 5,
                     escalationStreakDays: 7,
-                    escalationCondition: 'A cada semana',
+                    escalationCondition: "A cada semana",
                     areas: "GERAL",
                   },
                 ],
@@ -632,7 +633,7 @@ const EnterprisePageContent = ({
       />
 
       <div className="grid grid-cols-1 gap-6 mt-4">
-        <CustomTable<UserRankingInfo>
+        <CustomTable<UserRankingInfo | EnterpriseInfo>
           title="Pontuação dos Membros"
           columns={rankingColumns}
           data={usersRankingWithEnterprise}
@@ -697,8 +698,8 @@ const EnterprisePageContent = ({
       <UserTagsModal
         isOpen={isUserTagsModalOpen}
         onClose={() => setIsUserTagsModalOpen(false)}
-        user={selectedUser}
-        snapshots={usersSemesterScore}
+        target={selectedUser}
+        snapshots={allSnapshots}
         allTagTemplates={allTagTemplates}
       />
 
