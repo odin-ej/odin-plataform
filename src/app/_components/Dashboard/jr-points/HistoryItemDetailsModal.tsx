@@ -90,7 +90,6 @@ const HistoryItemDetailsModal = ({
 }: HistoryItemDetailsModalProps) => {
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [loadingSignedUrls, setLoadingSignedUrls] = useState(false);
-
   useEffect(() => {
     const fetchSignedUrls = async () => {
       if (!item || !item.data.attachments?.length) {
@@ -225,7 +224,7 @@ const HistoryItemDetailsModal = ({
                 <DetailRow
                   icon={<Building size={16} />}
                   label="É para a empresa?"
-                  value={data.isForEnterprise ? "Sim" : 'Não'}
+                  value={data.isForEnterprise ? "Sim" : "Não"}
                 />
                 <DetailRow
                   icon={<User size={16} />}
@@ -271,11 +270,13 @@ const HistoryItemDetailsModal = ({
                     format(new Date(data.datePerformed), "dd/MM/yyyy") ?? ""
                   }
                 />
-                <DetailRow
-                  icon={<Building size={16} />}
-                  label="É para a empresa?"
-                  value={data.isForEnterprise ? "Sim" : 'Não'}
-                />
+                {data.isForEnterprise && (
+                  <DetailRow
+                    icon={<Building size={16} />}
+                    label="É para a empresa?"
+                    value={data.isForEnterprise ? "Sim" : "Não"}
+                  />
+                )}
                 <DetailRow
                   label="Tags Solicitadas"
                   icon={<Tag size={16} />}
@@ -312,6 +313,11 @@ const HistoryItemDetailsModal = ({
                   label="Auditor(a)"
                   value={data.reviewer?.name ?? "Diretoria"}
                 />
+                <DetailRow
+                  icon={<BookOpen size={16} />}
+                  label="Versão das Regras"
+                  value={data.jrPointsVersion?.versionName}
+                />
               </dl>
             </div>
           </>
@@ -339,10 +345,17 @@ const HistoryItemDetailsModal = ({
                     </p>
                   }
                 />
+                {data.isForEnterprise && (
+                  <DetailRow
+                    icon={<Building size={16} />}
+                    label="É para a empresa?"
+                    value={data.isForEnterprise ? "Sim" : "Não"}
+                  />
+                )}
                 <DetailRow
                   icon={<Tag size={16} />}
                   label="Tag Contestada"
-                  value={data.tag.name ?? ""}
+                  value={data.tag.template.name ?? ""}
                 />
                 <DetailRow
                   icon={<Star size={16} />}
@@ -358,6 +371,11 @@ const HistoryItemDetailsModal = ({
                   icon={<CircleUser size={16} />}
                   label="Auditor(a)"
                   value={data.reviewer?.name ?? "Diretoria"}
+                />
+                <DetailRow
+                  icon={<BookOpen size={16} />}
+                  label="Versão das Regras"
+                  value={data.jrPointsVersion?.versionName}
                 />
               </dl>
             </div>

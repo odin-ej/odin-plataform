@@ -26,11 +26,11 @@ export type FullJRPointsSolicitation = Prisma.JRPointsSolicitationGetPayload<{
         email: true;
       };
     },
+    jrPointsVersion: {select: {versionName:true}};
     attachments: true;
     membersSelected: true;
     tags: {
       include: {
-        assigner: true;
         actionType: true;
       };
     };
@@ -50,6 +50,7 @@ export type FullJRPointsReport = Prisma.JRPointsReportGetPayload<{
         email: true;
       };
     };
+    jrPointsVersion: {select: {versionName:true}};
     reviewer: {
        select: {
         id: true;
@@ -59,7 +60,7 @@ export type FullJRPointsReport = Prisma.JRPointsReportGetPayload<{
       };
     },
     tag: {
-      include: { assigner: true; actionType: true };
+      include: { assigner: true; actionType: true, template:{ select:{name: true}}; };
     };
     attachments: true;
   };

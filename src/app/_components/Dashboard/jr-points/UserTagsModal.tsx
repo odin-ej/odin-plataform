@@ -70,7 +70,7 @@ const UserTagsModal = ({
   const [viewingItem, setViewingItem] = useState<any>(null);
 
   const targetSnapshots = useMemo(
-    () => snapshots.filter(s => s.targetId === target?.id),
+    () => snapshots.filter((s) => s.targetId === target?.id),
     [snapshots, target?.id]
   );
 
@@ -159,7 +159,11 @@ const UserTagsModal = ({
 
   // --- DEFINIÇÕES DE COLUNAS CORRIGIDAS ---
   const tagColumns: ColumnDef<UserTagWithRelations>[] = [
-    { accessorKey: 'template', header: 'Título', cell: (row) => row.template?.name},
+    {
+      accessorKey: "template",
+      header: "Título",
+      cell: (row) => row.template?.name,
+    },
     { accessorKey: "description", header: "Descrição" },
     {
       accessorKey: "actionType",
@@ -273,8 +277,11 @@ const UserTagsModal = ({
     },
   ];
 
- const selectedSnapshot = targetSnapshots.find(s => s.id === selectedView);
-  const totalPoints = selectedView === "current" ? target?.totalPoints : selectedSnapshot?.totalPoints;
+  const selectedSnapshot = targetSnapshots.find((s) => s.id === selectedView);
+  const totalPoints =
+    selectedView === "current"
+      ? target?.totalPoints
+      : selectedSnapshot?.totalPoints;
 
   return (
     <>
@@ -282,7 +289,7 @@ const UserTagsModal = ({
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
           <DialogContent
-            className="w-[80vw] max-w-[80vw] sm:max-w-[80vw]  scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent overflow-auto
+            className="w-[80vw] max-w-[80vw] sm:max-w-[80vw]  scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent overflow-y-auto
               max-h-[90vh] bg-[#010d26] border-2 border-[#0126fb] text-white flex flex-col"
           >
             <DialogHeader>
@@ -321,7 +328,7 @@ const UserTagsModal = ({
                 </Select>
               </div>
             </DialogHeader>
-            <div className="mt-4 flex-grow w-full overflow-hidden">
+            <div className="mt-4 flex-grow w-full overflow-y-auto">
               {isLoading || isUnlinking ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <Loader2 className="h-12 w-12 animate-spin text-[#f5b719]" />
@@ -354,9 +361,10 @@ const UserTagsModal = ({
                     filterColumns={["description", "status"]}
                     itemsPerPage={5}
                     type="onlyView"
-                    onRowClick={(item) =>
-                      setViewingItem({ type: "solicitation", data: item })
-                    }
+                    onRowClick={(item) => {
+                      setViewingItem({ type: "solicitation", data: item });
+                 
+                    }}
                   />
                   <CustomTable<FullJRPointsReport>
                     title="Histórico de Recursos"

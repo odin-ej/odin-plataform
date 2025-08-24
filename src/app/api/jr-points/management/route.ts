@@ -73,25 +73,64 @@ export async function GET() {
       prisma.jRPointsVersion.findMany({ orderBy: { createdAt: "desc" } }),
       prisma.userSemesterScore.findMany({
         orderBy: { createdAt: "desc" },
-        include: { user: true, tags: { include: { assigner: true, actionType: true, template: true} } },
+        include: {
+          user: true,
+          tags: {
+            include: { assigner: true, actionType: true, template: true },
+          },
+        },
       }),
       prisma.jRPointsSolicitation.findMany({
         orderBy: { createdAt: "desc" },
         include: {
+          jrPointsVersion: { select: { versionName: true } },
           user: { select: { id: true, name: true, imageUrl: true } },
           attachments: true,
           membersSelected: true,
-          tags: { include: { actionType: true, } },
-          reviewer:true,
+          tags: {
+            include: {
+              actionType: true,
+              jrPointsVersion: { select: { versionName: true } },
+            },
+          },
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+              email: true,
+            },
+          },
         },
       }),
       prisma.jRPointsReport.findMany({
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { id: true, name: true, imageUrl: true } },
-          tag: { include: { assigner: true, actionType: true } },
-          attachments:true,
-          reviewer:true,
+          tag: {
+            include: {
+              assigner: {
+                select: {
+                  id: true,
+                  name: true,
+                  imageUrl: true,
+                  email: true,
+                },
+              },
+              actionType: true,
+              template: { select: { name: true } },
+            },
+          },
+          jrPointsVersion: { select: { versionName: true } },
+          attachments: true,
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+              email: true,
+            },
+          },
         },
       }),
       prisma.semester.findMany({
@@ -104,7 +143,11 @@ export async function GET() {
       }),
       prisma.enterpriseSemesterScore.findMany({
         orderBy: { createdAt: "desc" },
-        include: {  tags: { include: { assigner: true, actionType: true , template: true} } },
+        include: {
+          tags: {
+            include: { assigner: true, actionType: true, template: true },
+          },
+        },
       }),
     ]);
 

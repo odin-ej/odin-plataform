@@ -1,8 +1,6 @@
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { NextResponse } from "next/server";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission } from "@/lib/utils";
 // Rota: GET /api/jr-points/snapshots/{UserSemesterScore ID}
 export async function GET(
   request: Request,
@@ -10,7 +8,7 @@ export async function GET(
 ) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
@@ -19,9 +17,6 @@ export async function GET(
     const userSemesterScore = await prisma.userSemesterScore.findUnique({
       where: {
         id: snapshotId,
-        // VERIFICAÇÃO DE SEGURANÇA: Garante que o usuário logado
-        // seja o dono do histórico que está tentando acessar.
-        userId: authUser.id,
       },
       include: {
         // Inclui todas as tags associadas a este placar semestral,

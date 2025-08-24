@@ -46,8 +46,8 @@ export interface ReviewData {
 }
 
 type ReviewRequest =
-  | (FullJRPointsReport & { type: "report" })
-  | (FullJRPointsSolicitation & { type: "solicitation" });
+  | (FullJRPointsReport & { type: "report", template: {name:string} })
+  | (FullJRPointsSolicitation & { type: "solicitation", template: {name:string}  });
 
 interface RequestReviewModalProps {
   request: ReviewRequest | null;
@@ -200,7 +200,7 @@ const RequestReviewModal = ({
 
   const isSolicitation = (
     req: ReviewRequest
-  ): req is FullJRPointsSolicitation & { type: "solicitation" } =>
+  ): req is FullJRPointsSolicitation & { type: "solicitation", template: {name:string}  } =>
     req.type === "solicitation";
 
   return (
@@ -375,7 +375,7 @@ const RequestReviewModal = ({
                 </h4>
                 <div className="mt-2 text-sm space-y-2 border-l-2 border-gray-600 pl-3">
                   <p>
-                    <strong>Tag Contestada:</strong> {request.tag.description}
+                    <strong>Tag Contestada:</strong> {request.tag.template?.name ?? request.tag.description}
                   </p>
                   <p>
                     <strong>Valor Original:</strong> {request.tag.value} pontos

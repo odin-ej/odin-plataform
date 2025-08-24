@@ -54,6 +54,7 @@ export async function GET(
         attachments: true,
         membersSelected: true,
         tags: { include: { actionType: true } },
+        jrPointsVersion: {select: {versionName:true}},
         reviewer: true,
       },
       orderBy: {
@@ -66,8 +67,9 @@ export async function GET(
       where: { userId: id, userSemesterScore: { semesterPeriodId: activeSemester.id }, },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
-        tag: { include: { assigner: true, actionType: true } },
+        tag: { include: { assigner: true, actionType: true, template: {select: {name: true}} } },
         attachments: true,
+        jrPointsVersion: {select: {versionName:true}},
         reviewer: true,
       },
       orderBy: {

@@ -23,9 +23,20 @@ import {
 import { useState } from "react";
 import { EnterpriseSemesterScore, Prisma, Semester } from "@prisma/client";
 import TimelineView from "./TimelineView";
+import {
+  FullJRPointsSolicitation,
+  FullJRPointsReport,
+} from "./SolicitationsBoard";
 
 // --- Tipagem para os Dados ---
 // Define a estrutura de um item na tabela de ranking
+
+interface EnterpriseHistory {
+  tags: TagWithAction[];
+  solicitations?: FullJRPointsSolicitation[];
+  reports?: FullJRPointsReport[];
+}
+
 export interface RankingItem {
   id: string;
   ranking: number;
@@ -99,18 +110,18 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     initialData: initialData,
   });
 
-  const { data: enterpriseHistoryTags, isLoading: isLoadingEnterpriseHistory } =
+  const { data: enterpriseHistory, isLoading: isLoadingEnterpriseHistory } =
     useQuery({
-      queryKey: ["enterpriseHistoryTags", selectedEnterpriseView],
-      queryFn: async (): Promise<TagWithAction[]> => {
+      queryKey: ["enterpriseHistory", selectedEnterpriseView],
+      queryFn: async (): Promise<EnterpriseHistory> => {
         if (selectedEnterpriseView === "current") {
-          return data?.enterpriseTags || [];
+          return { tags: data?.enterpriseTags };
         }
-        // Chama a API que busca as tags de um snapshot específico da empresa
-        const { data: snapshotTags } = await axios.get(
-          `${API_URL}/api/enterprise-points/snapshots/${selectedEnterpriseView}/tags`
+        // Chama a API que busca as o snapshot específico da empresa
+        const { data: snapshot } = await axios.get(
+          `${API_URL}/api/enterprise-points/snapshots/${selectedEnterpriseView}`
         );
-        return snapshotTags;
+        return snapshot;
       },
       enabled: !!data && selectedEnterpriseView !== "current",
     });
@@ -167,7 +178,6 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     allSemesters,
     initialIsHidden: isHidden,
   } = data || initialData;
-  console.log(enterpriseTags, enterprisePoints)
   const handleToggleRankingVisibility = () => toggleVisibility(!isHidden);
 
   const rankingColumns: ColumnDef<RankingItem>[] = [
@@ -272,7 +282,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
   const displayEnterpriseTags =
     selectedEnterpriseView === "current"
       ? enterpriseTags
-      : enterpriseHistoryTags;
+      : enterpriseHistory?.tags;
 
   return (
     <>

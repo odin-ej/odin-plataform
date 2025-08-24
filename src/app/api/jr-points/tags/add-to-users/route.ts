@@ -54,7 +54,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    console.log(datePerformed, performedDateObject);
     const activeSemester = await prisma.semester.findFirst({
       where: { isActive: true },
     });
