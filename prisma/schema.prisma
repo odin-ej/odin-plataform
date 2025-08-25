@@ -723,9 +723,9 @@ model ItemReservation {
 
 model NotificationUser {
   id             String       @id @default(uuid())
-  user           User         @relation(fields: [userId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
-  notification   Notification @relation(fields: [notificationId], references: [id])
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
   notificationId String
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
