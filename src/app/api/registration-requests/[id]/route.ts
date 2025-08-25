@@ -6,7 +6,7 @@ import { userProfileSchema } from "@/lib/schemas/memberFormSchema";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission } from "@/lib/utils";
+import { checkUserPermission, parseBrazilianDate } from "@/lib/utils";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/aws";
 
@@ -98,6 +98,12 @@ export async function PATCH(request: Request) {
       ...dataToUpdate
     } = validation.data;
 
+    const parsedBirthDate = parseBrazilianDate(birthDate);
+    if (!parsedBirthDate) {
+        return NextResponse.json({ message: "Formato de data inválido. Use DD/MM/AAAA." }, { status: 400 });
+    }
+
+
     // Caso 1: Membro comum (envia apenas roleId)
     const singleRoleArray = roleId && !roles ? [{ id: roleId }] : undefined;
 
@@ -124,7 +130,7 @@ export async function PATCH(request: Request) {
         ...(multipleRolesArray && {
           roles: { set: multipleRolesArray },
         }),
-        birthDate: new Date(birthDate),
+        birthDate: parsedBirthDate,
       },
       include: { roles: true },
     });
