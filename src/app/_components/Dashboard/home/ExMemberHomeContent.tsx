@@ -87,12 +87,6 @@ const ExMemberHomeContent = ({
           {linkPosters.map((linkPoster) => (
             <LinkPosterCard key={linkPoster.id} linkPoster={linkPoster} />
           ))}
-          {linkPosters.map((linkPoster) => (
-            <LinkPosterCard key={linkPoster.id} linkPoster={linkPoster} />
-          ))}
-          {linkPosters.map((linkPoster) => (
-            <LinkPosterCard key={linkPoster.id} linkPoster={linkPoster} />
-          ))}
         </div>
 
         <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-6">
