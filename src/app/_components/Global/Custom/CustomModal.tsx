@@ -371,7 +371,7 @@ const CustomModal = <T extends FieldValues>({
                                       height={150}
                                       src={data.imageUrl as string}
                                       alt={data.title}
-                                      className="object-cover rounded-md aspect-[2/1]"
+                                      className="object-center object-cover rounded-md aspect-[2/1]"
                                     />
                                   )
                                 ) : (

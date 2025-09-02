@@ -10,7 +10,7 @@ const LinkPosterCard = ({ linkPoster }: { linkPoster: LinkPoster }) => {
           src={linkPoster.imageUrl}
           alt={linkPoster.title}
           fill
-          className="object-center aspect-[2/1] rounded-2xl"
+          className="object-center object-cover aspect-[2/1] rounded-2xl"
         />
       </Link>
     </div>
