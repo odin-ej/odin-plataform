@@ -356,8 +356,8 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
         {/* --- TABELA DE TAGS DA EMPRESA ATUALIZADA --- */}
         <div>
           <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
-            <h2 className="text-2xl font-bold text-[#0126fb]">
-              Tags da Empresa
+            <h2 className="text-2xl font-semibold text-white">
+              Semestre de Pontuação
             </h2>
             <div className="w-full sm:w-auto flex-shrink-0">
               <Select
@@ -386,7 +386,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
             </div>
           ) : (
             <CustomTable<TagWithAction>
-              title="Extrato de Pontos"
+              title="Extrato de Pontos - Empresa"
               columns={tagColumns}
               data={displayEnterpriseTags || []}
               filterColumns={["description"]}

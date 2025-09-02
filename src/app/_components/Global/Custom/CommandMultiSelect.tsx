@@ -94,7 +94,7 @@ const CommandMultiSelect = ({
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-2 border-[#0126fb] bg-[#00205e] text-white">
                 <Command className="bg-[#00205e] max-h-[250px]">
-                  <CommandInput placeholder="Procurar..." />
+                  <CommandInput className='text-white pb-2' placeholder="Procurar..." />
                   <CommandList>
                     <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
                     <CommandGroup
