@@ -439,7 +439,7 @@ const LinkPostersPageContent = ({
           onSubmit={updateLinkPoster}
           isLoading={isUpdating}
           cropShape="rect"
-          aspect={16 / 9}
+          aspect={2 / 1}
           page="link-posters"
         />
       </div>
