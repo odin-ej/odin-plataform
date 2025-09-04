@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   await prisma.$connect();
 
   try {
-    const threeDaysAgo = addDays(new Date(), -3);
+    const onDayAgo = addDays(new Date(), -1);
 
     // 1. Encontra usuários com perfil incompleto que não foram notificados na última semana
     const usersToNotify = await prisma.user.findMany({
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
           {
             OR: [
               { profileCompletionNotifiedAt: null }, // Se nunca foi notificado
-              { profileCompletionNotifiedAt: { lt: threeDaysAgo } }, // Ou se a última notificação foi há mais de 7 dias
+              { profileCompletionNotifiedAt: { lt: onDayAgo } }, // Ou se a última notificação foi há mais de 1 dia
             ],
           },
         ],
