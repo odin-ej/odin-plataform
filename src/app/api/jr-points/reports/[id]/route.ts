@@ -27,7 +27,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       // 1. Deleta os arquivos do S3 se existirem
       if (reportToDelete.attachments.length > 0) {
         const deletePromises = reportToDelete.attachments.map(file => {
-          const s3Key = file.url.split(`${process.env.JRPOINTS_S3_BUCKET_NAME}.s3.amazonaws.com/`)[1];
+          const s3Key = file.url;
           return s3Client.send(new DeleteObjectCommand({ Bucket: process.env.JRPOINTS_S3_BUCKET_NAME!, Key: s3Key }));
         });
         await Promise.all(deletePromises);

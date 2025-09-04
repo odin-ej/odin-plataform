@@ -1,3 +1,4 @@
+import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { linkPostersUpdateSchema } from "@/lib/schemas/linkPostersSchema";
