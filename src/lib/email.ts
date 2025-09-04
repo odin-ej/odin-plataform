@@ -95,16 +95,16 @@ export const completeProfileEmailCommand = ({
         Html: {
           Charset: "UTF-8",
           Data: `<html>
-                    <body style="font-family: Arial, sans-serif; ...">
-                        <div style="max-width: 600px; ... text-align: center;">
+                    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; padding: 20px;">
+                       <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #ddd; text-align: center;">
                         <div style="margin-bottom: 30px;">
-                            <img src="${process.env.NEXT_PUBLIC_API_URL}/logo-azul.png" alt="Logotipo da Empresa JR" style="..."/>
+                            <img src="${process.env.NEXT_PUBLIC_API_URL}/logo-azul.png" alt="Logotipo da Empresa JR" style="border:0; max-width: 150px;"/>
                         </div>    
                         <h1 style="color: #0126fb;">Seu perfil está quase completo!</h1>
                             <p style="font-size: 16px; line-height: 1.6;">Olá, ${name}!</p>
-                            <p style="font-size: 16px; line-height: 1.6;">Vimos que ainda faltam algumas informações importantes no seu perfil, como seus <strong>interesses profissionais</strong> e seu <strong>histórico de cargos</strong>.</p>
+                            <p style="font-size: 16px; line-height: 1.6;">Vimos que ainda faltam algumas informações importantes no seu perfil, como seus <strong>interesses profissionais</strong> e/ou seu <strong>histórico de cargos</strong>.</p>
                             <p style="font-size: 16px; line-height: 1.6;">Manter seu perfil atualizado nos ajuda a conectar você com oportunidades e conteúdos que realmente importam.</p>
-                            <a href="${process.env.NEXT_PUBLIC_API_URL}/perfil" style="display: inline-block; background-color: #0126fb; color: #ffffff; font-weight: bold; padding: 14px 28px; ...">Completar Perfil Agora</a>
+                            <a href="${process.env.NEXT_PUBLIC_API_URL}/perfil" style="display: inline-block; background-color: #0126fb; color: #ffffff; font-weight: bold; padding: 14px 28px; text-decoration: none; border-radius: 8px; margin: 30px 0;">Completar Perfil Agora</a>
                             <p style="font-size: 14px; color: #555;">Leva só alguns minutos!</p>
                         </div>
                     </body>
