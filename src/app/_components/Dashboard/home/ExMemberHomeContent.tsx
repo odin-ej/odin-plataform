@@ -79,7 +79,7 @@ const ExMemberHomeContent = ({
         </div>
       </div>
 
-      <div className="bg-[#010d26] p-6 rounded-lg">
+      <div className="bg-[#010d26] p-6 rounded-lg mt-6">
         <h2 className="text-xl my-4 px-2 sm:text-2xl md:text-4xl lg:text-6xl font-extrabold text-white">
           Mural da Casinha:
         </h2>
