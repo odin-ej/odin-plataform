@@ -223,7 +223,7 @@ const ConfirmStep = ({ email, onConfirmSuccess }: ConfirmStepProps) => {
                       maxLength={6}
                       pattern={REGEXP_ONLY_DIGITS}
                       {...field}
-                      className="flex justify-center gap-2"
+                      className="flex justify-center gap-2 w-full"
                     >
                       <InputOTPGroup className="flex gap-2">
                         {[0, 1, 2, 3, 4, 5].map((index) => (

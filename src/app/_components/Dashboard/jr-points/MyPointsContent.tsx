@@ -118,7 +118,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       return axios.post(`${API_URL}${endpoint}`, requestData.data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["myPoints", userId] });
+      queryClient.invalidateQueries({ queryKey: ["myPoints", userId, "pointHistoryDetails"] });
       queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
     },
   });
@@ -136,7 +136,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       return axios.patch(`${API_URL}${endpoint}`, requestData.data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["myPoints", userId] });
+      queryClient.invalidateQueries({ queryKey: ["myPoints", userId, "pointHistoryDetails"] });
       queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
     },
   });
@@ -152,7 +152,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     onSuccess: () => {
       toast.success("Deletado com sucesso!");
       setIsDeleteConfirmOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["myPoints", userId] });
+      queryClient.invalidateQueries({ queryKey: ["myPoints", userId, "pointHistoryDetails"] });
       queryClient.invalidateQueries({ queryKey: ["enterprisePointsData"] });
     },
     onError: (error: AxiosError<{ message: string }>) =>
@@ -216,7 +216,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       })
     );
     setUploadableFiles(existingFiles);
-
+  
     if (type === "solicitation") {
       const sol = item as FullJRPointsSolicitation;
       requestForm.reset({
@@ -325,7 +325,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         ...existingAttachments,
         ...newUploadedAttachments,
       ];
-
+      console.log(finalAttachments)
       const finalData = {
         ...formData,
         attachments: finalAttachments,

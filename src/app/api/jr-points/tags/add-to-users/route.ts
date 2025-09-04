@@ -196,7 +196,7 @@ export async function POST(request: Request) {
     const notification = await prisma.notification.create({
       data: {
         link: "meu-pontos",
-        type: "REQUEST_APPROVED",
+        type: "POINTS_AWARDED",
         notification: `Você recebeu nova(s) tag(s) de JR Points. Atribuída(s) por: ${authUser.name}`,
       },
     });

@@ -24,7 +24,7 @@ const RequestCard = ({
       "bg-[#010d26] p-4 rounded-md border border-gray-700 cursor-pointer hover:border-[#0126fb] transition-colors group",
       item.directorsNotes &&
         item.directorsNotes ===
-          "Aprovado automaticamente via painel de administração." &&
+          "Aprovado automaticamente via painel de administração." || item.directorsNotes === "Aprovado automaticamente via painel de gerenciamento." &&
         "border-[#f5b719]"
     )}
   >

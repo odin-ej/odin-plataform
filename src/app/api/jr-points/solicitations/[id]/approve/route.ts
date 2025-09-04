@@ -91,8 +91,7 @@ export async function PATCH(
                 lastInstance.datePerformed
               );
               if (daysSinceLast <= tagTemplate.escalationStreakDays) {
-                // ✅ CORREÇÃO: Usa Math.abs no escalationValue para garantir que o bônus/pena
-                // seja sempre aplicado na mesma "direção" da pontuação base.
+                
                 const bonus = tagTemplate.baseValue >= 0 
                   ? Math.abs(tagTemplate.escalationValue) 
                   : -Math.abs(tagTemplate.escalationValue);
@@ -208,7 +207,7 @@ export async function PATCH(
       const notification = await prisma.notification.create({
         data: {
           notification: `Solicitação aprovada: ${solicitation.description} por ${authUser.name}`,
-          type: "POINTS_AWARDED",
+          type: "REQUEST_APPROVED",
           link: solicitation.isForEnterprise ? 'jr-points' : 'meus-pontos',
         },
       });
@@ -232,6 +231,7 @@ export async function PATCH(
           data: membersToReceive.map((user) => ({
             notificationId: notification.id,
             userId: user.id,
+
           })),
         });
       }

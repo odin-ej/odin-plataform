@@ -35,9 +35,11 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
+
     const validation = solicitationEditSchema.safeParse(body);
-    if(!validation.success){
-      console.error(validation.error.flatten().fieldErrors)
+
+    if (!validation.success) {
+      console.error(validation.error.flatten().fieldErrors);
       return new NextResponse("Dados inválidos", { status: 400 });
     }
 
@@ -45,6 +47,7 @@ export async function PATCH(
       where: { id },
       include: { user: true, attachments: true },
     });
+
     if (!solicitation) {
       return new NextResponse("Solicitação não encontrada", { status: 404 });
     }
@@ -63,12 +66,9 @@ export async function PATCH(
       const attachmentsToDelete = solicitation.attachments.filter(
         (a) => !finalUrls.includes(a.url)
       );
-
       if (attachmentsToDelete.length > 0) {
         const deletePromises = attachmentsToDelete.map((file) => {
-          const s3Key = file.url.split(
-            `${process.env.JRPOINTS_S3_BUCKET_NAME}.s3.amazonaws.com/`
-          )[1];
+          const s3Key = file.url;
           return s3Client.send(
             new DeleteObjectCommand({
               Bucket: process.env.JRPOINTS_S3_BUCKET_NAME!,
@@ -79,14 +79,17 @@ export async function PATCH(
         await Promise.all(deletePromises);
       }
 
-      const performedDateObject = fromZonedTime(validation.data.datePerformed, 'America/Sao_Paulo');
+      const performedDateObject = fromZonedTime(
+        validation.data.datePerformed,
+        "America/Sao_Paulo"
+      );
       if (isNaN(performedDateObject.getTime())) {
         return NextResponse.json(
           { message: "A data deve estar no formato AAAA-MM-DD." },
           { status: 400 }
         );
       }
-      console.log(validation.data.datePerformed, performedDateObject)
+
       const attachmentsToCreate =
         validation.data.attachments?.filter(
           (a) => !solicitation.attachments.some((oa) => oa.url === a.url)
@@ -172,9 +175,7 @@ export async function DELETE(
       ) {
         const deletePromises = solicitationToDelete.attachments.map((file) => {
           // Extrai a "chave" (caminho do arquivo) a partir da URL completa
-          const s3Key = file.url.split(
-            `${process.env.JRPOINTS_S3_BUCKET_NAME}.s3.amazonaws.com/`
-          )[1];
+          const s3Key = file.url;
 
           const deleteCommand = new DeleteObjectCommand({
             Bucket: process.env.JRPOINTS_S3_BUCKET_NAME!,
