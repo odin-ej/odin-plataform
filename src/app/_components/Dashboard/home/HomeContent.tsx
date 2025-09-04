@@ -221,7 +221,7 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
         <>
           <div>
             <Button
-              className="mb-4"
+              className="mb-4 bg-[#0126fb] hover:bg-[#0126fb]/50 text-white flex items-center gap-2"
               onClick={() =>
                 setViewMode(viewMode === "member" ? "exMember" : "member")
               }
