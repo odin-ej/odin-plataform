@@ -90,7 +90,7 @@ const SolicitationsBoard = ({
     "all" | "user" | "enterprise"
   >("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState("10");
+  const [itemsPerPage, setItemsPerPage] = useState("6");
   const [searchTerm, setSearchTerm] = useState("");
   const allRequests = useMemo(
     () =>
@@ -174,7 +174,7 @@ const SolicitationsBoard = ({
                   />
                 </SelectTrigger>
                 <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
-                  {Array.from({ length: 5 }, (_, i) => (i + 1) * 5).map(
+                  {Array.from({ length: 5 }, (_, i) => (i + 1) * 6).map(
                     (num) => (
                       <SelectItem
                         key={num}
