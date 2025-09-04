@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { Award, Clock, Loader2 } from "lucide-react";
+import { Award, Clock, Loader2, MousePointerClick } from "lucide-react";
 import CustomCard from "../../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../../Global/Custom/CustomCarousel";
 import CustomCalendarOAuth from "../../Global/Calendar/CalendarOAuth";
@@ -27,6 +27,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
   const [view, setView] = useState<"personal" | "odin">("odin");
+  const [viewMode, setViewMode] = useState<"member" | "exMember">("member");
   const { user } = useAuth();
 
   const fetchHomeData = async (): Promise<HomeContentData> => {
@@ -203,6 +204,10 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
     return { memberLinkPosters: finalPosters, exMemberLinkPosters };
   }, [data.linkPosters, user, isConsultant]);
 
+  const isDirector = useMemo(
+    () => (user ? checkUserPermission(user, DIRECTORS_ONLY) : false),
+    [user]
+  );
   if (isLoading)
     return (
       <div className="flex justify-center items-center mt-20">
@@ -212,89 +217,196 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
 
   return (
     <>
-      {!user?.isExMember ? (
+      {isDirector ? (
         <>
-          <div className="w-full">
-            <LinkPosterCarousel slides={memberLinkPosters} />
+          <div>
+            <Button
+              className="mb-4"
+              onClick={() =>
+                setViewMode(viewMode === "member" ? "exMember" : "member")
+              }
+            >
+              <MousePointerClick />
+              Modo: {viewMode === "member" ? "Membro" : "Ex-Membro"}
+            </Button>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <CustomCard
-              type="link"
-              title="Minhas Pendências"
-              value={numberOfTasks}
-              icon={Clock}
-              href="/minhas-pendencias"
-            />
-            <CustomCard
-              type="link"
-              title="Meus Pontos"
-              value={myPoints}
-              icon={Award}
-              href="/meus-pontos"
-            />
-          </div>
+          {viewMode === "member" ? (
+            <>
+              <div className="w-full min-h-[200px]">
+                <LinkPosterCarousel slides={memberLinkPosters} />
+              </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <UsefulLinksSection
-              links={specificLinks}
-              isGlobal={true}
-              isConsultant={isConsultant}
-            />
+              <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <CustomCard
+                  type="link"
+                  title="Minhas Pendências"
+                  value={numberOfTasks}
+                  icon={Clock}
+                  href="/minhas-pendencias"
+                />
+                <CustomCard
+                  type="link"
+                  title="Meus Pontos"
+                  value={myPoints}
+                  icon={Award}
+                  href="/meus-pontos"
+                />
+              </div>
 
-            <UsefulLinksSection links={usefulLinks} isGlobal={false} />
-          </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <UsefulLinksSection
+                  links={specificLinks}
+                  isGlobal={true}
+                  isConsultant={isConsultant}
+                />
 
-          <div className="grid grid-cols-1 w-full mt-8">
-            <CustomCarousel title="Metas da Casinha" slides={slidesData} />
-            <div className="hidden min-[375px]:flex w-full mt-8 gap-2 sm:gap-4 p-1 bg-[#00205e] rounded-lg">
-              <Button
-                onClick={() => setView("odin")}
-                className={cn(
-                  "px-3 sm:px-4 py-2 rounded-md font-semibold text-sm transition-colors",
-                  view === "odin"
-                    ? "bg-[#0126fb] text-white"
-                    : "bg-transparent text-gray-400 hover:bg-white/5"
+                <UsefulLinksSection links={usefulLinks} isGlobal={false} />
+              </div>
+
+              <div className="grid grid-cols-1 w-full mt-8">
+                <CustomCarousel title="Metas da Casinha" slides={slidesData} />
+                <div className="hidden min-[375px]:flex w-full mt-8 gap-2 sm:gap-4 p-1 bg-[#00205e] rounded-lg">
+                  <Button
+                    onClick={() => setView("odin")}
+                    className={cn(
+                      "px-3 sm:px-4 py-2 rounded-md font-semibold text-sm transition-colors",
+                      view === "odin"
+                        ? "bg-[#0126fb] text-white"
+                        : "bg-transparent text-gray-400 hover:bg-white/5"
+                    )}
+                  >
+                    Agenda EJ
+                  </Button>
+                  <Button
+                    onClick={() => setView("personal")}
+                    className={cn(
+                      "px-3 sm:px-4 py-2 rounded-md font-semibold text-sm transition-colors",
+                      view === "personal"
+                        ? "bg-[#0126fb] text-white"
+                        : "bg-transparent text-gray-400 hover:bg-white/5"
+                    )}
+                  >
+                    Minha Agenda
+                  </Button>
+                </div>
+
+                {view === "odin" && (
+                  <CustomCalendarOAuth
+                    clientId={
+                      process.env
+                        .NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID as string
+                    }
+                    calendarId={
+                      process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID as string
+                    }
+                  />
                 )}
-              >
-                Agenda EJ
-              </Button>
-              <Button
-                onClick={() => setView("personal")}
-                className={cn(
-                  "px-3 sm:px-4 py-2 rounded-md font-semibold text-sm transition-colors",
-                  view === "personal"
-                    ? "bg-[#0126fb] text-white"
-                    : "bg-transparent text-gray-400 hover:bg-white/5"
+
+                {view === "personal" && (
+                  <CustomCalendarOAuth
+                    clientId={
+                      process.env
+                        .NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID as string
+                    }
+                    calendarId="primary"
+                  />
                 )}
-              >
-                Minha Agenda
-              </Button>
-            </div>
-
-            {view === "odin" && (
-              <CustomCalendarOAuth
-                clientId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID as string
-                }
-                calendarId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID as string
-                }
-              />
-            )}
-
-            {view === "personal" && (
-              <CustomCalendarOAuth
-                clientId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID as string
-                }
-                calendarId="primary"
-              />
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <ExMemberHomeContent linkPosters={exMemberLinkPosters} />
+          )}
         </>
       ) : (
-        <ExMemberHomeContent linkPosters={exMemberLinkPosters} />
+        <>
+          {!user?.isExMember ? (
+            <>
+              <div className="w-full">
+                <LinkPosterCarousel slides={memberLinkPosters} />
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <CustomCard
+                  type="link"
+                  title="Minhas Pendências"
+                  value={numberOfTasks}
+                  icon={Clock}
+                  href="/minhas-pendencias"
+                />
+                <CustomCard
+                  type="link"
+                  title="Meus Pontos"
+                  value={myPoints}
+                  icon={Award}
+                  href="/meus-pontos"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <UsefulLinksSection
+                  links={specificLinks}
+                  isGlobal={true}
+                  isConsultant={isConsultant}
+                />
+
+                <UsefulLinksSection links={usefulLinks} isGlobal={false} />
+              </div>
+
+              <div className="grid grid-cols-1 w-full mt-8">
+                <CustomCarousel title="Metas da Casinha" slides={slidesData} />
+                <div className="hidden min-[375px]:flex w-full mt-8 gap-2 sm:gap-4 p-1 bg-[#00205e] rounded-lg">
+                  <Button
+                    onClick={() => setView("odin")}
+                    className={cn(
+                      "px-3 sm:px-4 py-2 rounded-md font-semibold text-sm transition-colors",
+                      view === "odin"
+                        ? "bg-[#0126fb] text-white"
+                        : "bg-transparent text-gray-400 hover:bg-white/5"
+                    )}
+                  >
+                    Agenda EJ
+                  </Button>
+                  <Button
+                    onClick={() => setView("personal")}
+                    className={cn(
+                      "px-3 sm:px-4 py-2 rounded-md font-semibold text-sm transition-colors",
+                      view === "personal"
+                        ? "bg-[#0126fb] text-white"
+                        : "bg-transparent text-gray-400 hover:bg-white/5"
+                    )}
+                  >
+                    Minha Agenda
+                  </Button>
+                </div>
+
+                {view === "odin" && (
+                  <CustomCalendarOAuth
+                    clientId={
+                      process.env
+                        .NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID as string
+                    }
+                    calendarId={
+                      process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_ID as string
+                    }
+                  />
+                )}
+
+                {view === "personal" && (
+                  <CustomCalendarOAuth
+                    clientId={
+                      process.env
+                        .NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID as string
+                    }
+                    calendarId="primary"
+                  />
+                )}
+              </div>
+            </>
+          ) : (
+            <ExMemberHomeContent linkPosters={exMemberLinkPosters} />
+          )}
+        </>
       )}
     </>
   );

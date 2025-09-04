@@ -4,13 +4,14 @@ import Link from "next/link";
 
 const LinkPosterCard = ({ linkPoster }: { linkPoster: LinkPoster }) => {
   return (
-    <div className="relative w-full aspect-[2/1]">
+    <div className="relative w-full aspect-[2/1] rounded-2xl">
       <Link href={linkPoster.link} target="_blank" rel="noopener noreferrer">
         <Image
           src={linkPoster.imageUrl}
           alt={linkPoster.title}
           fill
-          className="object-center object-cover aspect-[2/1] rounded-2xl"
+          priority
+          className="object-fill rounded-2xl"
         />
       </Link>
     </div>
