@@ -90,10 +90,12 @@ const DailyScheduleView = ({
             Agenda do Dia
           </h2>
           <p className="text-sm sm:text-base text-gray-400">
-            {format(viewDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            {format(viewDate, "EEEE, dd 'de' MMMM 'de' yyyy", {
+              locale: ptBR,
+            }).replace(/^\w/, (c) => c.toUpperCase())}
           </p>
         </div>
-      
+
         <div className="flex items-center gap-2">
           <Button
             className="bg-[#0126fb] hover:bg-[#0126fb/90]"
@@ -192,7 +194,7 @@ const DailyScheduleView = ({
                               </p>
                               <p className="font-ligh text-[9px] text-slate-100 italic truncate">
                                 {event.type === "eaufba" &&
-                                  "Horário Específico" }
+                                  "Horário Específico"}
                               </p>
                               <div className="flex items-center gap-1.5 opacity-80 mt-1">
                                 <UserIcon className="h-3 w-3" />
