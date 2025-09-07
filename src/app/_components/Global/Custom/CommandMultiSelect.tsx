@@ -50,7 +50,7 @@ const CommandMultiSelect = ({
 
   const renderSelect = (
     selectedValues: Set<string>,
-    handleSelect: (value: string) => void
+    handleSelect: (val: string) => void
   ) => {
     const selectedItems = options.filter((opt) =>
       selectedValues.has(opt.value)
@@ -129,19 +129,17 @@ const CommandMultiSelect = ({
     );
   };
 
-  // Modo com react-hook-form
+  // ---- Fluxo com React Hook Form ----
   if (form && name) {
     return (
       <FormField
         control={form.control}
         name={name}
         render={({ field }) => {
-          const selectedValues = new Set<string>(
-            (field.value as string[]) || []
-          );
+          const selectedValues = new Set<string>(field.value || []);
 
           const handleSelect = (val: string) => {
-            const newSelected = new Set<string>(selectedValues);
+            const newSelected = new Set(selectedValues);
             if (newSelected.has(val)) {
               newSelected.delete(val);
             } else {
@@ -156,19 +154,24 @@ const CommandMultiSelect = ({
     );
   }
 
-  // Modo controlado (value + onChange)
-  const selectedValues = new Set(value || []);
-  const handleSelect = (val: string) => {
-    const newSelected = new Set(selectedValues);
-    if (newSelected.has(val)) {
-      newSelected.delete(val);
-    } else {
-      newSelected.add(val);
-    }
-    onChange?.(Array.from(newSelected));
-  };
+  // ---- Fluxo controlado ----
+  if (value && onChange) {
+    const selectedValues = new Set(value);
+    const handleSelect = (val: string) => {
+      const newSelected = new Set(selectedValues);
+      if (newSelected.has(val)) {
+        newSelected.delete(val);
+      } else {
+        newSelected.add(val);
+      }
+      onChange(Array.from(newSelected));
+    };
 
-  return renderSelect(selectedValues, handleSelect);
+    return renderSelect(selectedValues, handleSelect);
+  }
+
+  // ---- Nenhum modo válido ----
+  return null;
 };
 
 export default CommandMultiSelect;
