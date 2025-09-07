@@ -95,9 +95,27 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
 
     const filterByPermissions = (item: FullOraculoFile | FullOraculoFolder) => {
-      if (isDirector) return true;
+      // 1. Diretores sempre têm acesso.
+      if (isDirector) {
+        return true;
+      }
+
       const restrictedAreas = item.restrictedToAreas;
-      if (!restrictedAreas || restrictedAreas.length === 0) return true;
+
+      // 2. Permitido se não houver nenhuma área de restrição definida no item.
+      if (!restrictedAreas || restrictedAreas.length === 0 || restrictedAreas === null) {
+        return true;
+      }
+
+      // 3. Permitido se a área "GERAL" estiver na lista de restrições,
+      //    o que torna o item visível para todos os utilizadores.
+      if (restrictedAreas.includes(OraculoAreas.GERAL)) {
+        // Assumindo que o valor da área é a string 'GERAL'
+        return true;
+      }
+
+      // 4. Se for restrito e não for "GERAL", verifica se o utilizador possui
+      //    pelo menos uma das áreas necessárias para aceder ao item.
       return restrictedAreas.some((area) => userAreas.includes(area as any));
     };
 
@@ -271,7 +289,10 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     }
   };
 
-  const isDirector = useMemo(() => checkUserPermission(user, DIRECTORS_ONLY), [user]);
+  const isDirector = useMemo(
+    () => checkUserPermission(user, DIRECTORS_ONLY),
+    [user]
+  );
 
   return (
     <>
@@ -297,8 +318,8 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
               <div className="absolute mt-1 w-full bg-[#00205e] border border-[#0126fb] rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                 {[...filteredItems.folders, ...filteredItems.files].length >
                 0 ? (
-                  [...filteredItems.folders, ...filteredItems.files]
-                    .map((item) => (
+                  [...filteredItems.folders, ...filteredItems.files].map(
+                    (item) => (
                       <div
                         key={item.id}
                         className="px-3 py-2 hover:bg-white/10 cursor-pointer text-white text-sm flex justify-between"
@@ -320,7 +341,8 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
                           <span className="text-xs opacity-70">[Arquivo]</span>
                         )}
                       </div>
-                    ))
+                    )
+                  )
                 ) : (
                   <div className="px-3 py-2 text-gray-400 text-sm">
                     Nenhum resultado
@@ -376,7 +398,11 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
           onFolderClick={handleFolderNavigation}
         />
 
-        {isDirector && <div className="mt-4"><SyncOraculoPanel /></div>}
+        {isDirector && (
+          <div className="mt-4">
+            <SyncOraculoPanel />
+          </div>
+        )}
       </div>
 
       <div className="mt-4 p-4 rounded-lg grid grid-cols-1 lg:grid-cols-10 gap-6 bg-[#010d26] border border-gray-800 min-h-[50vh]">
