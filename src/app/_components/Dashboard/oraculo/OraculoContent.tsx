@@ -61,66 +61,73 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     initialData,
   });
 
-  const filteredItems = useMemo(() => {
-    if (!data || !user) return { folders: [], files: [] };
+  const allVisibleItems = useMemo(() => {
+    if (!data || !user) return [];
 
     const userAreas = (user.currentRole?.area as OraculoAreas[]) || [];
     const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
 
     const hasDirectPermission = (item: FullOraculoFile | FullOraculoFolder) => {
-      if (isDirector) return true;
-      const restrictedAreas = item.restrictedToAreas;
-      if (!restrictedAreas || restrictedAreas.length === 0) return true;
-      if (restrictedAreas.includes(OraculoAreas.GERAL)) return true;
-      return restrictedAreas.some((area) => userAreas.includes(area));
+        if (isDirector) return true;
+        const restrictedAreas = item.restrictedToAreas;
+        if (!restrictedAreas || restrictedAreas.length === 0) return true;
+        if (restrictedAreas.includes(OraculoAreas.GERAL as any)) return true;
+        return restrictedAreas.some((area) => userAreas.includes(area));
     };
 
     const allFoldersMap = new Map(data.folders.map(f => [f.id, f]));
-    const accessibleItemsSet = new Set<FullOraculoFile | FullOraculoFolder>();
+    const accessibleItems = new Set<FullOraculoFile | FullOraculoFolder>();
 
-    data.files.forEach(file => {
-      if (hasDirectPermission(file)) {
-        accessibleItemsSet.add(file);
-      }
-    });
-    data.folders.forEach(folder => {
-      if (hasDirectPermission(folder)) {
-        accessibleItemsSet.add(folder);
-      }
-    });
+    const allItems = [...data.folders, ...data.files];
 
-    const itemsToTrace = [...accessibleItemsSet];
-    for (const item of itemsToTrace) {
-        let currentParentId = 'folderId' in item ? item.folderId : item.parentId;
-        while (currentParentId) {
-            const parentFolder = allFoldersMap.get(currentParentId);
-            if (parentFolder && !accessibleItemsSet.has(parentFolder)) {
-                accessibleItemsSet.add(parentFolder);
-                currentParentId = parentFolder.parentId;
-            } else {
-                currentParentId = null;
+    allItems.forEach(item => {
+        if (hasDirectPermission(item)) {
+            accessibleItems.add(item);
+            let parentId = 'folderId' in item ? item.folderId : item.parentId;
+            while (parentId) {
+                const parentFolder = allFoldersMap.get(parentId);
+                if (parentFolder) {
+                    accessibleItems.add(parentFolder);
+                    parentId = parentFolder.parentId;
+                } else {
+                    parentId = null;
+                }
             }
         }
+    });
+
+    return Array.from(accessibleItems);
+  }, [data, user]);
+
+
+  const filteredAndSearchedItems = useMemo(() => {
+    let items = allVisibleItems;
+
+    if (activeFilter === "favorites") {
+        items = items.filter(item => 'isFavorite' in item && item.isFavorite);
+    }
+    if (activeFilter === "recents") {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        items = items.filter(item => new Date(item.createdAt) > thirtyDaysAgo);
     }
     
-    let items = Array.from(accessibleItemsSet);
-
-    if (activeFilter === "favorites")
-      items = items.filter((item) => "isFavorite" in item && item.isFavorite);
-    if (activeFilter === "recents") {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      items = items.filter((item) => new Date(item.createdAt) > thirtyDaysAgo);
-    }
     if (searchQuery) {
-      const lowercasedQuery = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      items = items.filter((item) => item.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(lowercasedQuery));
+        const lowercasedQuery = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        // Quando há pesquisa, queremos mostrar uma lista plana de resultados, não a estrutura de pastas
+        return {
+            folders: items.filter(item => "parentId" in item && item.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(lowercasedQuery)) as FullOraculoFolder[],
+            files: items.filter(item => !("parentId" in item) && item.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(lowercasedQuery)) as FullOraculoFile[],
+            isSearchResult: true,
+        };
     }
+    
     return {
-      folders: items.filter((item) => "parentId" in item) as FullOraculoFolder[],
-      files: items.filter((item) => !("parentId" in item)) as FullOraculoFile[],
+        folders: items.filter(item => "parentId" in item) as FullOraculoFolder[],
+        files: items.filter(item => !("parentId" in item)) as FullOraculoFile[],
+        isSearchResult: false,
     };
-  }, [data, searchQuery, activeFilter, user]);
+  }, [allVisibleItems, activeFilter, searchQuery]);
 
   const { mutate: toggleFavoriteMutation } = useMutation({
     mutationFn: (fileId: string) =>
@@ -287,9 +294,9 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
             />
             {searchQuery && (
               <div className="absolute mt-1 w-full bg-[#00205e] border border-[#0126fb] rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-                {[...filteredItems.folders, ...filteredItems.files].length >
+                {[...filteredAndSearchedItems.folders, ...filteredAndSearchedItems.files].length >
                 0 ? (
-                  [...filteredItems.folders, ...filteredItems.files].map(
+                  [...filteredAndSearchedItems.folders, ...filteredAndSearchedItems.files].map(
                     (item) => (
                       <div
                         key={item.id}
@@ -380,8 +387,8 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
         <div className={selectedItem ? "lg:col-span-6" : "lg:col-span-10"}>
           <FileBrowser
             onMoveItem={handleMoveItem}
-            allFolders={filteredItems.folders}
-            allFiles={filteredItems.files}
+            allFolders={filteredAndSearchedItems.folders}
+            allFiles={filteredAndSearchedItems.files}
             viewMode={viewMode}
             onItemSelect={handleItemSelect}
             isLoading={isLoading}
