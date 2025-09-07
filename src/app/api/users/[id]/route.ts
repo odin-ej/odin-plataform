@@ -23,7 +23,6 @@ import { s3Client } from "@/lib/aws";
 import bcrypt from "bcrypt";
 import z from "zod";
 import { UserProfileValues } from "@/lib/schemas/memberFormSchema";
-import { update } from "lodash";
 
 // Configuração do cliente Cognito
 const cognitoClient = new CognitoIdentityProviderClient({

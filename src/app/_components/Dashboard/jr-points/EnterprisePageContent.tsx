@@ -629,6 +629,7 @@ const EnterprisePageContent = ({
       <SolicitationsBoard
         solicitations={solicitations}
         reports={jrPointsReports}
+        allTagTemplates={allTagTemplates}
         onCardClick={handleOpenReviewModal}
       />
 
