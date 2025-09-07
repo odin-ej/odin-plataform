@@ -66,6 +66,34 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     initialData,
   });
 
+  const flattenOraculo = (
+    folders: FullOraculoFolder[],
+    files: FullOraculoFile[]
+  ) => {
+    const allItems: (FullOraculoFolder | FullOraculoFile)[] = [];
+
+    const walk = (folder: FullOraculoFolder) => {
+      allItems.push(folder);
+      // arquivos dentro da pasta
+      const childFiles = files.filter((f) => f.folderId === folder.id);
+      allItems.push(...childFiles);
+
+      // pastas filhas
+      const childFolders = folders.filter((f) => f.parentId === folder.id);
+      childFolders.forEach(walk);
+    };
+
+    // começa pelos de raiz
+    const rootFolders = folders.filter((f) => f.parentId === null);
+    rootFolders.forEach(walk);
+
+    // arquivos soltos na raiz
+    const rootFiles = files.filter((f) => f.folderId === null);
+    allItems.push(...rootFiles);
+
+    return allItems;
+  };
+
   const filteredItems = useMemo(() => {
     if (!data) return { folders: [], files: [] };
     const userAreas = (user?.currentRole?.area as OraculoAreas[]) || [];
@@ -78,7 +106,7 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
       return restrictedAreas.some((area) => userAreas.includes(area as any));
     };
 
-    let items = [...(data.folders || []), ...(data.files || [])].filter(
+    let items = flattenOraculo(data.folders || [], data.files || []).filter(
       filterByPermissions
     );
 
@@ -146,12 +174,12 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
       type: OraculoActionType;
       payload: any;
     }) => {
-  
       if (type === "rename") {
         const { item, name } = payload;
         const itemType = "parentId" in item ? "folders" : "files";
         return axios.patch(`${API_URL}/api/oraculo/${itemType}/${item.id}`, {
-          name, restrictedToAreas: payload.restrictedToAreas
+          name,
+          restrictedToAreas: payload.restrictedToAreas,
         });
       }
       // Para createFolder e uploadFile, o payload já é o FormData
@@ -170,23 +198,34 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
       }),
   });
 
-   const { mutate: moveItemMutation } = useMutation({
-        mutationFn: ({ itemId, targetFolderId }: { itemId: string, targetFolderId: string | null }) => {
-            return axios.patch(`${API_URL}/api/oraculo/move`, { itemId, targetFolderId });
-        },
-        onSuccess: () => {
-            toast.success("Item movido com sucesso!");
-            queryClient.invalidateQueries({ queryKey: ["oraculoData"] });
-        },
-        onError: (e: AxiosError<{ message: string }>) => {
-            toast.error("Erro ao mover item", { description: e.response?.data?.message });
-        }
-    });
+  const { mutate: moveItemMutation } = useMutation({
+    mutationFn: ({
+      itemId,
+      targetFolderId,
+    }: {
+      itemId: string;
+      targetFolderId: string | null;
+    }) => {
+      return axios.patch(`${API_URL}/api/oraculo/move`, {
+        itemId,
+        targetFolderId,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Item movido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["oraculoData"] });
+    },
+    onError: (e: AxiosError<{ message: string }>) => {
+      toast.error("Erro ao mover item", {
+        description: e.response?.data?.message,
+      });
+    },
+  });
 
-    const handleMoveItem = (itemId: string, targetFolderId: string | null) => {
-        // Adicione aqui verificações, se necessário (ex: não mover uma pasta para dentro de si mesma)
-        moveItemMutation({ itemId, targetFolderId });
-    };
+  const handleMoveItem = (itemId: string, targetFolderId: string | null) => {
+    // Adicione aqui verificações, se necessário (ex: não mover uma pasta para dentro de si mesma)
+    moveItemMutation({ itemId, targetFolderId });
+  };
 
   const buildBreadcrumbsFromId = (folderId: string | null) => {
     if (folderId === null) {
@@ -225,19 +264,17 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     }, 10); // Pequeno delay para garantir que o ContextMenu feche
   };
 
-  
-
   const handleFolderNavigation = (folder: FullOraculoFolder | null) => {
-        if (folder === null) {
-            // Se for nulo, volta para a raiz
-            setCurrentFolderId(null);
-            setBreadcrumbs([{ id: null, name: 'Início' }]);
-        } else {
-            // Se for uma pasta, constrói o caminho
-            buildBreadcrumbsFromId(folder.id);
-            setCurrentFolderId(folder.id);
-        }
-    };
+    if (folder === null) {
+      // Se for nulo, volta para a raiz
+      setCurrentFolderId(null);
+      setBreadcrumbs([{ id: null, name: "Início" }]);
+    } else {
+      // Se for uma pasta, constrói o caminho
+      buildBreadcrumbsFromId(folder.id);
+      setCurrentFolderId(folder.id);
+    }
+  };
 
   return (
     <>
@@ -259,6 +296,41 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <div className="absolute mt-1 w-full bg-[#00205e] border border-[#0126fb] rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                {[...filteredItems.folders, ...filteredItems.files].length >
+                0 ? (
+                  [...filteredItems.folders, ...filteredItems.files]
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className="px-3 py-2 hover:bg-white/10 cursor-pointer text-white text-sm flex justify-between"
+                        onClick={() => {
+                          if ("parentId" in item) {
+                            // pasta → navega
+                            handleFolderNavigation(item);
+                          } else {
+                            // arquivo → abre preview
+                            setSelectedItem(item);
+                          }
+                          setSearchQuery(""); // limpa barra
+                        }}
+                      >
+                        {item.name}
+                        {"parentId" in item ? (
+                          <span className="text-xs opacity-70">[Pasta]</span>
+                        ) : (
+                          <span className="text-xs opacity-70">[Arquivo]</span>
+                        )}
+                      </div>
+                    ))
+                ) : (
+                  <div className="px-3 py-2 text-gray-400 text-sm">
+                    Nenhum resultado
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex md:justify-end items-center gap-2 w-full col-span-1">
             <Button
@@ -306,14 +378,12 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
           }}
           onFolderClick={handleFolderNavigation}
         />
-
-     
       </div>
 
       <div className="mt-4 p-4 rounded-lg grid grid-cols-1 lg:grid-cols-10 gap-6 bg-[#010d26] border border-gray-800 min-h-[50vh]">
         <div className={selectedItem ? "lg:col-span-6" : "lg:col-span-10"}>
           <FileBrowser
-          onMoveItem={handleMoveItem}
+            onMoveItem={handleMoveItem}
             allFolders={filteredItems.folders}
             allFiles={filteredItems.files}
             viewMode={viewMode}
@@ -328,7 +398,9 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
             onCreateFolder={() => handleAction("createFolder")}
             onRename={(item) => handleAction("rename", item)}
             onDelete={(item) => {
-              setTimeout(() => { setItemToDelete(item); }, 10); // Pequeno delay para garantir que o ContextMenu feche
+              setTimeout(() => {
+                setItemToDelete(item);
+              }, 10); // Pequeno delay para garantir que o ContextMenu feche
             }}
           />
         </div>
