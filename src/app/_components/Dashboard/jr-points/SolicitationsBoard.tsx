@@ -182,14 +182,14 @@ const SolicitationsBoard = ({
             Painel de Requisições
           </h2>
           <div className="flex w-full items-center justify-center flex-col gap-2 md:gap-4">
-            <div className="xl:mb-2 xl:mt-0 flex w-full items-center justify-center lg:justify-end gap-2">
+            <div className="xl:mb-2 xl:mt-0 flex w-full md:flex-row flex-col items-center justify-center lg:justify-end gap-2">
               <Select value={itemsPerPage} onValueChange={setItemsPerPage}>
                 <SelectTrigger className="w-[240px] bg-[#00205e]/50 border-[#00205e] text-white">
                   <SelectValue
                     placeholder={`${itemsPerPage} itens por página`}
                   />
                 </SelectTrigger>
-                <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                <SelectContent className="bg-[#00205e] text-white border-[#0126fb] w-full">
                   {Array.from({ length: 5 }, (_, i) => (i + 1) * 6).map(
                     (num) => (
                       <SelectItem
@@ -203,9 +203,7 @@ const SolicitationsBoard = ({
                   )}
                 </SelectContent>
               </Select>
-            </div>
 
-            <div className="w-full flex justify-center lg:justify-end">
               <CommandMultiSelect
                 value={selectedTagIds}
                 onChange={setSelectedTagIds}
@@ -214,6 +212,7 @@ const SolicitationsBoard = ({
                   value: t.id,
                   label: t.name,
                 }))}
+               
               />
             </div>
 
@@ -283,7 +282,7 @@ const SolicitationsBoard = ({
                 }`}
             >
               {tab.label} (
-              {allRequests.filter((r) => r.status === tab.status).length})
+              {paginatedData.filter((r) => r.status === tab.status).length})
             </button>
           ))}
         </nav>
