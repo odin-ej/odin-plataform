@@ -45,6 +45,7 @@ export async function PATCH(
         CopySource: `${bucket}/${oldKey}`, // formato BUCKET/KEY
         Key: newKey,
         ContentType: fileToRename.fileType,
+        MetadataDirective: "REPLACE",
       })
     );
 
@@ -100,7 +101,7 @@ export async function DELETE(
 
     await s3Client.send(
       new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME!,
+        Bucket: process.env.ORACULO_S3_BUCKET_NAME!,
         Key: fileToDelete.key,
       })
     );

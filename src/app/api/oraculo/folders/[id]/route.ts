@@ -50,9 +50,6 @@ export async function PATCH(
       where: { id: id },
       include: { owner: true },
     });
-    console.log("----------------------------------------------------")
-    console.log(body)
-    console.log("----------------------------------------------------")
     if (!folderToRename)
       return NextResponse.json(
         { message: "Pasta não encontrada." },
