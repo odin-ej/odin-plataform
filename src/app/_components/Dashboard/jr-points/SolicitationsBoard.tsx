@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Prisma, TagTemplate } from "@prisma/client";
-import { Building, Inbox, Search, User } from "lucide-react";
+import {
+  Building,
+  Inbox,
+  Search,
+  User,
+  FilePlus,
+  ShieldAlert,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import Pagination from "../../Global/Custom/Pagination";
 import RequestCard from "./RequestCard";
@@ -89,6 +96,9 @@ const SolicitationsBoard = ({
   const [activeTab, setActiveTab] = useState<
     "PENDING" | "APPROVED" | "REJECTED"
   >("PENDING");
+  const [requestType, setRequestType] = useState<
+    "all" | "solicitation" | "report"
+  >("all");
   const [targetFilter, setTargetFilter] = useState<
     "all" | "user" | "enterprise"
   >("all");
@@ -96,7 +106,8 @@ const SolicitationsBoard = ({
   const [itemsPerPage, setItemsPerPage] = useState("6");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const allRequests = useMemo(
+
+  const allItems = useMemo(
     () =>
       [
         ...solicitations.map((s) => ({ ...s, type: "solicitation" as const })),
@@ -110,38 +121,47 @@ const SolicitationsBoard = ({
 
   const filteredData = useMemo(() => {
     setCurrentPage(1); // Reset page when filters change
-    let items = allRequests.filter((r) => r.status === activeTab);
+    let items = allItems;
 
+    // 1. Filtrar por tipo (Solicitação ou Denúncia)
+    if (requestType === "solicitation") {
+      items = items.filter((item) => item.type === "solicitation");
+    } else if (requestType === "report") {
+      items = items.filter((item) => item.type === "report");
+    }
+
+    // 2. Filtrar por status (Pendente, Aprovado, Rejeitado)
+    items = items.filter((r) => r.status === activeTab);
+
+    // 3. Filtrar por alvo (Pessoal ou Empresa)
     if (targetFilter === "user") {
       items = items.filter((r) => !r.isForEnterprise);
     } else if (targetFilter === "enterprise") {
       items = items.filter((r) => r.isForEnterprise);
     }
 
-    // Apply search term filter
+    // 4. Filtrar por termo de busca
     if (searchTerm) {
       const normalizedSearch = searchTerm
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
-
       items = items.filter((item) => {
         const descriptionMatch = item.description
           .toLowerCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
           .includes(normalizedSearch);
-
         const userNameMatch = item.user.name
           .toLowerCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
           .includes(normalizedSearch);
-
         return descriptionMatch || userNameMatch;
       });
     }
 
+    // 5. Filtrar por tags selecionadas
     if (selectedTagIds.length > 0) {
       items = items.filter((item) => {
         if (item.type === "solicitation") {
@@ -155,18 +175,15 @@ const SolicitationsBoard = ({
     }
 
     return items;
-  }, [allRequests, activeTab, targetFilter, searchTerm, selectedTagIds]);
+  }, [allItems, activeTab, requestType, targetFilter, searchTerm, selectedTagIds]);
 
-  // Pagina os dados filtrados
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * Number(itemsPerPage);
     return filteredData.slice(startIndex, startIndex + Number(itemsPerPage));
   }, [filteredData, currentPage, itemsPerPage]);
 
   const totalPages =
-    Math.ceil(filteredData.length / Number(itemsPerPage)) === 0
-      ? 1
-      : Math.ceil(filteredData.length / Number(itemsPerPage));
+    Math.ceil(filteredData.length / Number(itemsPerPage)) || 1;
 
   const TABS = [
     { status: "PENDING", label: "Pendentes" },
@@ -175,93 +192,136 @@ const SolicitationsBoard = ({
   ];
 
   return (
-    <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-6 text-white shadow-lg mt-6">
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex lg:flex-row flex-col justify-center md:justify-between text-center xl:text-start w-full items-center gap-2">
-          <h2 className="text-2xl w-full text-center xl:text-start  font-bold text-[#0126fb]">
-            Painel de Requisições
-          </h2>
-          <div className="flex w-full items-center justify-center flex-col gap-2 md:gap-4">
-            <div className="xl:mb-2 xl:mt-0 flex w-full md:flex-row flex-col items-center justify-center lg:justify-end gap-2">
-              <Select value={itemsPerPage} onValueChange={setItemsPerPage}>
-                <SelectTrigger className="w-[240px] bg-[#00205e]/50 border-[#00205e] text-white">
-                  <SelectValue
-                    placeholder={`${itemsPerPage} itens por página`}
-                  />
-                </SelectTrigger>
-                <SelectContent className="bg-[#00205e] text-white border-[#0126fb] w-full">
-                  {Array.from({ length: 5 }, (_, i) => (i + 1) * 6).map(
-                    (num) => (
-                      <SelectItem
-                        key={num}
-                        value={String(num)}
-                        className="hover:bg-[#0126fb]/50"
-                      >
-                        {num} itens por página
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+    <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-4 sm:p-6 text-white shadow-lg mt-6">
+      {/* CABEÇALHO */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <h2 className="text-2xl font-bold text-center sm:text-left text-[#0126fb]">
+          Painel de Requisições
+        </h2>
+        <div className="w-full sm:w-auto min-w-[220px]">
+          <Select value={itemsPerPage} onValueChange={setItemsPerPage}>
+            <SelectTrigger className="w-full bg-[#00205e]/50 border-[#00205e] text-white">
+              <SelectValue placeholder={`${itemsPerPage} itens por página`} />
+            </SelectTrigger>
+            <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+              {Array.from({ length: 5 }, (_, i) => (i + 1) * 6).map((num) => (
+                <SelectItem
+                  key={num}
+                  value={String(num)}
+                  className="hover:bg-[#0126fb]/50"
+                >
+                  {num} itens por página
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-              <CommandMultiSelect
-                value={selectedTagIds}
-                onChange={setSelectedTagIds}
-                label="Filtrar por Tags"
-                options={allTagTemplates.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                }))}
-               
-              />
+      {/* PAINEL DE FILTROS RESPONSIVO */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4 mb-6">
+        {/* Coluna Esquerda: Busca e Tags */}
+        <div className="space-y-4">
+          <div className="relative">
+            <label className="text-sm font-medium text-white mb-2 block">
+              Pesquisar
+            </label>
+            <Search className="absolute left-3 bottom-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Por nome ou descrição..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-10 bg-[#00205e]/50 border-gray-700 text-white placeholder:text-gray-500 pl-9 w-full"
+            />
+          </div>
+          <div>
+            <CommandMultiSelect
+              value={selectedTagIds}
+              onChange={setSelectedTagIds}
+              label="Filtrar por Tags"
+              placeholder="Selecione uma ou mais tags..."
+              options={allTagTemplates.map((t) => ({
+                value: t.id,
+                label: t.name,
+              }))}
+            />
+          </div>
+        </div>
+
+        {/* Coluna Direita: Filtros de Botão */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+          <div>
+            <label className="text-sm font-medium text-white mb-2 block">
+              Tipo de Requisição
+            </label>
+            <div className="flex w-full items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
+              <Button
+                size="sm"
+                onClick={() => setRequestType("all")}
+                className={cn(
+                  "w-full bg-transparent hover:bg-[#f5b719]/90 hover:text-white",
+                  requestType === "all" && "bg-[#f5b719]"
+                )}
+              >
+                Todos
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setRequestType("solicitation")}
+                className={cn(
+                  "w-full bg-transparent hover:bg-[#0126fb]/90 hover:text-white",
+                  requestType === "solicitation" && "bg-[#0126fb]"
+                )}
+              >
+                <FilePlus className="h-4 w-4 mr-2" /> Solicitações
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setRequestType("report")}
+                className={cn(
+                  "w-full bg-transparent hover:bg-red-500/90 hover:text-white",
+                  requestType === "report" && "bg-red-500"
+                )}
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" /> Recursos
+              </Button>
             </div>
-
-            <div className="flex flex-col w-full md:justify-end justify-center md:flex-row gap-2 sm:gap-4 items-center">
-              <div className="relative flex-grow w-full xl:flex-grow-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Pesquisar por nome ou descrição..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 text-xs md:text-md bg-[#00205e]/50 border-gray-700 text-white placeholder:text-gray-500 pl-9 w-full"
-                />
-              </div>
-              {/* Target Filter Buttons */}
-              <div className="flex sm:flex-row flex-col sm:mt-0 mt-2 w-full sm:w-auto items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
-                <Button
-                  size="sm"
-                  onClick={() => setTargetFilter("all")}
-                  variant={targetFilter === "all" ? "default" : "ghost"}
-                  className={cn(
-                    "bg-transparent hover:bg-[#f5b719]/90 disabled:bg-[#f5b719]/50 hover:text-white",
-                    targetFilter === "all" && "bg-[#f5b719]"
-                  )}
-                >
-                  Todos
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setTargetFilter("user")}
-                  variant={targetFilter === "user" ? "default" : "ghost"}
-                  className={cn(
-                    "bg-transparent hover:bg-[#0126fb]/90 disabled:bg-[#0126fb]/50 hover:text-white",
-                    targetFilter === "user" && "bg-[#0126fb]"
-                  )}
-                >
-                  <User className="h-4 w-4 mr-2" /> Pessoais
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setTargetFilter("enterprise")}
-                  variant={targetFilter === "enterprise" ? "default" : "ghost"}
-                  className={cn(
-                    "bg-transparent hover:bg-[#00205e]/90 disabled:bg-[#00205e]/50",
-                    targetFilter === "enterprise" && "bg-[#00205e]"
-                  )}
-                >
-                  <Building className="h-4 w-4 mr-2" /> Da Empresa
-                </Button>
-              </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-white mb-2 block">
+              Alvo da Requisição
+            </label>
+            <div className="flex w-full items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
+              <Button
+                size="sm"
+                onClick={() => setTargetFilter("all")}
+                className={cn(
+                  "w-full bg-transparent hover:bg-[#f5b719]/90 hover:text-white",
+                  targetFilter === "all" && "bg-[#f5b719]"
+                )}
+              >
+                Todos
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setTargetFilter("user")}
+                className={cn(
+                  "w-full bg-transparent hover:bg-[#0126fb]/90 hover:text-white",
+                  targetFilter === "user" && "bg-[#0126fb]"
+                )}
+              >
+                <User className="h-4 w-4 mr-2" /> Pessoais
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setTargetFilter("enterprise")}
+                className={cn(
+                  "w-full bg-transparent hover:bg-[#00205e]/90",
+                  targetFilter === "enterprise" && "bg-[#00205e]"
+                )}
+              >
+                <Building className="h-4 w-4 mr-2" /> Empresa
+              </Button>
             </div>
           </div>
         </div>
@@ -269,20 +329,19 @@ const SolicitationsBoard = ({
 
       {/* Abas de Status */}
       <div className="border-b border-gray-700">
-        <nav className="-mb-px flex sm:flex-row flex-col items-center justify-center sm:justify-start  sm:space-x-6">
+        <nav className="-mb-px flex flex-wrap justify-center sm:justify-start sm:space-x-6">
           {TABS.map((tab) => (
             <button
               key={tab.status}
               onClick={() => setActiveTab(tab.status as any)}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
-                ${
-                  activeTab === tab.status
-                    ? "border-[#f5b719] text-[#f5b719]"
-                    : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500"
-                }`}
+              className={cn(
+                "whitespace-nowrap py-3 px-2 sm:px-1 border-b-2 font-medium text-sm transition-colors",
+                activeTab === tab.status
+                  ? "border-[#f5b719] text-[#f5b719]"
+                  : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500"
+              )}
             >
-              {tab.label} (
-              {allRequests.filter((r) => r.status === tab.status).length})
+              {tab.label} ({allItems.filter((r) => r.status === tab.status).length})
             </button>
           ))}
         </nav>
@@ -291,13 +350,9 @@ const SolicitationsBoard = ({
       {/* Conteúdo da Aba */}
       <div className="mt-6">
         {paginatedData.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {paginatedData.map((item) => (
-              <RequestCard
-                key={item.id}
-                item={item}
-                onCardClick={onCardClick}
-              />
+              <RequestCard key={item.id} item={item} onCardClick={onCardClick} />
             ))}
           </div>
         ) : (
