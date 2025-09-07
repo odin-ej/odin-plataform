@@ -283,7 +283,7 @@ const SolicitationsBoard = ({
                   requestType === "report" && "bg-red-500"
                 )}
               >
-                <ShieldAlert className="h-4 w-4 mr-2" /> Denúncias
+                <ShieldAlert className="h-4 w-4 mr-2" /> Recursos
               </Button>
             </div>
           </div>
