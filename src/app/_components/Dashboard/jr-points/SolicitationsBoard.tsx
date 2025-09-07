@@ -282,7 +282,7 @@ const SolicitationsBoard = ({
                 }`}
             >
               {tab.label} (
-              {paginatedData.filter((r) => r.status === tab.status).length})
+              {allRequests.filter((r) => r.status === tab.status).length})
             </button>
           ))}
         </nav>
