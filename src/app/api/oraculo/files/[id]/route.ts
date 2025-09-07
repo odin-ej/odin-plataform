@@ -24,7 +24,7 @@ export async function PATCH(
     const authUser = await getAuthenticatedUser();
     if (!authUser)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-    const { newName, restrictedToAreas } = await request.json();
+    const { name, restrictedToAreas } = await request.json();
     const fileToRename = await prisma.oraculoFile.findUnique({
       where: { id: id },
     });
@@ -33,6 +33,15 @@ export async function PATCH(
         { message: "Arquivo não encontrado." },
         { status: 404 }
       );
+      console.log(name)
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      return NextResponse.json(
+        {
+          message: "O novo nome do arquivo é obrigatório e não pode ser vazio.",
+        },
+        { status: 400 } // 400 Bad Request
+      );
+    }
     const isOwner = fileToRename.ownerId === authUser.id;
     if (!isOwner && !checkUserPermission(authUser, DIRECTORS_ONLY))
       return NextResponse.json({ message: "Não autorizado" }, { status: 403 });
@@ -44,9 +53,9 @@ export async function PATCH(
     const ownerId = parts[1]; // 123
     // ignoramos o timestamp pra não gerar duplicado
     const extension = fileToRename.name.split(".").pop() || "";
-    const safeNewName = normalizeFileName(newName);
+    const safename = normalizeFileName(name);
 
-    const newKey = `${parentId}/${ownerId}/${safeNewName}.${extension}`;
+    const newKey = `${parentId}/${ownerId}/${safename}.${extension}`;
 
     // Codifica cada parte do caminho antigo
     const encodedOldKey = oldKey
@@ -65,7 +74,6 @@ export async function PATCH(
       })
     );
 
-
     // Deleta o antigo
     await s3Client.send(
       new DeleteObjectCommand({
@@ -78,7 +86,7 @@ export async function PATCH(
     await prisma.oraculoFile.update({
       where: { id },
       data: {
-        name: newName,
+        name: name,
         key: newKey, // precisa salvar a nova key também
         restrictedToAreas,
       },
