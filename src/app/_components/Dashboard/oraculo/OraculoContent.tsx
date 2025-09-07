@@ -26,12 +26,6 @@ import OraculoActionModal from "./OraculoActionModal";
 
 type OraculoActionType = "createFolder" | "uploadFile" | "rename";
 
-/*
-  TO DO:
-  API's
-  Consertar design responsivo
-*/
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {

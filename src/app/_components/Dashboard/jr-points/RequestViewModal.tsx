@@ -47,8 +47,11 @@ export interface ReviewData {
 }
 
 type ReviewRequest =
-  | (FullJRPointsReport & { type: "report", template: {name:string} })
-  | (FullJRPointsSolicitation & { type: "solicitation", template: {name:string}  });
+  | (FullJRPointsReport & { type: "report"; template: { name: string } })
+  | (FullJRPointsSolicitation & {
+      type: "solicitation";
+      template: { name: string };
+    });
 
 interface RequestReviewModalProps {
   request: ReviewRequest | null;
@@ -201,8 +204,10 @@ const RequestReviewModal = ({
 
   const isSolicitation = (
     req: ReviewRequest
-  ): req is FullJRPointsSolicitation & { type: "solicitation", template: {name:string}  } =>
-    req.type === "solicitation";
+  ): req is FullJRPointsSolicitation & {
+    type: "solicitation";
+    template: { name: string };
+  } => req.type === "solicitation";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -240,10 +245,23 @@ const RequestReviewModal = ({
                     )}
                     Alvo: {request.isForEnterprise ? "Empresa" : "Membros"}
                   </Badge>
-                  <Badge className={cn(request.status === "PENDING" ? "bg-[#f5b719]" : request.status === "APPROVED" ? "bg-green-600" : "bg-red-600", 'text-white')}>
-                    Status: {request.status === "PENDING" ? "Pendente" : request.status === "APPROVED" ? "Aprovado" : "Rejeitado"}
+                  <Badge
+                    className={cn(
+                      request.status === "PENDING"
+                        ? "bg-[#f5b719]"
+                        : request.status === "APPROVED"
+                        ? "bg-green-600"
+                        : "bg-red-600",
+                      "text-white"
+                    )}
+                  >
+                    Status:{" "}
+                    {request.status === "PENDING"
+                      ? "Pendente"
+                      : request.status === "APPROVED"
+                      ? "Aprovado"
+                      : "Rejeitado"}
                   </Badge>
-
                 </DialogDescription>
               </div>
             </div>
@@ -278,14 +296,12 @@ const RequestReviewModal = ({
                     field="newValue"
                     label="Novo Valor (Pontos)"
                     type="number"
-                    disabled={request.status !== "PENDING"}
                   />
                   <div className="sm:col-span-2">
                     <CustomInput
                       form={form}
                       field="newDescription"
                       label="Nova Descrição da Tag"
-                      disabled={request.status !== "PENDING"}
                     />
                   </div>
                 </div>
@@ -356,7 +372,11 @@ const RequestReviewModal = ({
                                         {t.name}: {finalValue} pts
                                         {bonus !== 0 && (
                                           <span
-                                            className={`ml-1.5 flex items-center ${bonus > 0 ? "text-green-400" : "text-red-400"}`}
+                                            className={`ml-1.5 flex items-center ${
+                                              bonus > 0
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                            }`}
                                           >
                                             <Sparkles className="h-3 w-3 mr-1" />
                                             ({bonus > 0 ? `+${bonus}` : bonus})
@@ -380,7 +400,8 @@ const RequestReviewModal = ({
                 </h4>
                 <div className="mt-2 text-sm space-y-2 border-l-2 border-gray-600 pl-3">
                   <p>
-                    <strong>Tag Contestada:</strong> {request.tag.template?.name ?? request.tag.description}
+                    <strong>Tag Contestada:</strong>{" "}
+                    {request.tag.template?.name ?? request.tag.description}
                   </p>
                   <p>
                     <strong>Valor Original:</strong> {request.tag.value} pontos
@@ -432,7 +453,7 @@ const RequestReviewModal = ({
             <Button
               variant="destructive"
               onClick={form.handleSubmit(handleSubmit("REJECTED"))}
-              disabled={isReviewing}
+              disabled={isReviewing || request.status === "REJECTED"}
             >
               <Loader2
                 className={`animate-spin mr-2 ${!isReviewing && "hidden"}`}
@@ -443,7 +464,7 @@ const RequestReviewModal = ({
             <Button
               className="bg-green-600 hover:bg-green-700"
               onClick={form.handleSubmit(handleSubmit("APPROVED"))}
-              disabled={isReviewing}
+              disabled={isReviewing || request.status === "APPROVED"}
             >
               <Loader2
                 className={`animate-spin mr-2 ${!isReviewing && "hidden"}`}
@@ -451,7 +472,6 @@ const RequestReviewModal = ({
               <Check className={`mr-2 h-4 w-4 ${isReviewing && "hidden"}`} />{" "}
               Aprovar
             </Button>
-         
           </DialogFooter>
         </Form>
       </DialogContent>
