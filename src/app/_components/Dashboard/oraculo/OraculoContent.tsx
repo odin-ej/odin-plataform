@@ -297,7 +297,7 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <div className="absolute mt-1 w-full bg-[#00205e] border border-[#0126fb] rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+              <div className="absolute mt-1 w-full bg-[#00205e] border border-[#0126fb] rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                 {[...filteredItems.folders, ...filteredItems.files].length >
                 0 ? (
                   [...filteredItems.folders, ...filteredItems.files]
