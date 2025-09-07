@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import crypto from "crypto";
+import * as crypto from "crypto";
 import { s3Client } from "@/lib/aws";
 
 // Função para gerar um nome de arquivo aleatório e seguro

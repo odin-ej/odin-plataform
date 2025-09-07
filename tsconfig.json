@@ -7,8 +7,8 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@/server/*": ["../server/*"],
+      "@/server/*": ["../server/*"]
     }
   },
   "include": [
@@ -28,7 +28,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/app/(dashboard)/chat/[conversationId]/page.tsx",
+    "src/app/(dashboard)/chat/[conversationId]/page.tsx"
   ],
   "exclude": ["node_modules"]
 }

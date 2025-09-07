@@ -12,9 +12,30 @@ const nextConfig: NextConfig = {
         pathname: "/**",
         // Você pode ser mais específico com a porta e o pathname se desejar
       },
+      {
+        protocol: "https",
+        hostname: "odin-plataform-oraculo-system.s3.amazonaws.com",
+        port: "",
+        pathname: "/**",
+        // Você pode ser mais específico com a porta e o pathname se desejar
+      },
+      {
+        protocol: "https",
+        hostname: "i.imgur.com",
+        port: "",
+        pathname: "/**",
+        // Você pode ser mais específico com a porta e o pathname se desejar
+      },
             {
         protocol: "https",
         hostname: "odin-plataform-jr-points-attachments.s3.amazonaws.com",
+        port: "",
+        pathname: "/**",
+        // Você pode ser mais específico com a porta e o pathname se desejar
+      },
+            {
+        protocol: "https",
+        hostname: "odin-plataform-oraculo-system.s3.sa-east-1.amazonaws.com",
         port: "",
         pathname: "/**",
         // Você pode ser mais específico com a porta e o pathname se desejar

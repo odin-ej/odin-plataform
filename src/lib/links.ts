@@ -7,6 +7,7 @@ import {
   CircleUser,
   ClipboardList,
   Clock,
+  EyeIcon,
   Goal,
   HomeIcon,
   LayoutDashboard,
@@ -70,12 +71,18 @@ export const generalLinks: Links[] = [
     href: "/reports",
     icon: Megaphone,
   },
-{
-    name: 'Central de Reservas',
-    href: '/central-de-reservas',
+  {
+    name: "Central de Reservas",
+    href: "/central-de-reservas",
     icon: CalendarClock,
     exMemberCanAccess: false,
-  }
+  },
+  {
+    name: "Oráculo",
+    href: "/oraculo",
+    icon: EyeIcon,
+    exMemberCanAccess: false,
+  },
 ];
 
 export const personalLinks: Links[] = [
@@ -152,8 +159,8 @@ export const restrictedLinks: RestrictedLinks[] = [
     exMemberCanAccess: false,
   },
   {
-    name: 'Gerenciar Link Posters',
-    href: '/gerenciar-link-posters',
+    name: "Gerenciar Link Posters",
+    href: "/gerenciar-link-posters",
     icon: Link,
     roles: [
       { name: "Diretor(a) Presidente" },
@@ -164,9 +171,9 @@ export const restrictedLinks: RestrictedLinks[] = [
     ],
     exMemberCanAccess: false,
   },
-    {
-    name: 'Gerenciar Cargos',
-    href: '/gerenciar-cargos',
+  {
+    name: "Gerenciar Cargos",
+    href: "/gerenciar-cargos",
     icon: BookUser,
     roles: [
       { name: "Diretor(a) Presidente" },
@@ -176,9 +183,10 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Projetos" },
     ],
     exMemberCanAccess: false,
-  }, {
-    name: 'Gerenciar JR Points',
-    href: '/gerenciar-jr-points',
+  },
+  {
+    name: "Gerenciar JR Points",
+    href: "/gerenciar-jr-points",
     icon: JrPointIconWhite,
     roles: [
       { name: "Diretor(a) Presidente" },
@@ -188,5 +196,5 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Projetos" },
     ],
     exMemberCanAccess: false,
-  }
+  },
 ];

@@ -118,7 +118,7 @@ export async function GET() {
                 },
               },
               actionType: true,
-              template: { select: { name: true } },
+              template: { select: { name: true, id: true } },
             },
           },
           jrPointsVersion: { select: { versionName: true } },

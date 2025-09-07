@@ -29,7 +29,8 @@ export async function GET() {
         assigner: true,
         actionType: true,
         jrPointsVersion: true,
-        template:true
+        template:true,
+        generatedBySolicitation: {select: {id:true}},
       },
       orderBy: { datePerformed: "desc" },
     });

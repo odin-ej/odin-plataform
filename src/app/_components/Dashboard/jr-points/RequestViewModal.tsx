@@ -34,6 +34,7 @@ import CustomInput from "../../Global/Custom/CustomInput";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
+import { cn } from "@/lib/utils";
 
 // ... (interfaces e tipos não mudam) ...
 export interface ReviewData {
@@ -239,6 +240,10 @@ const RequestReviewModal = ({
                     )}
                     Alvo: {request.isForEnterprise ? "Empresa" : "Membros"}
                   </Badge>
+                  <Badge className={cn(request.status === "PENDING" ? "bg-[#f5b719]" : request.status === "APPROVED" ? "bg-green-600" : "bg-red-600", 'text-white')}>
+                    Status: {request.status === "PENDING" ? "Pendente" : request.status === "APPROVED" ? "Aprovado" : "Rejeitado"}
+                  </Badge>
+
                 </DialogDescription>
               </div>
             </div>
@@ -420,7 +425,6 @@ const RequestReviewModal = ({
               field="directorsNotes"
               label="Justificativa da Decisão (Obrigatório)"
               placeholder="Adicione uma nota para o membro..."
-              disabled={request.status !== "PENDING"}
             />
           </div>
 
@@ -428,7 +432,7 @@ const RequestReviewModal = ({
             <Button
               variant="destructive"
               onClick={form.handleSubmit(handleSubmit("REJECTED"))}
-              disabled={isReviewing || request.status !== "PENDING"}
+              disabled={isReviewing}
             >
               <Loader2
                 className={`animate-spin mr-2 ${!isReviewing && "hidden"}`}
@@ -439,7 +443,7 @@ const RequestReviewModal = ({
             <Button
               className="bg-green-600 hover:bg-green-700"
               onClick={form.handleSubmit(handleSubmit("APPROVED"))}
-              disabled={isReviewing || request.status !== "PENDING"}
+              disabled={isReviewing}
             >
               <Loader2
                 className={`animate-spin mr-2 ${!isReviewing && "hidden"}`}
@@ -447,6 +451,7 @@ const RequestReviewModal = ({
               <Check className={`mr-2 h-4 w-4 ${isReviewing && "hidden"}`} />{" "}
               Aprovar
             </Button>
+         
           </DialogFooter>
         </Form>
       </DialogContent>

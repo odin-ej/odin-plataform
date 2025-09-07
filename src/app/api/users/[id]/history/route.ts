@@ -39,6 +39,7 @@ export async function GET(
         assigner: true,
         actionType: true,
         jrPointsVersion: true,
+        generatedBySolicitation: {select: {id:true}},
         template:true,
       },
       orderBy: {

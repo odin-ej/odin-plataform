@@ -29,12 +29,14 @@ import {
   TrendingUp,
   CircleUser,
   Building,
+  ScrollText,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
 interface HistoryItemDetailsModalProps {
   isOpen: boolean;
+  isDirector: boolean;
   onClose: () => void;
   item: {
     type: "tag" | "solicitation" | "report";
@@ -46,6 +48,7 @@ interface HistoryItemDetailsModalProps {
 const DetailRow = ({
   icon,
   label,
+
   value,
 }: {
   icon: React.ReactNode;
@@ -85,6 +88,7 @@ const ModalHeader = ({
 
 const HistoryItemDetailsModal = ({
   isOpen,
+  isDirector = false,
   onClose,
   item,
 }: HistoryItemDetailsModalProps) => {
@@ -236,6 +240,15 @@ const HistoryItemDetailsModal = ({
                   label="Versão das Regras"
                   value={data.jrPointsVersion?.versionName}
                 />
+                {isDirector && (
+                  <>
+                    <DetailRow
+                      icon={<ScrollText size={16} />}
+                      label='ID da Solicitação'
+                      value={data.generatedBySolicitationId || "N/A"}
+                    />
+                  </>
+                )}
               </dl>
             </div>
           </>
@@ -249,6 +262,13 @@ const HistoryItemDetailsModal = ({
             />
             <div className="p-6">
               <dl>
+                {isDirector && (
+                  <DetailRow
+                    icon={<ScrollText size={16} />}
+                    label='ID da Solicitação'
+                    value={data.id || "N/A"}
+                  />
+                )}
                 <DetailRow
                   icon={<Hash size={16} />}
                   label="Status"

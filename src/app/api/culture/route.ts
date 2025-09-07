@@ -22,7 +22,7 @@ export async function GET() {
         },
       }),
       prisma.user.findMany({
-        where: { id: { not: "f34cea1a-c091-709f-d7ae-ac6583665cbd" } },
+        where: { id: { not: process.env.ADMIN_ID as string } },
         include: {
           roles: true,
           currentRole: true,

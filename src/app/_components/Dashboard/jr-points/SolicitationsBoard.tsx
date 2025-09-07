@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
-import { Prisma } from "@prisma/client";
+import { Prisma, TagTemplate } from "@prisma/client";
 import { Building, Inbox, Search, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import Pagination from "../../Global/Custom/Pagination";
@@ -67,7 +67,7 @@ export type FullJRPointsReport = Prisma.JRPointsReportGetPayload<{
       include: {
         assigner: true;
         actionType: true;
-        template: { select: { name: true } };
+        template: { select: { name: true, id: true } };
       };
     };
     attachments: true;
@@ -77,10 +77,12 @@ export type FullJRPointsReport = Prisma.JRPointsReportGetPayload<{
 const SolicitationsBoard = ({
   solicitations = [],
   reports = [],
+  allTagTemplates = [],
   onCardClick,
 }: {
   solicitations: FullJRPointsSolicitation[];
   reports: FullJRPointsReport[];
+  allTagTemplates: TagTemplate[]
   onCardClick: (item: any) => void;
 }) => {
   const [activeTab, setActiveTab] = useState<
@@ -92,6 +94,7 @@ const SolicitationsBoard = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState("6");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTagId, setSelectedTagId] = useState<string>("all");
   const allRequests = useMemo(
     () =>
       [
@@ -138,8 +141,21 @@ const SolicitationsBoard = ({
       });
     }
 
+    if (selectedTagId !== 'all') {
+        items = items.filter(item => {
+            if (item.type === 'solicitation') {
+                return item.tags.some(tag => tag.id === selectedTagId);
+            }
+            if (item.type === 'report') {
+                return item.tag.template?.id === selectedTagId;
+            }
+            return false;
+        });
+    }
+
+
     return items;
-  }, [allRequests, activeTab, targetFilter, searchTerm]);
+  }, [allRequests, activeTab, targetFilter, searchTerm, selectedTagId]);
 
   // Pagina os dados filtrados
   const paginatedData = useMemo(() => {
@@ -187,6 +203,22 @@ const SolicitationsBoard = ({
                   )}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="w-full flex justify-center lg:justify-end">
+                 <Select value={selectedTagId} onValueChange={setSelectedTagId}>
+                    <SelectTrigger className="w-full xl:w-[240px] bg-[#00205e]/50 border-[#00205e] text-white">
+                        <SelectValue placeholder="Filtrar por tag..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                        <SelectItem value="all" className="hover:bg-[#0126fb]/50">Todas as Tags</SelectItem>
+                        {allTagTemplates.map((template) => (
+                            <SelectItem key={template.id} value={template.id} className="hover:bg-[#0126fb]/50">
+                                {template.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="flex flex-col w-full md:justify-end justify-center md:flex-row gap-2 sm:gap-4 items-center">

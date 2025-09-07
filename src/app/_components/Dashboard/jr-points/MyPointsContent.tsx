@@ -970,6 +970,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         isOpen={!!viewingItem}
         onClose={() => setViewingItem(null)}
         item={viewingItem}
+        isDirector={isDirector}
       />
     </>
   );

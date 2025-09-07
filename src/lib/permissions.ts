@@ -52,6 +52,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   '/gerenciar-jr-points': DIRECTORS_ONLY,
   "/tarefas": MEMBERS_ONLY,
   "/chat": MEMBERS_ONLY,
+  '/oraculo': MEMBERS_ONLY,
   "/jr-points": MEMBERS_ONLY,
   'central-reservas': MEMBERS_ONLY,
   "/jr-points/nossa-empresa": MEMBERS_ONLY,

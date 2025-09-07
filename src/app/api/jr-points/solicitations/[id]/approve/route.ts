@@ -37,110 +37,66 @@ export async function PATCH(
       return new NextResponse("Solicitação não encontrada", { status: 404 });
     }
 
-    // Lógica para REJEIÇÃO (sem alterações)
-    if (status === "REJECTED") {
-      const updatedSolicitation = await prisma.jRPointsSolicitation.update({
-        where: { id },
-        data: { status, directorsNotes, reviewerId: authUser.id },
-      });
-      // ... toda a sua lógica de notificação para rejeição continua aqui ...
-      return NextResponse.json(updatedSolicitation);
-    }
-
     // Lógica para APROVAÇÃO
-    if (solicitation.tags.length === 0) {
-      throw new Error(
-        "Aprovação falhou: A solicitação não contém tags para pontuar."
-      );
+    if (solicitation.status === status) {
+      return NextResponse.json({
+        message: "O status da solicitação já é este.",
+      });
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.jRPointsSolicitation.update({
-        where: { id },
-        data: { status, directorsNotes, reviewerId: authUser.id },
-      });
+      if (solicitation.status === "APPROVED" && status === "REJECTED") {
+        const tagsToDelete = await tx.tag.findMany({
+          where: { generatedBySolicitationId: id },
+        });
 
-      const activeSemester = await tx.semester.findFirst({
-        where: { isActive: true },
-      });
-      if (!activeSemester) throw new Error("Nenhum semestre ativo encontrado.");
-
-      const activeVersion = await tx.jRPointsVersion.findFirst({
-        where: { isActive: true },
-      });
-      if (!activeVersion) throw new Error("Nenhuma versão ativa.");
-
-      const formatedDate = new Date(solicitation.datePerformed);
-
-      for (const tagTemplate of solicitation.tags) {
-        // --- CASO 1: APROVAÇÃO PARA A EMPRESA ---
-        if (solicitation.isForEnterprise) {
-          let finalValue = tagTemplate.baseValue;
-          if (
-            tagTemplate.isScalable &&
-            tagTemplate.escalationValue != null &&
-            tagTemplate.escalationStreakDays != null
-          ) {
-            const lastInstance = await tx.tag.findFirst({
-              where: { enterprisePointsId: 1, templateId: tagTemplate.id },
-              orderBy: { datePerformed: "desc" },
+        for (const tag of tagsToDelete) {
+          const pointsToReverse = tag.value * -1; // Inverte o valor para subtrair
+          if (tag.userPointsId) {
+            await tx.userPoints.updateMany({
+              where: { id: tag.userPointsId },
+              data: { totalPoints: { increment: pointsToReverse } },
             });
-            if (lastInstance) {
-              const daysSinceLast = differenceInDays(
-                formatedDate,
-                lastInstance.datePerformed
-              );
-              if (daysSinceLast <= tagTemplate.escalationStreakDays) {
-                
-                const bonus = tagTemplate.baseValue >= 0 
-                  ? Math.abs(tagTemplate.escalationValue) 
-                  : -Math.abs(tagTemplate.escalationValue);
-                finalValue = lastInstance.value + bonus;
-              }
-            }
           }
-          await tx.enterprisePoints.update({
-            where: { id: 1 },
-            data: { value: { increment: finalValue } },
-          });
-          const enterpriseScore = await tx.enterpriseSemesterScore.upsert({
-             where: { semesterPeriodId: activeSemester.id },
-             update: { value: { increment: finalValue } },
-             create: {
-               semester: activeSemester.name,
-               value: finalValue,
-               semesterPeriodId: activeSemester.id,
-             },
-           });
-          await tx.tag.create({
-            data: {
-              description: tagTemplate.description,
-              value: finalValue,
-              datePerformed: formatedDate,
-              actionTypeId: tagTemplate.actionTypeId,
-              templateId: tagTemplate.id,
-              enterprisePointsId: 1,
-              assignerId: authUser.id,
-              enterpriseSemesterScoreId: enterpriseScore.id,
-              jrPointsVersionId: activeVersion.id,
-            },
-          });
+          if (tag.userSemesterScoreId) {
+            await tx.userSemesterScore.updateMany({
+              where: { id: tag.userSemesterScoreId },
+              data: { totalPoints: { increment: pointsToReverse } },
+            });
+          }
+          if (tag.enterprisePointsId) {
+            await tx.enterprisePoints.update({
+              where: { id: 1 },
+              data: { value: { increment: pointsToReverse } },
+            });
+          }
+          if (tag.enterpriseSemesterScoreId) {
+            await tx.enterpriseSemesterScore.updateMany({
+              where: { id: tag.enterpriseSemesterScoreId },
+              data: { value: { increment: pointsToReverse } },
+            });
+          }
         }
-        // --- CASO 2: APROVAÇÃO PARA USUÁRIOS ---
-        else {
-          // ✅ CORREÇÃO: Lógica para remover usuários duplicados
-          const allUsersWithPossibleDuplicates = [
-            ...solicitation.membersSelected,
-          ];
-          const uniqueUsersMap = new Map();
-          allUsersWithPossibleDuplicates.forEach(user => {
-            if (user) {
-              uniqueUsersMap.set(user.id, user);
-            }
-          });
-          const uniqueInvolvedUsers = Array.from(uniqueUsersMap.values());
+        await tx.tag.deleteMany({ where: { generatedBySolicitationId: id } });
+      }
 
-          for (const user of uniqueInvolvedUsers) {
+      if (status === "APPROVED") {
+        const activeSemester = await tx.semester.findFirst({
+          where: { isActive: true },
+        });
+        if (!activeSemester)
+          throw new Error("Nenhum semestre ativo encontrado.");
+
+        const activeVersion = await tx.jRPointsVersion.findFirst({
+          where: { isActive: true },
+        });
+        if (!activeVersion) throw new Error("Nenhuma versão ativa.");
+
+        const formatedDate = new Date(solicitation.datePerformed);
+
+        for (const tagTemplate of solicitation.tags) {
+          // --- CASO 1: APROVAÇÃO PARA A EMPRESA ---
+          if (solicitation.isForEnterprise) {
             let finalValue = tagTemplate.baseValue;
             if (
               tagTemplate.isScalable &&
@@ -148,10 +104,7 @@ export async function PATCH(
               tagTemplate.escalationStreakDays != null
             ) {
               const lastInstance = await tx.tag.findFirst({
-                where: {
-                  userPoints: { userId: user.id },
-                  templateId: tagTemplate.id,
-                },
+                where: { enterprisePointsId: 1, templateId: tagTemplate.id },
                 orderBy: { datePerformed: "desc" },
               });
               if (lastInstance) {
@@ -160,31 +113,24 @@ export async function PATCH(
                   lastInstance.datePerformed
                 );
                 if (daysSinceLast <= tagTemplate.escalationStreakDays) {
-                  // ✅ CORREÇÃO: Lógica de bônus/pena consistente aplicada aqui também
-                   const bonus = tagTemplate.baseValue >= 0 
-                    ? Math.abs(tagTemplate.escalationValue) 
-                    : -Math.abs(tagTemplate.escalationValue);
+                  const bonus =
+                    tagTemplate.baseValue >= 0
+                      ? Math.abs(tagTemplate.escalationValue)
+                      : -Math.abs(tagTemplate.escalationValue);
                   finalValue = lastInstance.value + bonus;
                 }
               }
             }
-            const userPoints = await tx.userPoints.upsert({
-              where: { userId: user.id },
-              update: { totalPoints: { increment: finalValue } },
-              create: { userId: user.id, totalPoints: finalValue },
+            await tx.enterprisePoints.update({
+              where: { id: 1 },
+              data: { value: { increment: finalValue } },
             });
-            const userSemesterScore = await tx.userSemesterScore.upsert({
-              where: {
-                userId_semesterPeriodId: {
-                  userId: user.id,
-                  semesterPeriodId: activeSemester.id,
-                },
-              },
-              update: { totalPoints: { increment: finalValue } },
+            const enterpriseScore = await tx.enterpriseSemesterScore.upsert({
+              where: { semesterPeriodId: activeSemester.id },
+              update: { value: { increment: finalValue } },
               create: {
-                userId: user.id,
                 semester: activeSemester.name,
-                totalPoints: finalValue,
+                value: finalValue,
                 semesterPeriodId: activeSemester.id,
               },
             });
@@ -195,49 +141,132 @@ export async function PATCH(
                 datePerformed: formatedDate,
                 actionTypeId: tagTemplate.actionTypeId,
                 templateId: tagTemplate.id,
-                userPointsId: userPoints.id,
+                enterprisePointsId: 1,
                 assignerId: authUser.id,
-                userSemesterScoreId: userSemesterScore.id,
+                enterpriseSemesterScoreId: enterpriseScore.id,
                 jrPointsVersionId: activeVersion.id,
+                generatedBySolicitationId: solicitation.id,
               },
             });
           }
+          // --- CASO 2: APROVAÇÃO PARA USUÁRIOS ---
+          else {
+            // ✅ CORREÇÃO: Lógica para remover usuários duplicados
+            const allUsersWithPossibleDuplicates = [
+              ...solicitation.membersSelected,
+            ];
+            const uniqueUsersMap = new Map();
+            allUsersWithPossibleDuplicates.forEach((user) => {
+              if (user) {
+                uniqueUsersMap.set(user.id, user);
+              }
+            });
+            const uniqueInvolvedUsers = Array.from(uniqueUsersMap.values());
+
+            for (const user of uniqueInvolvedUsers) {
+              let finalValue = tagTemplate.baseValue;
+              if (
+                tagTemplate.isScalable &&
+                tagTemplate.escalationValue != null &&
+                tagTemplate.escalationStreakDays != null
+              ) {
+                const lastInstance = await tx.tag.findFirst({
+                  where: {
+                    userPoints: { userId: user.id },
+                    templateId: tagTemplate.id,
+                  },
+                  orderBy: { datePerformed: "desc" },
+                });
+                if (lastInstance) {
+                  const daysSinceLast = differenceInDays(
+                    formatedDate,
+                    lastInstance.datePerformed
+                  );
+                  if (daysSinceLast <= tagTemplate.escalationStreakDays) {
+                    // ✅ CORREÇÃO: Lógica de bônus/pena consistente aplicada aqui também
+                    const bonus =
+                      tagTemplate.baseValue >= 0
+                        ? Math.abs(tagTemplate.escalationValue)
+                        : -Math.abs(tagTemplate.escalationValue);
+                    finalValue = lastInstance.value + bonus;
+                  }
+                }
+              }
+              const userPoints = await tx.userPoints.upsert({
+                where: { userId: user.id },
+                update: { totalPoints: { increment: finalValue } },
+                create: { userId: user.id, totalPoints: finalValue },
+              });
+              const userSemesterScore = await tx.userSemesterScore.upsert({
+                where: {
+                  userId_semesterPeriodId: {
+                    userId: user.id,
+                    semesterPeriodId: activeSemester.id,
+                  },
+                },
+                update: { totalPoints: { increment: finalValue } },
+                create: {
+                  userId: user.id,
+                  semester: activeSemester.name,
+                  totalPoints: finalValue,
+                  semesterPeriodId: activeSemester.id,
+                },
+              });
+              await tx.tag.create({
+                data: {
+                  description: tagTemplate.description,
+                  value: finalValue,
+                  datePerformed: formatedDate,
+                  actionTypeId: tagTemplate.actionTypeId,
+                  templateId: tagTemplate.id,
+                  userPointsId: userPoints.id,
+                  assignerId: authUser.id,
+                  userSemesterScoreId: userSemesterScore.id,
+                  jrPointsVersionId: activeVersion.id,
+                },
+              });
+            }
+          }
         }
       }
-      const notification = await prisma.notification.create({
-        data: {
-          notification: `Solicitação aprovada: ${solicitation.description} por ${authUser.name}`,
-          type: "REQUEST_APPROVED",
-          link: solicitation.isForEnterprise ? 'jr-points' : 'meus-pontos',
-        },
+
+      await tx.jRPointsSolicitation.update({
+        where: { id },
+        data: { status, directorsNotes, reviewerId: authUser.id },
       });
+
+      const notificationMessage =
+        solicitation.status === "PENDING"
+          ? `Sua solicitação foi ${
+              status === "APPROVED" ? "aprovada" : "rejeitada"
+            } por ${authUser.name}`
+          : `O status da sua solicitação foi alterado de ${solicitation.status} para ${status} por ${authUser.name}`;
+
+      let usersToNotify = [solicitation.user].map((u) => ({ id: u.id }));
+
       if (solicitation.isForEnterprise) {
-        const allMembersId = await prisma.user.findMany({
+        usersToNotify = await tx.user.findMany({
           where: { isExMember: false },
           select: { id: true },
         });
-        await prisma.notificationUser.createMany({
-          data: allMembersId
-            .filter((user) => user.id !== authUser.id)
-            .map((user) => ({
-              notificationId: notification.id,
-              userId: user.id,
-            })),
-        });
-      } else {
-        const membersToReceive = [...solicitation.membersSelected, authUser];
-
-        await prisma.notificationUser.createMany({
-          data: membersToReceive.map((user) => ({
-            notificationId: notification.id,
-            userId: user.id,
-
-          })),
-        });
       }
+
+      // Cria uma notificação para CADA usuário afetado
+      const notificationPromises = usersToNotify.map((userToNotify) =>
+        tx.notification.create({
+          data: {
+            notification: notificationMessage,
+            type:
+              status === "APPROVED" ? "REQUEST_APPROVED" : "REQUEST_REJECTED",
+            link: solicitation.isForEnterprise ? "/jr-points" : "/meus-pontos",
+            notificationUsers: { create: { userId: userToNotify.id } },
+          },
+        })
+      );
+      await Promise.all(notificationPromises);
     });
-        revalidatePath('/jr-points')
-        revalidatePath('/gerenciar-jr-points')
+    revalidatePath("/jr-points");
+    revalidatePath("/gerenciar-jr-points");
     revalidatePath("/meus-pontos");
     return NextResponse.json({ message: "Solicitação aprovada com sucesso!" });
   } catch (error) {
