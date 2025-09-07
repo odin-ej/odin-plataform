@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
@@ -250,10 +251,10 @@ export const SyncOraculoPanel = () => {
               configurada no Google Drive.
             </p>
           </div>
-          <button
+          <Button
             onClick={() => runSync()}
             disabled={isPending}
-            className="w-full md:w-auto bg-[#0126fb] hover:bg-[#0126fb]/80 disabled:bg-gray-600 disabled:cursor-not-allowed transition-all font-semibold px-6 h-12 text-base flex items-center justify-center rounded-lg shadow-md"
+            className="w-full cursor-pointer md:w-auto bg-[#0126fb] hover:bg-[#0126fb]/80 disabled:bg-gray-600 disabled:cursor-not-allowed transition-all font-semibold px-6 h-12 text-base flex items-center justify-center rounded-lg shadow-md"
           >
             <SyncIcon
               className={cn(
@@ -268,7 +269,7 @@ export const SyncOraculoPanel = () => {
                 ? "Tentar Novamente"
                 : "Sincronizar Agora"}
             </span>
-          </button>
+          </Button>
         </div>
       </div>
 
