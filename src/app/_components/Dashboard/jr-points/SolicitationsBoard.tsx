@@ -250,11 +250,11 @@ const SolicitationsBoard = ({
 
         {/* Coluna Direita: Filtros de Botão */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-          <div>
+          <div className='col-span-1'>
             <label className="text-sm font-medium text-white mb-2 block">
               Tipo de Requisição
             </label>
-            <div className="flex w-full items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
+            <div className="flex w-full flex-wrap items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
               <Button
                 size="sm"
                 onClick={() => setRequestType("all")}
@@ -287,11 +287,11 @@ const SolicitationsBoard = ({
               </Button>
             </div>
           </div>
-          <div>
+          <div className='col-span-1'>
             <label className="text-sm font-medium text-white mb-2 block">
               Alvo da Requisição
             </label>
-            <div className="flex w-full items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
+            <div className="flex w-full flex-wrap items-center gap-2 p-1 bg-[#00205e]/50 rounded-lg">
               <Button
                 size="sm"
                 onClick={() => setTargetFilter("all")}
