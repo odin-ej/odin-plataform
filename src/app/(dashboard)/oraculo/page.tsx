@@ -6,6 +6,8 @@ import { verifyAccess } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 
+export const dynamic = 'force-dynamic'
+
 export type FullOraculoFolder = Prisma.OraculoFolderGetPayload<{
   include: {
     parent: true;
