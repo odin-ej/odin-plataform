@@ -259,7 +259,7 @@ const SolicitationsBoard = ({
                 size="sm"
                 onClick={() => setRequestType("all")}
                 className={cn(
-                  "w-full bg-transparent hover:bg-[#f5b719]/90 hover:text-white",
+                  "flex-1 bg-transparent hover:bg-[#f5b719]/90 hover:text-white",
                   requestType === "all" && "bg-[#f5b719]"
                 )}
               >
@@ -269,7 +269,7 @@ const SolicitationsBoard = ({
                 size="sm"
                 onClick={() => setRequestType("solicitation")}
                 className={cn(
-                  "w-full bg-transparent hover:bg-[#0126fb]/90 hover:text-white",
+                  "flex-1 bg-transparent hover:bg-[#0126fb]/90 hover:text-white",
                   requestType === "solicitation" && "bg-[#0126fb]"
                 )}
               >
@@ -279,11 +279,11 @@ const SolicitationsBoard = ({
                 size="sm"
                 onClick={() => setRequestType("report")}
                 className={cn(
-                  "w-full bg-transparent hover:bg-red-500/90 hover:text-white",
+                  "flex-1 bg-transparent hover:bg-red-500/90 hover:text-white",
                   requestType === "report" && "bg-red-500"
                 )}
               >
-                <ShieldAlert className="h-4 w-4 mr-2" /> Recursos
+                <ShieldAlert className="h-4 w-4 mr-2" /> Denúncias
               </Button>
             </div>
           </div>
@@ -296,7 +296,7 @@ const SolicitationsBoard = ({
                 size="sm"
                 onClick={() => setTargetFilter("all")}
                 className={cn(
-                  "w-full bg-transparent hover:bg-[#f5b719]/90 hover:text-white",
+                  "flex-1 bg-transparent hover:bg-[#f5b719]/90 hover:text-white",
                   targetFilter === "all" && "bg-[#f5b719]"
                 )}
               >
@@ -306,7 +306,7 @@ const SolicitationsBoard = ({
                 size="sm"
                 onClick={() => setTargetFilter("user")}
                 className={cn(
-                  "w-full bg-transparent hover:bg-[#0126fb]/90 hover:text-white",
+                  "flex-1 bg-transparent hover:bg-[#0126fb]/90 hover:text-white",
                   targetFilter === "user" && "bg-[#0126fb]"
                 )}
               >
@@ -316,7 +316,7 @@ const SolicitationsBoard = ({
                 size="sm"
                 onClick={() => setTargetFilter("enterprise")}
                 className={cn(
-                  "w-full bg-transparent hover:bg-[#00205e]/90",
+                  "flex-1 bg-transparent hover:bg-[#00205e]/90",
                   targetFilter === "enterprise" && "bg-[#00205e]"
                 )}
               >
