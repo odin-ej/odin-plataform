@@ -22,12 +22,17 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 // CORREÇÃO: Importado o useDroppable
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { cn } from "@/lib/utils";
+import { cn, checkUserPermission } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useMemo } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const getSignedUrl = async (key: string): Promise<string> => {
-  const { data } = await axios.post(`${API_URL}/api/oraculo/get-signed-url`, { key });
+  const { data } = await axios.post(`${API_URL}/api/oraculo/get-signed-url`, {
+    key,
+  });
   return data.url;
 };
 
@@ -49,8 +54,22 @@ const ItemIcon = ({ item }: { item: FullOraculoFile | FullOraculoFolder }) => {
   }
 
   if (isImage) {
-    if (isLoading) return <div className="h-8 w-8 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-gray-500" /></div>;
-    if (signedUrl) return <Image src={signedUrl} alt={file.name} width={32} height={32} className="h-8 w-8 rounded-md object-cover" />;
+    if (isLoading)
+      return (
+        <div className="h-8 w-8 flex items-center justify-center">
+          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+        </div>
+      );
+    if (signedUrl)
+      return (
+        <Image
+          src={signedUrl}
+          alt={file.name}
+          width={32}
+          height={32}
+          className="h-8 w-8 rounded-md object-cover"
+        />
+      );
   }
 
   return <FileIcon className="h-6 w-6 text-gray-500 flex-shrink-0" />;
@@ -66,10 +85,17 @@ const FileListRow = ({
   onFolderClick: (folder: FullOraculoFolder) => void;
 }) => {
   const isFolder = "parentId" in item;
-  const isFromDrive = !isFolder ? !!item.googleDriveFileId : !!item.googleDriveFolderId;
+  const isFromDrive = !isFolder
+    ? !!item.googleDriveFileId
+    : !!item.googleDriveFolderId;
 
   // Hook para tornar o item arrastável (draggable)
-  const { attributes, listeners, setNodeRef: setDraggableNodeRef, isDragging } = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableNodeRef,
+    isDragging,
+  } = useDraggable({
     id: item.id,
     data: { item },
   });
@@ -79,6 +105,14 @@ const FileListRow = ({
     id: item.id,
     disabled: !isFolder, // Desabilitado se não for uma pasta
   });
+
+  const { user } = useAuth();
+  const isDirector = useMemo(
+    () => checkUserPermission(user, DIRECTORS_ONLY),
+    [user]
+  );
+  const isOwner = user?.id === item.ownerId;
+  const canDrag = isOwner || isDirector;
 
   const handleClick = () => {
     if (isFolder) {
@@ -103,7 +137,8 @@ const FileListRow = ({
             )}
           >
             {/* 1. Alça de Arrastar (Drag Handle) */}
-        
+
+            {canDrag && (
               <div
                 ref={setDraggableNodeRef} // A ref do draggable fica apenas na alça
                 {...listeners}
@@ -112,7 +147,7 @@ const FileListRow = ({
               >
                 <GripVertical className="h-5 w-5" />
               </div>
-            
+            )}
 
             {/* 2. Conteúdo Clicável */}
             <div

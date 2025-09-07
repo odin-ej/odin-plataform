@@ -2,13 +2,19 @@
 import { FullOraculoFolder } from "@/app/(dashboard)/oraculo/page";
 import { Folder, GripVertical } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { checkUserPermission, cn } from "@/lib/utils";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useMemo } from "react";
 
 const FolderCard = ({ folder, onFolderClick }: { folder: FullOraculoFolder; onFolderClick: (folder: FullOraculoFolder) => void; }) => {
   const { attributes, listeners, setNodeRef: setDraggableNodeRef, isDragging } = useDraggable({ id: folder.id, data: { item: folder } });
   const { isOver, setNodeRef: setDroppableNodeRef } = useDroppable({ id: folder.id });
-
+ const {user} = useAuth()
+  const isDirector = useMemo(() => checkUserPermission(user, DIRECTORS_ONLY), [user]);
+  const isOwner = user?.id === folder.ownerId;
+  const canDrag = isOwner || isDirector;
   return (
     <div ref={setDroppableNodeRef} className={cn("rounded-lg transition-colors", isOver && 'bg-blue-500/20 ring-2 ring-blue-500')}>
         <TooltipProvider delayDuration={300}>
@@ -20,9 +26,11 @@ const FolderCard = ({ folder, onFolderClick }: { folder: FullOraculoFolder; onFo
                     <p className="text-sm font-medium truncate w-full text-white">{folder.name}</p>
                 </div>
               
-                  <div ref={setDraggableNodeRef} {...listeners} {...attributes} className="absolute top-1 right-1 p-1 cursor-grab text-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                 {canDrag && (
+                   <div ref={setDraggableNodeRef} {...listeners} {...attributes} className="absolute top-1 right-1 p-1 cursor-grab text-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
                     <GripVertical className="h-4 w-4" />
                 </div>
+                 )}
                
             </div>
             </TooltipTrigger>

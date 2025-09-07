@@ -11,7 +11,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useDraggable } from "@dnd-kit/core";
-import { cn } from "@/lib/utils";
+import { checkUserPermission, cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useMemo } from "react";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -30,6 +33,10 @@ const FileGridCard = ({
   item: FullOraculoFile;
   onFileSelect: (file: FullOraculoFile) => void;
 }) => {
+  const {user} = useAuth()
+  const isDirector = useMemo(() => checkUserPermission(user, DIRECTORS_ONLY), [user]);
+  const isOwner = user?.id === item.ownerId;
+  const canDrag = isOwner || isDirector;
   const isImage = item.fileType?.startsWith("image/");
   const isFromDrive = !!item.googleDriveFileId;
 
@@ -90,7 +97,8 @@ const FileGridCard = ({
 
             {/* 2. A alça para ARRASTAR fica no canto e só aparece no hover */}
           
-              <div
+             {canDrag && (
+               <div
               ref={setNodeRef}
               {...listeners}
               {...attributes}
@@ -98,6 +106,7 @@ const FileGridCard = ({
             >
               <GripVertical className="h-4 w-4" />
             </div>
+             )}
 
            
             {/* 3. Ícone do Google Drive (se aplicável) */}
