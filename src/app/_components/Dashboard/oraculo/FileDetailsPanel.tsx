@@ -2,6 +2,9 @@ import { FullOraculoFile } from "@/app/(dashboard)/oraculo/page";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { checkUserPermission } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import {
@@ -14,6 +17,7 @@ import {
   Link
 } from "lucide-react";
 import Image from "next/image";
+import { useMemo } from "react";
 
 
 const getSignedUrl = async (key: string) => {
@@ -36,6 +40,13 @@ const FileDetailsPanel = ({
 }) => {
   const path = breadcrumbs.map((c) => c.name).join(" / ");
   const isFromDrive = !!file.googleDriveFileId;
+    const { user } = useAuth();
+    const isDirector = useMemo(
+      () => checkUserPermission(user, DIRECTORS_ONLY),
+      [user]
+    );
+    const isOwner = user?.id === file?.ownerId;
+    const canDelete = isOwner || isDirector;
 
   const { data: downloadUrl, isLoading: isLoadingUrl } = useQuery({
     queryKey: ["downloadUrl", file.id],
@@ -144,7 +155,7 @@ const FileDetailsPanel = ({
           variant="ghost"
           size="icon"
           className="hover:!bg-red-500/10"
-          disabled={isFromDrive}
+          disabled={!canDelete}
           onClick={() => onDelete(file.id)}
         >
           <Trash2 className="h-4 w-4 text-red-500" />
