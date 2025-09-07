@@ -212,8 +212,11 @@ const RequestReviewModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="bg-[#010d26] text-white border-2 border-[#0126fb] w-[80vw] max-w-[80vw] sm:max-w-[80vw] 
-    max-h-[90vh]"
+        className={cn(
+          "bg-[#010d26] text-white border-2 border-[#0126fb]",
+          "w-[90vw] max-w-[600px] sm:w-[80vw] sm:max-w-[800px]",
+          "max-h-[90vh] overflow-hidden rounded-lg sm:rounded-xl p-4"
+        )}
       >
         <Form {...form}>
           <DialogHeader>
@@ -266,8 +269,7 @@ const RequestReviewModal = ({
               </div>
             </div>
           </DialogHeader>
-
-          <div className="space-y-6 my-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#0126fb]">
+          <div className="space-y-6 my-4 max-h-[70vh] overflow-y-auto pr-2 sm:pr-4 scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-transparent">
             {/* Detalhes do Pedido */}
             <div className="p-4 bg-[#00205e]/30 rounded-lg border border-gray-700">
               <h4 className="font-semibold mb-2 text-[#f5b719]">
