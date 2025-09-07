@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import CommandMultiSelect from "../../Global/Custom/CommandMultiSelect";
 
 export type FullJRPointsSolicitation = Prisma.JRPointsSolicitationGetPayload<{
   include: {
@@ -67,7 +68,7 @@ export type FullJRPointsReport = Prisma.JRPointsReportGetPayload<{
       include: {
         assigner: true;
         actionType: true;
-        template: { select: { name: true, id: true } };
+        template: { select: { name: true; id: true } };
       };
     };
     attachments: true;
@@ -82,7 +83,7 @@ const SolicitationsBoard = ({
 }: {
   solicitations: FullJRPointsSolicitation[];
   reports: FullJRPointsReport[];
-  allTagTemplates: TagTemplate[]
+  allTagTemplates: TagTemplate[];
   onCardClick: (item: any) => void;
 }) => {
   const [activeTab, setActiveTab] = useState<
@@ -94,7 +95,7 @@ const SolicitationsBoard = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState("6");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTagId, setSelectedTagId] = useState<string>("all");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const allRequests = useMemo(
     () =>
       [
@@ -141,21 +142,20 @@ const SolicitationsBoard = ({
       });
     }
 
-    if (selectedTagId !== 'all') {
-        items = items.filter(item => {
-            if (item.type === 'solicitation') {
-                return item.tags.some(tag => tag.id === selectedTagId);
-            }
-            if (item.type === 'report') {
-                return item.tag.template?.id === selectedTagId;
-            }
-            return false;
-        });
+    if (selectedTagIds.length > 0) {
+      items = items.filter((item) => {
+        if (item.type === "solicitation") {
+          return item.tags.some((tag) => selectedTagIds.includes(tag.id));
+        }
+        if (item.type === "report") {
+          return selectedTagIds.includes(item.tag.template?.id ?? "");
+        }
+        return false;
+      });
     }
 
-
     return items;
-  }, [allRequests, activeTab, targetFilter, searchTerm, selectedTagId]);
+  }, [allRequests, activeTab, targetFilter, searchTerm, selectedTagIds]);
 
   // Pagina os dados filtrados
   const paginatedData = useMemo(() => {
@@ -206,19 +206,15 @@ const SolicitationsBoard = ({
             </div>
 
             <div className="w-full flex justify-center lg:justify-end">
-                 <Select value={selectedTagId} onValueChange={setSelectedTagId}>
-                    <SelectTrigger className="w-full xl:w-[240px] bg-[#00205e]/50 border-[#00205e] text-white">
-                        <SelectValue placeholder="Filtrar por tag..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
-                        <SelectItem value="all" className="hover:bg-[#0126fb]/50">Todas as Tags</SelectItem>
-                        {allTagTemplates.map((template) => (
-                            <SelectItem key={template.id} value={template.id} className="hover:bg-[#0126fb]/50">
-                                {template.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+              <CommandMultiSelect
+                value={selectedTagIds}
+                onChange={setSelectedTagIds}
+                label="Filtrar por Tags"
+                options={allTagTemplates.map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                }))}
+              />
             </div>
 
             <div className="flex flex-col w-full md:justify-end justify-center md:flex-row gap-2 sm:gap-4 items-center">
