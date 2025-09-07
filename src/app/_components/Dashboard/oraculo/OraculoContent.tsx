@@ -23,6 +23,7 @@ import { checkUserPermission, cn } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { OraculoAreas } from "@prisma/client";
 import OraculoActionModal from "./OraculoActionModal";
+import { SyncOraculoPanel } from "./SyncOraculoPanel";
 
 type OraculoActionType = "createFolder" | "uploadFile" | "rename";
 
@@ -270,6 +271,8 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     }
   };
 
+  const isDirector = useMemo(() => checkUserPermission(user, DIRECTORS_ONLY), [user]);
+
   return (
     <>
       <CustomCard
@@ -372,6 +375,8 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
           }}
           onFolderClick={handleFolderNavigation}
         />
+
+        {isDirector && <SyncOraculoPanel />}
       </div>
 
       <div className="mt-4 p-4 rounded-lg grid grid-cols-1 lg:grid-cols-10 gap-6 bg-[#010d26] border border-gray-800 min-h-[50vh]">
