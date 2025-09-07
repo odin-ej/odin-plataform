@@ -103,7 +103,7 @@ const FileListRow = ({
             )}
           >
             {/* 1. Alça de Arrastar (Drag Handle) */}
-            {!isFromDrive && (
+        
               <div
                 ref={setDraggableNodeRef} // A ref do draggable fica apenas na alça
                 {...listeners}
@@ -112,7 +112,7 @@ const FileListRow = ({
               >
                 <GripVertical className="h-5 w-5" />
               </div>
-            )}
+            
 
             {/* 2. Conteúdo Clicável */}
             <div

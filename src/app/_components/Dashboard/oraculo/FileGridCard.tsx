@@ -89,7 +89,7 @@ const FileGridCard = ({
             </div>
 
             {/* 2. A alça para ARRASTAR fica no canto e só aparece no hover */}
-            {!isFromDrive && (
+          
               <div
               ref={setNodeRef}
               {...listeners}
@@ -99,7 +99,7 @@ const FileGridCard = ({
               <GripVertical className="h-4 w-4" />
             </div>
 
-            )}
+           
             {/* 3. Ícone do Google Drive (se aplicável) */}
             {isFromDrive && (
               <Tooltip>

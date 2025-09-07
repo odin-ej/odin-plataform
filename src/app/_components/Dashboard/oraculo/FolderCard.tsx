@@ -19,11 +19,11 @@ const FolderCard = ({ folder, onFolderClick }: { folder: FullOraculoFolder; onFo
                     <Folder className="h-16 w-16 text-[#0126fb] mb-2" />
                     <p className="text-sm font-medium truncate w-full text-white">{folder.name}</p>
                 </div>
-                {folder.googleDriveFolderId ? null : (
+              
                   <div ref={setDraggableNodeRef} {...listeners} {...attributes} className="absolute top-1 right-1 p-1 cursor-grab text-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
                     <GripVertical className="h-4 w-4" />
                 </div>
-                )}
+               
             </div>
             </TooltipTrigger>
             <TooltipContent className='bg-[#0126fb]'><p>{folder.name}</p></TooltipContent>
