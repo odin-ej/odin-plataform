@@ -325,7 +325,6 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         ...existingAttachments,
         ...newUploadedAttachments,
       ];
-      console.log(finalAttachments)
       const finalData = {
         ...formData,
         attachments: finalAttachments,

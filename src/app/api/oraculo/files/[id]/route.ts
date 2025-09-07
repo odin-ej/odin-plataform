@@ -7,6 +7,14 @@ import { DeleteObjectCommand, CopyObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
+function normalizeFileName(name: string) {
+  return name
+    .normalize("NFD") // separa acentos
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[\\/[\]{}^%$#@!?:;<>|`~]/g, "_") // caracteres inválidos para S3
+    .trim();
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -35,19 +43,28 @@ export async function PATCH(
     const parentId = parts[0]; // root
     const ownerId = parts[1]; // 123
     // ignoramos o timestamp pra não gerar duplicado
-    const extension = fileToRename.name.split(".").pop();
-    const newKey = `${parentId}/${ownerId}/${newName}.${extension}`;
+    const extension = fileToRename.name.split(".").pop() || "";
+    const safeNewName = normalizeFileName(newName);
 
-    // Copia o arquivo para a nova key
+    const newKey = `${parentId}/${ownerId}/${safeNewName}.${extension}`;
+
+    // Codifica cada parte do caminho antigo
+    const encodedOldKey = oldKey
+      .split("/")
+      .map((part) => encodeURIComponent(part))
+      .join("/");
+
+    // Copia para a nova key
     await s3Client.send(
       new CopyObjectCommand({
         Bucket: bucket,
-        CopySource: `${bucket}/${oldKey}`, // formato BUCKET/KEY
+        CopySource: `${bucket}/${encodedOldKey}`,
         Key: newKey,
         ContentType: fileToRename.fileType,
         MetadataDirective: "REPLACE",
       })
     );
+
 
     // Deleta o antigo
     await s3Client.send(
@@ -63,7 +80,7 @@ export async function PATCH(
       data: {
         name: newName,
         key: newKey, // precisa salvar a nova key também
-        restrictedToAreas
+        restrictedToAreas,
       },
     });
     revalidatePath("/oraculo");
@@ -106,7 +123,7 @@ export async function DELETE(
       })
     );
     await prisma.oraculoFile.delete({ where: { id: id } });
-revalidatePath("/oraculo");
+    revalidatePath("/oraculo");
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("Erro ao deletar arquivo do Oráculo:", error);
