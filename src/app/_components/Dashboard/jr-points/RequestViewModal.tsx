@@ -215,7 +215,8 @@ const RequestReviewModal = ({
         className={cn(
           "bg-[#010d26] text-white border-2 border-[#0126fb]",
           "w-[90vw] max-w-[600px] sm:w-[80vw] sm:max-w-[800px]",
-          "max-h-[90vh] overflow-hidden rounded-lg sm:rounded-xl p-4"
+          "max-h-[90vh] overflow-hidden rounded-lg sm:rounded-xl p-4",
+          "overflow-y-auto scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-transparent"
         )}
       >
         <Form {...form}>
