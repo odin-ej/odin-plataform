@@ -116,7 +116,7 @@ const OraculoSidebar = ({
       <Accordion
         type="single"
         collapsible
-        className="w-full bg-[#00205e]/30 rounded-lg border border-gray-700 px-4 max-h-[300px] sm:max-h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
+        className="w-full bg-[#00205e]/30 rounded-lg border border-gray-700 px-4 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
       >
         <AccordionItem value="folders" className="border-b-0">
           <AccordionTrigger className="hover:no-underline font-semibold text-white">
