@@ -220,7 +220,7 @@ const RequestReviewModal = ({
       >
         <Form {...form}>
           <DialogHeader>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Avatar className="h-12 w-12 border-2 border-gray-700">
                 <AvatarImage src={request.user.imageUrl} />
                 <AvatarFallback>
@@ -231,7 +231,7 @@ const RequestReviewModal = ({
                 <DialogTitle className="text-xl">
                   Revisar {isSolicitation(request) ? "Solicitação" : "Recurso"}
                 </DialogTitle>
-                <DialogDescription className="flex items-center gap-4 text-gray-400">
+                <DialogDescription className="flex flex-wrap items-center gap-2 text-gray-400 mt-1">
                   <span>De: {request.user.name}</span>
                   <Badge
                     variant={request.isForEnterprise ? "default" : "secondary"}
@@ -451,7 +451,7 @@ const RequestReviewModal = ({
             />
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               variant="destructive"
               onClick={form.handleSubmit(handleSubmit("REJECTED"))}
