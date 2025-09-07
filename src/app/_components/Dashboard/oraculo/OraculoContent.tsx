@@ -61,67 +61,49 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     initialData,
   });
 
-  const flattenOraculo = (
-    folders: FullOraculoFolder[],
-    files: FullOraculoFile[]
-  ) => {
-    const allItems: (FullOraculoFolder | FullOraculoFile)[] = [];
-
-    const walk = (folder: FullOraculoFolder) => {
-      allItems.push(folder);
-      // arquivos dentro da pasta
-      const childFiles = files.filter((f) => f.folderId === folder.id);
-      allItems.push(...childFiles);
-
-      // pastas filhas
-      const childFolders = folders.filter((f) => f.parentId === folder.id);
-      childFolders.forEach(walk);
-    };
-
-    // começa pelos de raiz
-    const rootFolders = folders.filter((f) => f.parentId === null);
-    rootFolders.forEach(walk);
-
-    // arquivos soltos na raiz
-    const rootFiles = files.filter((f) => f.folderId === null);
-    allItems.push(...rootFiles);
-
-    return allItems;
-  };
-
   const filteredItems = useMemo(() => {
-    if (!data) return { folders: [], files: [] };
-    const userAreas = (user?.currentRole?.area as OraculoAreas[]) || [];
+    if (!data || !user) return { folders: [], files: [] };
+
+    const userAreas = (user.currentRole?.area as OraculoAreas[]) || [];
     const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
 
-    const filterByPermissions = (item: FullOraculoFile | FullOraculoFolder) => {
-      // 1. Diretores sempre têm acesso.
-      if (isDirector) {
-        return true;
-      }
-
+    const hasDirectPermission = (item: FullOraculoFile | FullOraculoFolder) => {
+      if (isDirector) return true;
       const restrictedAreas = item.restrictedToAreas;
-
-      // 2. Permitido se não houver nenhuma área de restrição definida no item.
-      if (!restrictedAreas || restrictedAreas.length === 0 || restrictedAreas === null) {
-        return true;
-      }
-
-      // 3. Permitido se a área "GERAL" estiver na lista de restrições,
-      //    o que torna o item visível para todos os utilizadores.
-      if (restrictedAreas.includes(OraculoAreas.GERAL)) {
-        // Assumindo que o valor da área é a string 'GERAL'
-        return true;
-      }
-
-      // 4. Se for restrito e não for "GERAL", verifica se o utilizador possui
-      //    pelo menos uma das áreas necessárias para aceder ao item.
-      return restrictedAreas.some((area) => userAreas.includes(area as any));
+      if (!restrictedAreas || restrictedAreas.length === 0) return true;
+      if (restrictedAreas.includes(OraculoAreas.GERAL)) return true;
+      return restrictedAreas.some((area) => userAreas.includes(area));
     };
 
-    let items = flattenOraculo(data.folders || [], data.files || []).filter(
-      filterByPermissions
-    );
+    const allFoldersMap = new Map(data.folders.map(f => [f.id, f]));
+    const accessibleItemsSet = new Set<FullOraculoFile | FullOraculoFolder>();
+
+    data.files.forEach(file => {
+      if (hasDirectPermission(file)) {
+        accessibleItemsSet.add(file);
+      }
+    });
+    data.folders.forEach(folder => {
+      if (hasDirectPermission(folder)) {
+        accessibleItemsSet.add(folder);
+      }
+    });
+
+    const itemsToTrace = [...accessibleItemsSet];
+    for (const item of itemsToTrace) {
+        let currentParentId = 'folderId' in item ? item.folderId : item.parentId;
+        while (currentParentId) {
+            const parentFolder = allFoldersMap.get(currentParentId);
+            if (parentFolder && !accessibleItemsSet.has(parentFolder)) {
+                accessibleItemsSet.add(parentFolder);
+                currentParentId = parentFolder.parentId;
+            } else {
+                currentParentId = null;
+            }
+        }
+    }
+    
+    let items = Array.from(accessibleItemsSet);
 
     if (activeFilter === "favorites")
       items = items.filter((item) => "isFavorite" in item && item.isFavorite);
@@ -131,22 +113,11 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
       items = items.filter((item) => new Date(item.createdAt) > thirtyDaysAgo);
     }
     if (searchQuery) {
-      const lowercasedQuery = searchQuery
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-      items = items.filter((item) =>
-        item.name
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .includes(lowercasedQuery)
-      );
+      const lowercasedQuery = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      items = items.filter((item) => item.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(lowercasedQuery));
     }
     return {
-      folders: items.filter(
-        (item) => "parentId" in item
-      ) as FullOraculoFolder[],
+      folders: items.filter((item) => "parentId" in item) as FullOraculoFolder[],
       files: items.filter((item) => !("parentId" in item)) as FullOraculoFile[],
     };
   }, [data, searchQuery, activeFilter, user]);
