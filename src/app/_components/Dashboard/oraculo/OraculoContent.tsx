@@ -376,7 +376,7 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
           onFolderClick={handleFolderNavigation}
         />
 
-        {isDirector && <SyncOraculoPanel />}
+        {isDirector && <div className="mt-4"><SyncOraculoPanel /></div>}
       </div>
 
       <div className="mt-4 p-4 rounded-lg grid grid-cols-1 lg:grid-cols-10 gap-6 bg-[#010d26] border border-gray-800 min-h-[50vh]">
