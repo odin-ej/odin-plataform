@@ -2,10 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import {
-  Loader2,
-} from "lucide-react";
+import axios, { AxiosError } from "axios";
+import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const SyncIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -81,12 +79,16 @@ const FailureIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+type SyncStatus = "default" | "checking" | "syncing" | "success" | "failure";
+interface FileToProcess {
+  id: string;
+  name: string;
+}
+
 // Componente de UI para o painel de sincronização
 export const SyncOraculoPanel = () => {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<
-    "default" | "syncing" | "success" | "failure"
-  >("default");
+  const [status, setStatus] = useState<SyncStatus>("default");
   const [lastSyncDate, setLastSyncDate] = useState<string>("Buscando...");
 
   // Efeito para buscar a data da última sincronização ao montar o componente
@@ -115,15 +117,69 @@ export const SyncOraculoPanel = () => {
     };
     fetchLastSync();
   }, []);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [errorDetails, setErrorDetails] = useState<string>("");
 
   const { mutate: runSync, isPending } = useMutation({
-    mutationFn: () => axios.post("/api/oraculo/sync"),
-    onMutate: () => {
+    mutationFn: async () => {
+      // Etapa 1: Verificar arquivos para sincronizar
+      setStatus("checking");
+      const checkResponse = await axios.post<{
+        filesToProcess: FileToProcess[];
+      }>("/api/oraculo/sync/check");
+      const files = checkResponse.data.filesToProcess;
+
+      if (files.length === 0) {
+        // Atualiza o log para SUCCESS mesmo se nada for sincronizado
+        await axios.post("/api/oraculo/sync/log-success");
+        return {
+          message:
+            "Seu Oráculo já está atualizado. Nenhum arquivo precisou ser sincronizado.",
+        };
+      }
+
+      // Etapa 2: Processar cada arquivo individualmente
       setStatus("syncing");
+      setProgress({ current: 0, total: files.length });
+      let successCount = 0;
+      let firstError: string | null = null;
+
+      for (const file of files) {
+        try {
+          await axios.post("/api/oraculo/sync/process-file", {
+            fileId: file.id,
+          });
+          successCount++;
+        } catch (error) {
+          const axiosError = error as AxiosError<{ message: string }>;
+          console.error(
+            `Falha ao processar o arquivo ${file.name}:`,
+            axiosError.response?.data?.message || axiosError.message
+          );
+          if (!firstError) {
+            firstError = `Falha no arquivo "${file.name}". Verifique as permissões no Google Drive.`;
+          }
+        }
+        setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+      }
+
+      // Etapa 3: Finalizar o log
+      if (firstError) {
+        await axios.post("/api/oraculo/sync/log-failure", {
+          details: firstError,
+        });
+        throw new Error(firstError);
+      }
+
+      await axios.post("/api/oraculo/sync/log-success");
+      return {
+        message: `${successCount} de ${files.length} arquivos foram sincronizados com sucesso!`,
+      };
     },
     onSuccess: () => {
+      setStatus("success");
       queryClient.invalidateQueries({
-        queryKey: ["oraculoFiles", "oraculoFolders"],
+        queryKey: ["oraculoFiles", "oraculoFolders", "oraculoData"],
       });
       setLastSyncDate(
         new Date().toLocaleString("pt-BR", {
@@ -131,43 +187,50 @@ export const SyncOraculoPanel = () => {
           timeStyle: "medium",
         })
       );
-      setStatus("success");
-      setTimeout(() => setStatus("default"), 4000); // Volta ao padrão após 4s
+      setTimeout(() => setStatus("default"), 4000);
     },
-    onError: () => {
+    onError: (error) => {
+      setErrorDetails((error as Error).message);
       setStatus("failure");
-      setTimeout(() => setStatus("default"), 5000); // Volta ao padrão após 5s
+      setTimeout(() => setStatus("default"), 8000);
     },
   });
 
   const statusInfo = {
     default: {
-      barClass: "border-blue-500/30 bg-blue-500/10",
-      textClass: "text-blue-300",
+      bar: "border-blue-500/30 bg-blue-500/10",
+      text: "text-blue-300",
       icon: <ClockIcon className="h-5 w-5 mr-3" />,
       title: "Última sincronização",
       subtitle: lastSyncDate,
     },
+    checking: {
+      bar: "border-yellow-500/30 bg-yellow-500/10",
+      text: "text-yellow-300",
+      icon: <Loader2 className="h-5 w-5 mr-3 shrink-0 animate-spin" />,
+      title: "Verificando arquivos...",
+      subtitle: "Comparando com o Google Drive.",
+    },
     syncing: {
-      barClass: "border-yellow-500/30 bg-yellow-500/10",
-      textClass: "text-yellow-300 animate-pulse",
+      bar: "border-yellow-500/30 bg-yellow-500/10",
+      text: "text-yellow-300 animate-pulse",
       icon: <Loader2 className="h-5 w-5 mr-3 animate-spin" />,
       title: "Sincronização em andamento...",
       subtitle: "Buscando e atualizando arquivos.",
     },
     success: {
-      barClass: "border-green-500/30 bg-green-500/10",
-      textClass: "text-green-300",
+      bar: "border-green-500/30 bg-green-500/10",
+      text: "text-green-300",
       icon: <SuccessIcon className="h-5 w-5 mr-3" />,
       title: "Sincronização concluída com sucesso!",
       subtitle: `Atualizado em: ${new Date().toLocaleTimeString("pt-BR")}`,
     },
     failure: {
-      barClass: "border-red-500/30 bg-red-500/10",
-      textClass: "text-red-300",
+      bar: "border-red-500/30 bg-red-500/10",
+      text: "text-red-300",
       icon: <FailureIcon className="h-5 w-5 mr-3" />,
       title: "Falha na sincronização.",
-      subtitle: "Por favor, tente novamente.",
+      subtitle: errorDetails,
     },
   };
 
@@ -183,11 +246,10 @@ export const SyncOraculoPanel = () => {
               Sincronização com Google Drive
             </h2>
             <p className="text-gray-400 pt-1 text-sm max-w-2xl">
-              Atualize os arquivos e pastas do Oráculo a partir da sua pasta
+              Mantenha os arquivos do Oráculo atualizados com a sua pasta
               configurada no Google Drive.
             </p>
           </div>
-
           <button
             onClick={() => runSync()}
             disabled={isPending}
@@ -201,7 +263,7 @@ export const SyncOraculoPanel = () => {
             />
             <span>
               {isPending
-                ? "Sincronizando..."
+                ? "Em Andamento..."
                 : status === "failure"
                 ? "Tentar Novamente"
                 : "Sincronizar Agora"}
@@ -210,14 +272,19 @@ export const SyncOraculoPanel = () => {
         </div>
       </div>
 
-      {/* Barra de Status Dinâmica */}
       <div
         className={cn(
-          "px-6 py-3 border-t-2 transition-all duration-300",
-          currentStatus.barClass
+          "px-6 py-3 border-t-2 transition-all duration-300 relative",
+          currentStatus.bar
         )}
       >
-        <div className={cn("flex items-center", currentStatus.textClass)}>
+        {status === "syncing" && (
+          <div
+            className="absolute top-0 left-0 h-full bg-yellow-400/20"
+            style={{ width: `${(progress.current / progress.total) * 100}%` }}
+          ></div>
+        )}
+        <div className={cn("flex items-center relative", currentStatus.text)}>
           {currentStatus.icon}
           <div>
             <p className="font-semibold text-sm">{currentStatus.title}</p>
