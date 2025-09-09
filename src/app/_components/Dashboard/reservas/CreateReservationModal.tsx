@@ -331,7 +331,7 @@ const CreateReservationModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#010d26] max-w-none sm:w-[%50] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent w-[70%] max-h-[80vh] text-white border-2 border-[#0126fb]">
+      <DialogContent className="bg-[#010d26] max-w-none w-[90%] overflow-y-auto sm:w-[%50] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent max-h-[80vh] text-white border-2 border-[#0126fb]">
         <DialogHeader>
           <DialogTitle>Criar Nova Reserva</DialogTitle>
         </DialogHeader>
