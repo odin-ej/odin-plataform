@@ -54,7 +54,7 @@ export async function PATCH(
       data: {
         type: "NEW_MENTION",
         notification: `O objetivo estratégico ${updatedObjective.objective} foi atualizado.`,
-        link: `/metas-casinha`,
+        link: `/metas`,
       },
     });
 

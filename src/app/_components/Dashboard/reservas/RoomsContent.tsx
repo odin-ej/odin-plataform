@@ -287,7 +287,7 @@ const RoomsContent = ({ initialData, isDirector }: RoomsContentProps) => {
         <CustomTable
           data={processedMyReservations}
           columns={createColumns(true)}
-          filterColumns={["roomName", "userName", "formattedDate",' title']}
+          filterColumns={["roomName", "userName", "formattedDate", "title"]}
           title="Minhas Reservas"
           itemsPerPage={5}
           type="onlyView"
@@ -295,7 +295,7 @@ const RoomsContent = ({ initialData, isDirector }: RoomsContentProps) => {
         <CustomTable
           data={processedAllReservations}
           columns={createColumns(false)}
-          filterColumns={["roomName", "userName", "formattedDate", 'title']}
+          filterColumns={["roomName", "userName", "formattedDate", "title"]}
           title="Todas as Reservas"
           itemsPerPage={5}
           type="onlyView"

@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { checkUserPermission, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CombinedUser, useAuth } from "@/lib/auth/AuthProvider";
-import { formatReaisResumo } from "../metas-casinha/GoalCard";
+import { formatReaisResumo } from "../metas/GoalCard";
 import UsefulLinksSection from "./UsefulLinksSection";
 import axios from "axios";
 import { HomeContentData } from "@/app/(dashboard)/page";

@@ -52,22 +52,24 @@ export async function PATCH(
 
     const notification = await prisma.notification.create({
       data: {
-        link: `/metas-casinha`,
+        link: `/metas`,
         notification: `A meta ${updatedGoal.title} foi atualizada por ${authUser.name}. Clique no link para ver os detalhes.`,
         type: "GENERAL_ALERT",
       },
     });
 
     await prisma.notificationUser.createMany({
-      data: allMembersId.filter(member => member.id !== authUser.id).map((member) => ({
-        notificationId: notification.id,
-        userId: member.id,
-        isRead: false,
-      })),
+      data: allMembersId
+        .filter((member) => member.id !== authUser.id)
+        .map((member) => ({
+          notificationId: notification.id,
+          userId: member.id,
+          isRead: false,
+        })),
     });
 
     revalidatePath("/atualizar-estrategia");
-    revalidatePath("/metas-casinha");
+    revalidatePath("/metas");
 
     return NextResponse.json(updatedGoal);
   } catch (error) {
