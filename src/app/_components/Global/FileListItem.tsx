@@ -32,25 +32,40 @@ interface FileListItemProps {
 }
 
 const FileListItem = ({ uploadableFile, onRemove }: FileListItemProps) => {
-  // CORRETO: useMemo agora está no nível superior do componente FileListItem
-  const [previewUrl, setPreviewUrl] = useState(null);
-
-  const fetchSignedUrl = async () => {
-    if (!uploadableFile || !uploadableFile.file) return;
-    try {
-      const res = await axios.get(`/api/s3-get-signed-url`, {
-        params: { key: uploadableFile.url },
-      });
-      setPreviewUrl(res.data.url);
-    } catch (err) {
-      console.error("Erro ao buscar signed URL", err);
-    }
-  };
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    uploadableFile.file ? URL.createObjectURL(uploadableFile.file) : null
+  );
 
   useEffect(() => {
+    // 1. Limpa a URL temporária quando o componente é desmontado
+    //    Isso é crucial para evitar vazamento de memória
+    return () => {
+      if (uploadableFile.file && previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [uploadableFile.file, previewUrl]);
+
+  useEffect(() => {
+    // 2. Lógica para buscar a URL assinada
+    const fetchSignedUrl = async () => {
+      // Se não há um arquivo local, mas há uma URL (key do S3),
+      // significa que é um arquivo existente no banco de dados.
+      if (!uploadableFile.file && uploadableFile.url) {
+        try {
+          const res = await axios.get(`/api/s3-get-signed-url`, {
+            params: { key: uploadableFile.url },
+          });
+          setPreviewUrl(res.data.url);
+        } catch (err) {
+          console.error("Erro ao buscar signed URL", err);
+          setPreviewUrl(null); // Define como null em caso de erro
+        }
+      }
+    };
+
     fetchSignedUrl();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uploadableFile]);
+  }, [uploadableFile.url, uploadableFile.file]); 
 
   return (
     <li className="bg-[#00205e]/50 p-3 rounded-md">
