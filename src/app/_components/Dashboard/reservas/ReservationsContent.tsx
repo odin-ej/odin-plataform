@@ -220,7 +220,7 @@ const ReservationsContent = ({
         description="Gerencie todas as reservas em um único lugar."
       />
 
-      <div className="mt-6 grid grid-cols-1 2xl:grid-cols-2 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6">
         <DailyScheduleView
           rooms={rooms}
           items={reservableItems}
