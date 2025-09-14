@@ -104,6 +104,7 @@ enum OraculoAreas {
 
 enum RequestStatus {
   PENDING
+  REQUESTED
   APPROVED
   REJECTED
 }
@@ -143,6 +144,23 @@ enum ItemStatus {
   AVAILABLE
   IN_USE
   MAINTENANCE
+}
+
+enum PostType {
+  ORIGINAL
+  REPOST
+  QUOTE // Repost com comentário
+}
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
+  DIRECT
+}
+
+enum ChannelMemberRole {
+  ADMIN
+  MEMBER
 }
 
 // --- MODELS ---
@@ -247,19 +265,32 @@ model User {
   ItemReservation               ItemReservation[]
   reviewedSolicitationsJRPoints JRPointsSolicitation[]       @relation("SolicitationReviewer")
   reviewedReportsJRPoints       JRPointsReport[]             @relation("SolicitationReviewer")
-  oraculoFiles                   OraculoFile[]
-  oraculoFolders                 OraculoFolder[]
+  oraculoFiles                  OraculoFile[]
+  oraculoFolders                OraculoFolder[]
+  favoritedPosts                Post[]                       @relation("PostFavorites")
+  reposts                       Post[]                       @relation("PostReposts")
+
+  // Relações com Canais
+  channelMemberships ChannelMember[] // Em quais canais o usuário está
+
+  // Relações com Mensagens Diretas
+  directConversations DirectConversation[] @relation("DirectConversationParticipants")
+  sentDirectMessages  DirectMessage[]
+  channelMessages      ChannelMessage[]
+  messageReactions     MessageReaction[]
 }
 
 model UserRoleHistory {
-  id        String   @id @default(uuid())
-  semester  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roleId    String
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  id               String          @id @default(uuid())
+  semester         String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId           String
+  role             Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  managementReport FileAttachment?
+  managementReportId String?
 
   @@index([userId])
   @@index([roleId])
@@ -444,8 +475,8 @@ model Tag {
   // --- CAMPO DE COMPATIBILIDADE ---
   // Este campo é mantido para garantir que as tags existentes na sua base de dados continuem funcionando.
   // Para novas tags, ele deve ser preenchido com a informação do TagTemplate no momento da criação.
-  actionTypeId String
-  actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+  actionTypeId  String
+  actionType    ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
 
   // --- NOVO SISTEMA DE MOLDES (Templates) ---
   // Esta relação é OPCIONAL (?) para não quebrar as tags existentes.
@@ -488,6 +519,10 @@ model FileAttachment {
   post                   Post?                 @relation(fields: [postId], references: [id], onDelete: Cascade)
   jRPointsReport         JRPointsReport?       @relation(fields: [jRPointsReportId], references: [id], onDelete: Cascade)
   jRPointsReportId       String?
+  directMessage          DirectMessage?        @relation(fields: [directMessageId], references: [id])
+  directMessageId        String?
+  userRoleHistoryId      String?              @unique
+  userRoleHistory        UserRoleHistory?     @relation(fields: [userRoleHistoryId], references: [id], onDelete: Cascade)
 }
 
 model JRPointsSolicitation {
@@ -513,7 +548,7 @@ model JRPointsSolicitation {
   enterpriseSemesterScoreId String?
   reviewerId                String?
   reviewer                  User?                      @relation("SolicitationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
-  generatedTags              Tag[]                    @relation("GeneratedTags")
+  generatedTags             Tag[]                      @relation("GeneratedTags")
 }
 
 model JRPointsReport {
@@ -704,7 +739,7 @@ model LinkPoster {
 }
 
 model ReserveRequestToConections {
-  id          String        @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   date        DateTime
   description String
@@ -765,7 +800,7 @@ model Notification {
 model OraculoFile {
   id         String   @id @default(uuid())
   name       String
-  key        String   @unique// URL do arquivo no S3
+  key        String   @unique // URL do arquivo no S3
   fileType   String // Ex: "application/pdf", "image/png"
   size       Int // Tamanho em bytes
   isFavorite Boolean  @default(false)
@@ -774,12 +809,11 @@ model OraculoFile {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  folderId String?
-  folder   OraculoFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  restrictedToAreas OraculoAreas[]
-  googleDriveModifiedTime DateTime? 
-  googleDriveFileId String? @unique
-
+  folderId                String?
+  folder                  OraculoFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  restrictedToAreas       OraculoAreas[]
+  googleDriveModifiedTime DateTime?
+  googleDriveFileId       String?        @unique
 }
 
 // Modelo para as Pastas do Oráculo (com suporte a subpastas)
@@ -796,35 +830,50 @@ model OraculoFolder {
   parent   OraculoFolder?  @relation("Subfolders", fields: [parentId], references: [id], onDelete: Cascade)
   children OraculoFolder[] @relation("Subfolders")
 
-  files OraculoFile[] // Uma pasta contém muitos arquivos
-  restrictedToAreas OraculoAreas[]
-  googleDriveFolderId String? @unique
+  files               OraculoFile[] // Uma pasta contém muitos arquivos
+  restrictedToAreas   OraculoAreas[]
+  googleDriveFolderId String?        @unique
 }
 
 model SyncLog {
   id         String    @id @default(uuid())
-  service    String    // Ex: "GOOGLE_DRIVE"
-  status     String    // Ex: "SUCCESS", "FAILED"
+  service    String // Ex: "GOOGLE_DRIVE"
+  status     String // Ex: "SUCCESS", "FAILED"
   details    String?   @db.Text
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
 }
 
 model Post {
-  id          String           @id @default(uuid())
-  title       String
-  content     String           @db.Text
-  isFixed     Boolean?         @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  authorId    String
-  author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  isFixed   Boolean? @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- Melhorias e Novas Relações ---
+  type PostType @default(ORIGINAL) // Identifica o tipo de post
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Relação para Reposts
+  originalPostId String?
+  originalPost   Post?   @relation("Reposts", fields: [originalPostId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reposts        Post[]  @relation("Reposts") // Lista de todos os reposts deste post
+
+  // Relações de Engajamento
   likedBy     User[]           @relation("PostLikes")
+  favoritedBy User[]           @relation("PostFavorites") // NOVO: Quem favoritou (salvou)
+  repostedBy  User[]           @relation("PostReposts") // NOVO: Quem deu repost
   comments    Comment[]
-  layouts     PostsLayout[]    @relation("LayoutPosts")
   attachments FileAttachment[]
 
+  // Relações existentes
+  layouts PostsLayout[] @relation("LayoutPosts")
+
   @@index([authorId])
+  @@index([originalPostId])
 }
 
 model Comment {
@@ -853,4 +902,114 @@ model PostsLayout {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   posts     Post[]   @relation("LayoutPosts")
+}
+
+model Channel {
+  id          String      @id @default(uuid())
+  name        String
+  description String?     @db.Text
+  type        ChannelType @default(PUBLIC)
+  imageUrl    String? // Imagem para canais destacados
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Restringe o canal a uma ou mais áreas específicas
+  restrictedToAreas AreaRoles[]
+
+  // Relações
+  members  ChannelMember[]
+  messages ChannelMessage[]
+}
+
+model ChannelMember {
+  id       String            @id @default(uuid())
+  role     ChannelMemberRole @default(MEMBER)
+  joinedAt DateTime          @default(now())
+
+  // Relações
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId]) // Garante que um usuário só pode entrar uma vez no mesmo canal
+  @@index([userId])
+  @@index([channelId])
+}
+
+model ChannelMessage {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  isPinned  Boolean  @default(false)
+  isDeleted Boolean  @default(false) // Soft delete
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // Para responder a uma mensagem
+  parentId String?
+  parent   ChannelMessage?  @relation("MessageReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  ChannelMessage[] @relation("MessageReplies")
+
+  // Anexos e Reações
+  // attachments FileAttachment[] // Você precisará adicionar a relação no modelo FileAttachment
+  reactions MessageReaction[]
+
+  @@index([channelId])
+  @@index([authorId])
+}
+
+model MessageReaction {
+  id    String @id @default(uuid())
+  emoji String // O caractere do emoji, ex: "👍"
+
+  // Relações
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messageId String
+  message   ChannelMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji]) // Um usuário só pode dar a mesma reação uma vez por mensagem
+  @@index([messageId])
+}
+
+// --- Conversas Diretas (DMs) ---
+
+model DirectConversation {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  participants User[]          @relation("DirectConversationParticipants")
+  messages     DirectMessage[]
+
+  @@index([updatedAt]) // Para ordenar as conversas pela mais recente
+}
+
+model DirectMessage {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  attachments FileAttachment[]
+
+  @@index([conversationId])
 }

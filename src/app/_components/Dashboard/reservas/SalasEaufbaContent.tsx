@@ -174,6 +174,7 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
       cell: (row) => {
         const statusMap: Record<RequestStatus, string> = {
           PENDING: "Em análise",
+          REQUESTED: 'Solicitada ao Apoio',
           APPROVED: "Aprovada",
           REJECTED: "Rejeitada",
         };
@@ -245,6 +246,7 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
         type: "select",
         options: [
           { value: "PENDING", label: "Em análise" },
+          { value: "REQUESTED", label: "Solicitada ao Apoio" },
           { value: "APPROVED", label: "Aprovada" },
           { value: "REJECTED", label: "Rejeitada" },
         ],

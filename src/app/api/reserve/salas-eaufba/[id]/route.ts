@@ -84,7 +84,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           link: `/salas-eaufba`,
           type: 'NEW_MENTION',
-          notification: `A solicitação de reserva: ${originalRequest.title} foi alterada para ${status === 'PENDING' ? 'Pendente' : status === 'APPROVED' ? 'Aprovada' : 'Rejeitada'}.`,
+          notification: `A solicitação de reserva: ${originalRequest.title} foi alterada para ${status === 'PENDING' ? 'Pendente' : status === 'APPROVED' ? 'Aprovada' : status === 'REQUESTED' ? 'Solicitada ao Apoio' : 'Rejeitada'}.`,
         },
       })
 
