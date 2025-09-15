@@ -36,7 +36,12 @@ import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { cn, getSimilarWords } from "@/lib/utils";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // ... (interfaces e tipos não mudam) ...
 export interface ReviewData {
@@ -96,23 +101,29 @@ const RequestReviewModal = ({
   });
 
   const similarSolicitations = useMemo(() => {
-    if (!request || request.type !== 'solicitation' || !allSolicitations) return [];
-    
+    if (!request || request.type !== "solicitation" || !allSolicitations)
+      return [];
+
     // Pega as 3 palavras mais relevantes da descrição atual
     const currentKeywords = getSimilarWords(request.description, 3);
-    
-    return allSolicitations.filter((sol: FullJRPointsSolicitation) => {
-        // Exclui a própria solicitação da lista
-        if (sol.id === request.id) return false;
-        
-        // Critério 1: Mesma data de realização
-        const sameDate = isSameDay(new Date(sol.datePerformed), new Date(request.datePerformed));
-        
-        // Critério 2: Pelo menos uma palavra chave em comum na descrição
-        const otherKeywords = getSimilarWords(sol.description, 10);
-        const hasSimilarWords = currentKeywords.some(keyword => otherKeywords.includes(keyword));
 
-        return sameDate && hasSimilarWords;
+    return allSolicitations.filter((sol: FullJRPointsSolicitation) => {
+      // Exclui a própria solicitação da lista
+      if (sol.id === request.id) return false;
+
+      // Critério 1: Mesma data de realização
+      const sameDate = isSameDay(
+        new Date(sol.datePerformed),
+        new Date(request.datePerformed)
+      );
+
+      // Critério 2: Pelo menos uma palavra chave em comum na descrição
+      const otherKeywords = getSimilarWords(sol.description, 10);
+      const hasSimilarWords = currentKeywords.some((keyword) =>
+        otherKeywords.includes(keyword)
+      );
+
+      return sameDate && hasSimilarWords;
     });
   }, [request, allSolicitations]);
 
@@ -470,30 +481,70 @@ const RequestReviewModal = ({
             )}
 
             {isSolicitation(request) && similarSolicitations.length > 0 && (
-                <div className="p-4 bg-[#00205e]/30 rounded-lg border border-gray-700 space-y-4">
-                    <h4 className="font-semibold text-[#f5b719] flex items-center">
-                        <History className="h-4 w-4 mr-2"/> Solicitações Similares Encontradas
-                    </h4>
-                    <p className="text-xs text-gray-400">
-                        Encontramos outras solicitações com descrições e datas parecidas. Use-as como referência para manter a consistência nas aprovações.
-                    </p>
-                    <Accordion type="multiple" className="w-full">
-                      {similarSolicitations.map((sol: FullJRPointsSolicitation) => (
-                          <AccordionItem key={sol.id} value={sol.id} className="bg-[#010d26]/20 border-gray-600 px-3 rounded-md mb-2">
-                              <AccordionTrigger className="hover:no-underline text-sm font-medium">
-                                <div className="flex items-center justify-between w-full pr-2">
-                                  <span className="truncate max-w-[200px]">{sol.user.name}</span>
-                                  <Badge className={cn(sol.status === 'APPROVED' ? 'bg-green-600': sol.status === 'PENDING' ? 'bg-[#f5b719]' : 'bg-red-600', 'text-white')}>{sol.status}</Badge>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="pt-2 text-xs text-gray-300 space-y-2">
-                                  <p><strong>Descrição:</strong> {sol.description}</p>
-                                  <p><strong>Notas da Diretoria:</strong> {sol.directorsNotes || 'N/A'}</p>
-                              </AccordionContent>
-                          </AccordionItem>
-                      ))}
-                    </Accordion>
-                </div>
+              <div className="p-4 bg-[#00205e]/30 rounded-lg border border-gray-700 space-y-4">
+                <h4 className="font-semibold text-[#f5b719] flex items-center">
+                  <History className="h-4 w-4 mr-2" /> Solicitações Similares
+                  Encontradas
+                </h4>
+                <p className="text-xs text-gray-400">
+                  Encontramos outras solicitações com descrições e datas
+                  parecidas. Use-as como referência para manter a consistência
+                  nas aprovações.
+                </p>
+                <Accordion type="multiple" className="w-full">
+                  {similarSolicitations.map((sol: FullJRPointsSolicitation) => (
+                    <AccordionItem
+                      key={sol.id}
+                      value={sol.id}
+                      className="bg-[#010d26]/20 border-gray-600 px-3 rounded-md mb-2"
+                    >
+                      <AccordionTrigger className="hover:no-underline text-sm font-medium">
+                        <div className="flex items-center justify-between w-full pr-2">
+                          <span className="truncate max-w-[200px]">
+                            {sol.user.name}
+                          </span>
+                          <Badge
+                            className={cn(
+                              sol.status === "APPROVED"
+                                ? "bg-green-600"
+                                : sol.status === "PENDING"
+                                ? "bg-[#f5b719]"
+                                : "bg-red-600",
+                              "text-white"
+                            )}
+                          >
+                            {" "}
+                            {sol.status === "PENDING"
+                              ? "Pendente"
+                              : sol.status === "APPROVED"
+                              ? "Aprovado"
+                              : "Rejeitado"}
+                          </Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-2 text-xs text-gray-300 space-y-2">
+                        <p>
+                          <strong>Descrição:</strong> {sol.description}
+                        </p>
+                        <p>
+                          <strong>Data de Realização:</strong>{" "}
+                          {format(sol.datePerformed, "dd/MM/yyyy")}
+                        </p>
+                        <p>
+                          <strong>Membros Envolvidos:</strong>{" "}
+                          {sol.membersSelected
+                            .map((member) => member.name)
+                            .join(", ")}
+                        </p>
+                        <p>
+                          <strong>Notas da Diretoria:</strong>{" "}
+                          {sol.directorsNotes || "N/A"}
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
             )}
 
             <CustomTextArea
