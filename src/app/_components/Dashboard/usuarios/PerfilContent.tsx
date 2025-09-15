@@ -15,7 +15,7 @@ import {
   exMemberUpdateSchema,
   memberUpdateSchema,
   MemberUpdateType,
-  ExMemberUpdateType
+  ExMemberUpdateType,
 } from "@/lib/schemas/profileUpdateSchema";
 import { checkUserPermission, formatDateForInput } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
@@ -43,25 +43,86 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     enabled: !!userId,
   });
 
+  const uploadFile = async ({
+    file,
+    subfolder,
+    olderFileKey,
+  }: {
+    file: File;
+    subfolder?: string;
+    olderFileKey?: string | null;
+  }) => {
+    const presignedUrlRes = await axios.post("/api/s3-upload", {
+      fileType: file.type,
+      fileSize: file.size,
+      subfolder,
+      olderFile: olderFileKey,
+    });
+    const { url, key } = presignedUrlRes.data;
+    await axios.put(url, file, { headers: { "Content-Type": file.type } });
+
+    // Retorna o objeto completo para relatórios, ou apenas a URL completa para avatares
+    const fullS3Url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+    return subfolder
+      ? { fileName: file.name, fileType: file.type, url: fullS3Url }
+      : fullS3Url;
+  };
+
   const { mutate: updateProfile, isPending: isUpdating } = useMutation({
     mutationFn: async (formData: MemberUpdateType | ExMemberUpdateType) => {
-      let imageUrl = data?.user?.imageUrl;
-      const { image, ...restOfData } = formData;
+      const { image, roleHistory, ...restOfData } = formData as any;
+      let finalImageUrl = data?.user?.imageUrl;
+
+      const uploadPromises: Promise<any>[] = [];
+
+      // 1. Prepara o upload da imagem de perfil
       if (image && image instanceof File) {
-        // Lógica de upload para S3
-        const presignedUrlRes = await axios.post("/api/s3-upload", {
-          fileType: image.type,
-          fileSize: image.size,
-          olderFile: imageUrl,
-        });
-        const { url, key } = presignedUrlRes.data;
-        await axios.put(url, image, {
-          headers: { "Content-Type": image.type },
-        });
-        imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+        uploadPromises.push(
+          uploadFile({ file: image, olderFileKey: data?.user?.imageUrl })
+        );
       }
 
-      const finalData = { ...restOfData, imageUrl };
+      // 2. Prepara o upload dos relatórios de gestão
+      const finalRoleHistory = await Promise.all(
+        (roleHistory || []).map(async (historyItem: any, index: number) => {
+          let file: File | undefined;
+
+          // 🔹 Se veio como FileList do input
+          if (
+            historyItem.managementReport instanceof FileList &&
+            historyItem.managementReport.length > 0
+          ) {
+            file = historyItem.managementReport[0];
+          }
+
+          // 🔹 Se já veio como File (caso o form tenha sido setado manualmente)
+          if (historyItem.managementReport instanceof File) {
+            file = historyItem.managementReport;
+          }
+
+          if (file) {
+            const oldReport = data?.user?.roleHistory[index]?.managementReport;
+            const newReportData = await uploadFile({
+              file,
+              subfolder: "relatorios",
+              olderFileKey: oldReport ? oldReport.url : null, 
+            });
+            return { ...historyItem, managementReport: newReportData };
+          }
+          return historyItem;
+        })
+      );
+
+      const uploadResults = await Promise.all(uploadPromises);
+      if (image && image instanceof File) {
+        finalImageUrl = uploadResults.shift();
+      }
+
+      const finalData = {
+        ...restOfData,
+        imageUrl: finalImageUrl,
+        roleHistory: finalRoleHistory,
+      };
       return axios.patch(`${API_URL}/api/users/${userId}`, finalData);
     },
     onSuccess: async () => {
@@ -73,7 +134,8 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     },
     onError: (error: any) => {
       toast.error("Erro ao Atualizar", {
-        description: error.response?.data?.message,
+        description:
+          error.response?.data?.message || "Ocorreu um erro inesperado.",
       });
     },
   });
@@ -104,17 +166,12 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
 
   const { user, roles, interestCategories } = data || {};
 
-
-
-    const canChangeRole = useMemo(
-    () =>
-      user
-        ? checkUserPermission(user, DIRECTORS_ONLY)
-        : false,
+  const canChangeRole = useMemo(
+    () => (user ? checkUserPermission(user, DIRECTORS_ONLY) : false),
     [user]
   );
 
- const formInitialValues = useMemo(() => {
+  const formInitialValues = useMemo(() => {
     if (!user) return undefined;
     return {
       name: user.name,
@@ -129,20 +186,29 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
       linkedin: user.linkedin ?? "",
       instagram: user.instagram ?? "",
       currentRoleId: user.currentRoleId ?? "",
-      professionalInterests: user.professionalInterests.map(interest => interest.id),
-      roleHistory: user.roleHistory.map(history => ({ roleId: history.roleId, semester: history.semester })),
+      professionalInterests: user.professionalInterests.map(
+        (interest) => interest.id
+      ),
+      roleHistory:
+        user.roleHistory.map((history) => ({
+          id: history.id,
+          roleId: history.roleId,
+          semester: history.semester,
+          // PASSE O OBJETO DO RELATÓRIO PARA O FORMULÁRIO
+          managementReport: history.managementReport,
+        })) ?? [],
       // Ex-Membro
       semesterLeaveEj: user.semesterLeaveEj ?? "",
       aboutEj: user.aboutEj ?? "",
       alumniDreamer: user.alumniDreamer ? "Sim" : "Não",
       isWorking: user.isWorking ? "Sim" : "Não",
       workplace: user.workplace ?? "",
-      roles: user.roles.map(role => role.id),
+      roles: user.roles.map((role) => role.id),
       otherRole: user.otherRole ?? "",
     };
   }, [user]);
 
-    if (isLoadingData || !user || !roles || !interestCategories) {
+  if (isLoadingData || !user || !roles || !interestCategories) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="animate-spin text-[#f5b719] h-12 w-12" />
@@ -165,7 +231,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
             isLoading={isUpdating}
             onSubmit={(data) => updateProfile(data)}
             roles={roles}
-            title='Enviar'
+            title="Enviar"
             values={formInitialValues as any}
             schema={exMemberUpdateSchema}
             canChangeRole={false}
@@ -180,7 +246,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
             roles={roles}
             values={formInitialValues as any}
             schema={memberUpdateSchema}
-            title='Enviar'
+            title="Enviar"
             canChangeRole={canChangeRole}
             onFileSelect={handleFileSelect}
             interestCategories={interestCategories}

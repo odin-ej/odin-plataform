@@ -69,6 +69,8 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
     about: "",
     image: undefined,
     imageUrl: "",
+    roleHistory: [],
+    
   };
 
   const form = useForm<z.infer<T>>({

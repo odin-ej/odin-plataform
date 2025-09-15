@@ -204,3 +204,11 @@ input[type="range"]::-moz-range-track {
   background: #0126fb;
   border-radius: 5px;
 }
+
+input[type="file"]::file-selector-button {
+  color: #f5b719; /* Cor do texto */
+  padding: 1px 5px; /* Preenchimento */
+  border-radius: 5px; /* Cantos arredondados */
+  font-size:10px;
+  cursor: pointer; /* Cursor de ponteiro */
+}

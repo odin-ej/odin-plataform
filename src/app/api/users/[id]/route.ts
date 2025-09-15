@@ -18,7 +18,7 @@ import {
   MemberUpdateType,
 } from "@/lib/schemas/profileUpdateSchema";
 import { revalidatePath } from "next/cache";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/aws";
 import bcrypt from "bcrypt";
 import z from "zod";
@@ -83,7 +83,10 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const userToUpdate = await prisma.user.findUnique({ where: { id } });
+    const userToUpdate = await prisma.user.findUnique({
+      where: { id },
+      include: { roleHistory: { include: { managementReport: true } } },
+    });
     if (!userToUpdate) {
       return NextResponse.json(
         { message: "Usuário não encontrado." },
@@ -96,7 +99,7 @@ export async function PATCH(
     const bodyToValidate = roleId ? { ...rest, currentRoleId: roleId } : rest;
 
     // A validação Zod usa o schema correto com base no status do usuário no banco
-  
+
     const validation = userToUpdate.isExMember
       ? exMemberUpdateSchema.safeParse(bodyToValidate)
       : memberUpdateSchema.safeParse(bodyToValidate);
@@ -113,77 +116,154 @@ export async function PATCH(
     }
 
     const validatedData = validation.data;
-
-
-
+    const { professionalInterests, roleHistory, ...restOfUserData } =
+      validatedData;
     // --- Inicia a transação do Prisma ---
-    const updatedUser = await prisma.$transaction(async (tx) => {
-      // Objeto base para a atualização do Prisma
-      const updateData: Prisma.UserUpdateInput = {
-        name: validatedData.name,
-        email: validatedData.email,
-        emailEJ: validatedData.emailEJ,
-        birthDate: parseBrazilianDate(validatedData.birthDate)!,
-        phone: validatedData.phone,
-        semesterEntryEj: validatedData.semesterEntryEj,
-        course: validatedData.course,
-        about: validatedData.about,
-        instagram: validatedData.instagram,
-        linkedin: validatedData.linkedin,
-        imageUrl: body.imageUrl,
-      };
-
-      if (validatedData.password) {
-        updateData.password = await bcrypt.hash(validatedData.password, 10);
-      }
-
-      // Lógica de sincronização para Interesses e Histórico
-      if (validatedData.professionalInterests) {
-        updateData.professionalInterests = {
-          set: validatedData.professionalInterests.map((id) => ({ id })),
+    const updatedUser = await prisma.$transaction(
+      async (tx) => {
+        // Objeto base para a atualização do Prisma
+        const updateData: Prisma.UserUpdateInput = {
+          name: validatedData.name,
+          email: validatedData.email,
+          emailEJ: validatedData.emailEJ,
+          birthDate: parseBrazilianDate(validatedData.birthDate)!,
+          phone: validatedData.phone,
+          semesterEntryEj: validatedData.semesterEntryEj,
+          course: validatedData.course,
+          about: validatedData.about,
+          instagram: validatedData.instagram,
+          linkedin: validatedData.linkedin,
+          imageUrl: body.imageUrl,
         };
-      }
-      if (validatedData.roleHistory) {
-        await tx.userRoleHistory.deleteMany({ where: { userId: id } });
-        if (validatedData.roleHistory.length > 0) {
-          await tx.userRoleHistory.createMany({
-            data: validatedData.roleHistory.map((h) => ({ ...h, userId: id })),
-          });
-        }
-      }
 
-      // Lógica específica para o tipo de membro
-      if (userToUpdate.isExMember) {
-        const exMemberData = validatedData as z.infer<
-          typeof exMemberUpdateSchema
-        >;
-        updateData.semesterLeaveEj = exMemberData.semesterLeaveEj;
-        updateData.aboutEj = exMemberData.aboutEj;
-        updateData.isWorking = exMemberData.isWorking === "Sim";
-        updateData.workplace = exMemberData.workplace;
-        updateData.alumniDreamer = exMemberData.alumniDreamer === "Sim";
-        updateData.roles = { set: exMemberData?.roles?.map((id) => ({ id })) };
-        updateData.currentRole = { disconnect: true }; // Ex-membro não tem cargo atual
-      } else {
-        const memberData = validatedData as z.infer<typeof memberUpdateSchema>;
-        if (memberData.currentRoleId) {
-          updateData.currentRole = {
-            connect: { id: memberData.currentRoleId },
+        if (validatedData.password) {
+          updateData.password = await bcrypt.hash(validatedData.password, 10);
+        }
+
+        // Lógica de sincronização para Interesses e Histórico
+        if (validatedData.professionalInterests) {
+          updateData.professionalInterests = {
+            set: validatedData.professionalInterests.map((id) => ({ id })),
           };
         }
-        if(isExMember === 'Sim' && !userToUpdate.isExMember){
-          updateData.currentRole ={
-            disconnect: {id: memberData.currentRoleId}
-          }
-          updateData.isExMember = true
-          const actualSemester = await prisma.semester.findFirst({where: {isActive: true}})
-          updateData.semesterLeaveEj = actualSemester?.name
-        }
-      }
+        if (roleHistory) {
+          // 1. Identifica os relatórios que foram REMOVIDOS no frontend
+          const incomingReportIds = new Set(
+            roleHistory.map((h) => h.managementReport?.id).filter(Boolean)
+          );
 
-      // Atualiza o usuário no Prisma
-      return await tx.user.update({ where: { id }, data: updateData });
-    });
+          const reportsToDelete = userToUpdate.roleHistory
+            .map((h) => h.managementReport)
+            .filter((report) => report && !incomingReportIds.has(report.id));
+
+          // 2. Se houver relatórios para deletar, remove-os do S3
+          if (reportsToDelete.length > 0) {
+            console.log(
+              `Deletando ${reportsToDelete.length} relatório(s) do S3...`
+            );
+
+            await s3Client.send(
+              new DeleteObjectsCommand({
+                Bucket: process.env.AWS_S3_BUCKET_NAME!,
+                Delete: {
+                  Objects: reportsToDelete.map((r) => {
+                    const url = new URL(r!.url);
+                    const key = decodeURIComponent(url.pathname.slice(1));
+                    return { Key: key };
+                  }), // Use a 'key' do seu schema
+                },
+              })
+            );
+          }
+
+          // 3. Apaga todo o histórico de cargos antigo do banco de dados.
+          // A cascata cuidará de apagar os FileAttachments associados.
+          await tx.userRoleHistory.deleteMany({ where: { userId: id } });
+
+          // 4. Cria os novos registros de histórico
+          if (roleHistory.length > 0) {
+            for (const historyItem of roleHistory) {
+              const { managementReport, ...historyData } = historyItem;
+
+              const createdHistory = await tx.userRoleHistory.create({
+                data: {
+                  user: { connect: { id } },
+                  role: { connect: { id: historyData.roleId } },
+                  semester: historyData.semester,
+                },
+              });
+
+              // Se houver um relatório (novo ou antigo mantido), conecta ou cria
+              if (managementReport) {
+                if (managementReport.id) {
+                  // Conecta um relatório existente
+                  await tx.userRoleHistory.update({
+                    where: { id: createdHistory.id },
+                    data: {
+                      managementReport: {
+                        connect: { id: managementReport.id },
+                      },
+                    },
+                  });
+                } else if (managementReport.url) {
+                  // Cria um novo anexo para um relatório recém-enviado
+                  const newReport = await tx.fileAttachment.create({
+                    data: {
+                      url: managementReport.url,
+                      fileName: managementReport.fileName,
+                      fileType: managementReport.fileType,
+                    },
+                  });
+                  await tx.userRoleHistory.update({
+                    where: { id: createdHistory.id },
+                    data: { managementReportId: newReport.id },
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // Lógica específica para o tipo de membro
+        if (userToUpdate.isExMember) {
+          const exMemberData = validatedData as z.infer<
+            typeof exMemberUpdateSchema
+          >;
+          updateData.semesterLeaveEj = exMemberData.semesterLeaveEj;
+          updateData.aboutEj = exMemberData.aboutEj;
+          updateData.isWorking = exMemberData.isWorking === "Sim";
+          updateData.workplace = exMemberData.workplace;
+          updateData.alumniDreamer = exMemberData.alumniDreamer === "Sim";
+          updateData.roles = {
+            set: exMemberData?.roles?.map((id) => ({ id })),
+          };
+          updateData.currentRole = { disconnect: true }; // Ex-membro não tem cargo atual
+        } else {
+          const memberData = validatedData as z.infer<
+            typeof memberUpdateSchema
+          >;
+          if (memberData.currentRoleId) {
+            updateData.currentRole = {
+              connect: { id: memberData.currentRoleId },
+            };
+          }
+          if (isExMember === "Sim" && !userToUpdate.isExMember) {
+            updateData.currentRole = {
+              disconnect: { id: memberData.currentRoleId },
+            };
+            updateData.isExMember = true;
+            const actualSemester = await prisma.semester.findFirst({
+              where: { isActive: true },
+            });
+            updateData.semesterLeaveEj = actualSemester?.name;
+          }
+        }
+
+        // Atualiza o usuário no Prisma
+        return await tx.user.update({ where: { id }, data: updateData });
+      },
+      { timeout: 20000 }
+    );
 
     // --- Operações Externas (Cognito, S3) - Feitas após a transação do DB ser bem-sucedida ---
 
@@ -267,7 +347,10 @@ export async function DELETE(
     const { id } = await params;
 
     // 1. Encontra o utilizador no Prisma para obter o seu e-mail (username do Cognito)
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { roleHistory: { include: { managementReport: true } } },
+    });
     if (!user) {
       return NextResponse.json(
         { message: "Utilizador não encontrado." },
@@ -275,12 +358,43 @@ export async function DELETE(
       );
     }
 
+    const s3KeysToDelete: string[] = [];
+
+    // Adiciona a key do avatar, se existir
     if (user.imageUrl) {
-      const command = new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: user.imageUrl,
-      });
-      await s3Client.send(command);
+      try {
+        const url = new URL(user.imageUrl);
+        s3KeysToDelete.push(decodeURIComponent(url.pathname.substring(1)));
+      } catch (e) {
+        console.error("URL de avatar inválida:", user.imageUrl);
+      }
+    }
+
+    // Adiciona as keys dos relatórios de gestão, se existirem
+    user.roleHistory.forEach((history) => {
+      if (history.managementReport?.url) {
+        try {
+          const url = new URL(history.managementReport.url);
+          s3KeysToDelete.push(decodeURIComponent(url.pathname.substring(1)));
+        } catch (e) {
+          console.error(
+            "URL de relatório inválida:",
+            history.managementReport.url
+          );
+        }
+      }
+    });
+
+    // 3. Deleta os arquivos do S3 em um único lote, se houver algum
+    if (s3KeysToDelete.length > 0) {
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME!,
+          Delete: {
+            Objects: s3KeysToDelete.map((key) => ({ Key: key })),
+          },
+        })
+      );
     }
 
     // 2. Apaga o utilizador do AWS Cognito

@@ -289,8 +289,8 @@ model UserRoleHistory {
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   roleId           String
   role             Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  managementReport FileAttachment?
-  managementReportId String?
+   managementReport   FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
+  managementReportId String?       @unique
 
   @@index([userId])
   @@index([roleId])
@@ -521,8 +521,7 @@ model FileAttachment {
   jRPointsReportId       String?
   directMessage          DirectMessage?        @relation(fields: [directMessageId], references: [id])
   directMessageId        String?
-  userRoleHistoryId      String?              @unique
-  userRoleHistory        UserRoleHistory?     @relation(fields: [userRoleHistoryId], references: [id], onDelete: Cascade)
+  userRoleHistory    UserRoleHistory?
 }
 
 model JRPointsSolicitation {

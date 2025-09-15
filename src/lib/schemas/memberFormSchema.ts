@@ -3,9 +3,9 @@ import {
   User,
   Role,
   RegistrationRequest,
-  UserRoleHistory,
   ProfessionalInterest,
   InterestCategory,
+  Prisma,
 } from "@prisma/client";
 
 const baseMemberSchema = z.object({
@@ -125,7 +125,14 @@ type InterestWithCategory = ProfessionalInterest & {
 export type MemberWithFullRoles = User & {
   roles: Role[];
   currentRole: Role;
-  roleHistory: (UserRoleHistory & { role: { name: string } })[];
+  roleHistory: Prisma.UserRoleHistoryGetPayload<{
+    include: {
+      role: {
+        select: { name: true };
+      };
+      managementReport: true;
+    };
+  }>[];
   professionalInterests: InterestWithCategory[];
 };
 export type RegistrationRequestWithRoles = RegistrationRequest & {

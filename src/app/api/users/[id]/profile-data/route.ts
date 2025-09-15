@@ -15,7 +15,7 @@ export async function GET(
           roles: true,
           currentRole: true,
           professionalInterests: true,
-          roleHistory: { include: { role: true } },
+          roleHistory: { include: { role: true, managementReport: true } },
         },
       }),
       prisma.role.findMany(),

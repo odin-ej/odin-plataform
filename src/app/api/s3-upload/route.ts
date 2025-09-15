@@ -8,9 +8,24 @@ import { s3Client } from "@/lib/aws";
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
+const mimeToExtension: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+  "application/zip": "zip",
+  "application/x-zip-compressed": "zip", // navegador pode mandar assim
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.ms-powerpoint": "ppt",
+};
+
 export async function POST(request: Request) {
   try {
-    const { fileType, fileSize, olderFile } = await request.json();
+    const { fileType, fileSize, olderFile, subfolder } = await request.json();
 
     // Validações de segurança
     if (!fileType || !fileSize) {
@@ -41,8 +56,9 @@ export async function POST(request: Request) {
     }
 
     const fileName = generateFileName();
-    const fileExtension = fileType.split("/")[1];
-    const key = `${fileName}.${fileExtension}`;
+     const fileExtension =
+      mimeToExtension[fileType] ?? fileType.split("/")[1] ?? "bin";
+     const key = subfolder ? `${subfolder}/${fileName}.${fileExtension}` : `${fileName}.${fileExtension}`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME!,

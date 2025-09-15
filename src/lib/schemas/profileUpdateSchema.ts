@@ -1,26 +1,39 @@
 import { z } from "zod";
 
+
+
 // Parte 1: Schema base cru, agora com imageUrl
 const baseProfileSchema = z.object({
   name: z.string().min(3, "Nome completo é obrigatório"),
   birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
   email: z.string().email("E-mail pessoal inválido"),
   emailEJ: z.string().email("E-mail institucional inválido"),
-  phone: z.string().regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
+  phone: z
+    .string()
+    .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
   course: z.string().min(1, "Curso é obrigatório"),
   semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório"),
   about: z.string().optional(),
   image: z.any().optional(), // Para upload
   imageUrl: z.string().url().optional().or(z.literal("")),
-  linkedin: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal("")),
+  linkedin: z
+    .string()
+    .url({ message: "Por favor, insira uma URL válida." })
+    .optional()
+    .or(z.literal("")),
   instagram: z.string().optional(),
   professionalInterests: z.array(z.string()).optional(),
-  roleHistory: z.array(
-    z.object({
-      roleId: z.string().min(1, "Selecione um cargo."),
-      semester: z.string().regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
-    })
-  ).optional(),
+  roleHistory: z
+    .array(
+      z.object({
+        roleId: z.string().min(1, "Selecione um cargo."),
+        semester: z
+          .string()
+          .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+        managementReport: z.any().optional().nullable(),
+      })
+    )
+    .optional(),
 
   password: z.string().optional().or(z.literal("")),
   confPassword: z.string().optional().or(z.literal("")),
@@ -32,15 +45,17 @@ export const memberUpdateSchema = baseProfileSchema.extend({
 });
 
 // Schema para Ex-Membros
-export const exMemberUpdateSchema = baseProfileSchema.extend({
-  semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório"),
-  aboutEj: z.string().optional(),
-  roles: z.array(z.string()).min(1, "Selecione pelo menos um cargo ocupado."),
-  otherRole: z.string().optional(),
-  alumniDreamer: z.enum(["Sim", "Não"]),
-  isWorking: z.enum(["Sim", "Não"]),
-  workplace: z.string().optional(),
-}).superRefine((data, ctx) => {
+export const exMemberUpdateSchema = baseProfileSchema
+  .extend({
+    semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório"),
+    aboutEj: z.string().optional(),
+    roles: z.array(z.string()).min(1, "Selecione pelo menos um cargo ocupado."),
+    otherRole: z.string().optional(),
+    alumniDreamer: z.enum(["Sim", "Não"]),
+    isWorking: z.enum(["Sim", "Não"]),
+    workplace: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
     if (
       data.password &&
       data.password.length > 0 &&

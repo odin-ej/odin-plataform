@@ -1,6 +1,6 @@
 import { constructMetadata } from "@/lib/metadata";
 import PerfilContent from "../../_components/Dashboard/usuarios/PerfilContent";
-import { InterestCategory, ProfessionalInterest, Role, User, UserRoleHistory,  } from "@prisma/client";
+import { FileAttachment, InterestCategory, ProfessionalInterest, Role, User, UserRoleHistory,  } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 import { verifyAccess } from "@/lib/utils";
@@ -10,7 +10,7 @@ export const metadata = constructMetadata({ title: "Perfil" });
 
 export interface FullUserProfile extends User {
   professionalInterests: ProfessionalInterest[];
-  roleHistory: (UserRoleHistory & { role: Role })[];
+  roleHistory: (UserRoleHistory & { role: Role, managementReport: FileAttachment })[];
   roles: Role[];
   currentRole: Role;
 }
