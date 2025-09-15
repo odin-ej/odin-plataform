@@ -101,31 +101,49 @@ const RequestReviewModal = ({
   });
 
   const similarSolicitations = useMemo(() => {
-    if (!request || request.type !== "solicitation" || !allSolicitations)
-      return [];
+    if (!request || request.type !== "solicitation" || !allSolicitations) {
+        return [];
+    }
 
     // Pega as 3 palavras mais relevantes da descrição atual
     const currentKeywords = getSimilarWords(request.description, 3);
+    
+    // --- NOVO: CRIA UM CONJUNTO COM TODOS OS IDs DE USUÁRIOS ENVOLVIDOS NA SOLICITAÇÃO ORIGINAL ---
+    // Isso inclui o criador (user) e todos os membros selecionados (membersSelected).
+    // Usamos um 'Set' para garantir que não haja IDs duplicados e para buscas rápidas.
+    const involvedUserIds = new Set([
+        request.user.id, 
+        ...request.membersSelected.map(member => member.id)
+    ]);
 
     return allSolicitations.filter((sol: FullJRPointsSolicitation) => {
-      // Exclui a própria solicitação da lista
-      if (sol.id === request.id) return false;
+        // Exclui a própria solicitação da lista
+        if (sol.id === request.id) return false;
 
-      // Critério 1: Mesma data de realização
-      const sameDate = isSameDay(
-        new Date(sol.datePerformed),
-        new Date(request.datePerformed)
-      );
+        // CRITÉRIO 1: MESMA DATA DE REALIZAÇÃO
+        const sameDate = isSameDay(
+            new Date(sol.datePerformed),
+            new Date(request.datePerformed)
+        );
 
-      // Critério 2: Pelo menos uma palavra chave em comum na descrição
-      const otherKeywords = getSimilarWords(sol.description, 10);
-      const hasSimilarWords = currentKeywords.some((keyword) =>
-        otherKeywords.includes(keyword)
-      );
+        // CRITÉRIO 2: DESCRIÇÃO SIMILAR
+        const otherKeywords = getSimilarWords(sol.description, 10);
+        const hasSimilarWords = currentKeywords.some((keyword) =>
+            otherKeywords.includes(keyword)
+        );
+        
+        // --- NOVO: CRITÉRIO 3: ENVOLVE PELO MENOS UMA DAS MESMAS PESSOAS ---
+        // Verifica se o criador da outra solicitação (sol.user.id) OU
+        // algum dos membros selecionados nela (sol.membersSelected)
+        // está no nosso conjunto de usuários originais.
+        const hasSharedMember = 
+            involvedUserIds.has(sol.user.id) || 
+            sol.membersSelected.some(member => involvedUserIds.has(member.id));
 
-      return sameDate && hasSimilarWords;
+        // A solicitação só é considerada similar se todos os critérios forem atendidos.
+        return sameDate && hasSimilarWords && hasSharedMember;
     });
-  }, [request, allSolicitations]);
+}, [request, allSolicitations]);
 
   useEffect(() => {
     const fetchStreakValues = async () => {
