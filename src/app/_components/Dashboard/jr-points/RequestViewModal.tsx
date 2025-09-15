@@ -232,7 +232,7 @@ const RequestReviewModal = ({
   ): req is FullJRPointsSolicitation & {
     type: "solicitation";
     template: { name: string };
-  } => req.type === "solicitation" && "memberSolicitations" in req;
+  } => req.type === "solicitation";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
