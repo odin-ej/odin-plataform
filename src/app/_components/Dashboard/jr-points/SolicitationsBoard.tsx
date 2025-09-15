@@ -352,7 +352,11 @@ const SolicitationsBoard = ({
         {paginatedData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {paginatedData.map((item) => (
-              <RequestCard key={item.id} item={item} onCardClick={onCardClick} />
+              <RequestCard
+                key={item.id}
+                item={item}
+                onCardClick={onCardClick}
+              />
             ))}
           </div>
         ) : (

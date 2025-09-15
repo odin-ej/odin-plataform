@@ -400,3 +400,22 @@ export function exportToExcel<T>(data: T[], fileName: string) {
   // Gera o arquivo e aciona o download no navegador
   XLSX.writeFile(workbook, `${fileName}.xlsx`);
 }
+
+/**
+ * Extrai as palavras mais relevantes de um texto, ignorando palavras comuns.
+ * @param text O texto de entrada.
+ * @param count O número de palavras a serem retornadas.
+ * @returns Um array com as palavras mais relevantes.
+ */
+export function getSimilarWords(text: string, count: number): string[] {
+  // Lista de 'stop words' em português (palavras comuns a serem ignoradas)
+  const stopWords = new Set(['de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'com', 'não', 'uma', 'os', 'no', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu', 'sua']);
+  
+  return text
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^\w\s]/g, '') // Remove pontuação
+    .split(/\s+/) // Divide em palavras
+    .filter(word => word.length > 3 && !stopWords.has(word)) // Filtra palavras curtas e stop words
+    .slice(0, count); // Pega as primeiras 'count' palavras
+}

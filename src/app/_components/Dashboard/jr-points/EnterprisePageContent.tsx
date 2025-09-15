@@ -748,6 +748,7 @@ const EnterprisePageContent = ({
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
         request={reviewingRequest}
+        allSolicitations={solicitations}
         onReview={reviewRequestMutation}
         isReviewing={isReviewing}
       />
