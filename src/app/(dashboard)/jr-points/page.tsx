@@ -5,7 +5,9 @@ import { verifyAccess } from "@/lib/utils";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { TagWithAction } from "@/lib/schemas/pointsSchema";
 import { EnterpriseSemesterScore, Prisma, Semester } from "@prisma/client";
-import JrPointsContent, { RankingItem } from "@/app/_components/Dashboard/jr-points/JrPointsContent";
+import JrPointsContent, {
+  RankingItem,
+} from "@/app/_components/Dashboard/jr-points/JrPointsContent";
 
 // Tipagem para os dados da página
 export interface JrPointsPageData {
@@ -21,12 +23,18 @@ export interface JrPointsPageData {
   enterprisePoints: number;
   usersTotalPoints?: number;
   enterpriseSemesterScores: EnterpriseSemesterScore[];
-      allVersions: Prisma.JRPointsVersionGetPayload<{
-            include: {
-              _count: true
-            }
-          }>[];
-      allSemesters: Semester[]
+  allVersions: Prisma.JRPointsVersionGetPayload<{
+    include: {
+      _count: true;
+      tagTemplates: {
+        include: {
+          actionType: true;
+          jrPointsVersion: true;
+        };
+      };
+    };
+  }>[];
+  allSemesters: Semester[];
 }
 
 export const dynamic = "force-dynamic";
@@ -46,7 +54,16 @@ async function getPageData(): Promise<JrPointsPageData> {
     return response.json();
   } catch (error) {
     console.error("Erro em getPageData:", error);
-    return { allVersions: [], allSemesters: [], enterpriseSemesterScores: [], myPoints: 0, usersRanking: [], rankingIsHidden: false, enterprisePoints: 0,enterpriseTags: [] };
+    return {
+      allVersions: [],
+      allSemesters: [],
+      enterpriseSemesterScores: [],
+      myPoints: 0,
+      usersRanking: [],
+      rankingIsHidden: false,
+      enterprisePoints: 0,
+      enterpriseTags: [],
+    };
   }
 }
 
@@ -79,7 +96,7 @@ const Page = async () => {
     initialIsHidden: data.rankingIsHidden,
     enterpriseSemesterScores: data.enterpriseSemesterScores,
     allVersions: data.allVersions,
-    allSemesters: data.allSemesters
+    allSemesters: data.allSemesters,
   };
 
   return (

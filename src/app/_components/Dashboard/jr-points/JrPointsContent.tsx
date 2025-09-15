@@ -1,5 +1,5 @@
 "use client";
-import { Award, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Award, CheckCircle, Eye, EyeOff, Loader2, X } from "lucide-react";
 import CustomCard from "../../Global/Custom/CustomCard";
 import CustomTable, { ColumnDef } from "../../Global/Custom/CustomTable";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,7 +12,10 @@ import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { JrPointsPageData } from "@/app/(dashboard)/jr-points/page";
 import axios from "axios";
-import { TagWithAction } from "@/lib/schemas/pointsSchema";
+import {
+  TagTemplateWithAction,
+  TagWithAction,
+} from "@/lib/schemas/pointsSchema";
 import {
   Select,
   SelectContent,
@@ -27,6 +30,8 @@ import {
   FullJRPointsSolicitation,
   FullJRPointsReport,
 } from "./SolicitationsBoard";
+import { Badge } from "@/components/ui/badge";
+import { getLabelForArea } from "./AdminActionsModal";
 
 // --- Tipagem para os Dados ---
 // Define a estrutura de um item na tabela de ranking
@@ -57,6 +62,12 @@ interface JrPointsContentProps {
     allVersions: Prisma.JRPointsVersionGetPayload<{
       include: {
         _count: true;
+        tagTemplates: {
+          include: {
+            actionType: true;
+            jrPointsVersion: true;
+          };
+        };
       };
     }>[];
     allSemesters: Semester[];
@@ -70,6 +81,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
   const { user } = useAuth();
   const [selectedEnterpriseView, setSelectedEnterpriseView] =
     useState("current");
+    const [selectedVersion, setSelectedVersion] = useState<string>("current");
 
   const { data, isLoading: isLoadingData } = useQuery({
     queryKey: ["jrPointsData"],
@@ -248,6 +260,44 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     { accessorKey: "value", header: "Pontos", className: "text-right" },
   ];
 
+  const tagTemplateColumns: ColumnDef<TagTemplateWithAction>[] = [
+    { accessorKey: "name", header: "Nome do Modelo" },
+    {
+      accessorKey: "actionType",
+      header: "Tipo de Ação",
+      cell: (row) => row.actionType?.name || "N/A",
+    },
+    { accessorKey: "baseValue", header: "Pontos", className: "text-center" },
+    {
+      accessorKey: "isScalable",
+      header: "Escalonável?",
+      cell: (row) =>
+        row.isScalable ? (
+          <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />
+        ) : (
+          <X className="h-5 w-5 text-gray-500 mx-auto" />
+        ),
+      className: "text-center",
+    },
+    {
+      accessorKey: "areas",
+      header: "Áreas",
+      className: "text-center",
+      cell: (row) => (
+        <div className="flex gap-1 flex-wrap justify-center">
+          {row.areas.map((area) => (
+            <Badge
+              key={area}
+              className="bg-[#0126fb] text-white hover:bg-[#0126fb]/80 hover:text-white transition-colors"
+            >
+              {getLabelForArea(area)}
+            </Badge>
+          ))}
+      </div>
+      ),
+    },
+  ];
+
   const handleEnterpriseTagsExport = () => {
     if (enterpriseTags.length === 0) return alert("Nenhum dado para exportar");
     const dataToExport = data.enterpriseTags.map((u) => ({
@@ -283,6 +333,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     selectedEnterpriseView === "current"
       ? enterpriseTags
       : enterpriseHistory?.tags;
+  const displayTagTemplates = selectedVersion === 'current' ? data.allVersions.find(v => v.isActive)?.tagTemplates : data.allVersions.find(v => v.id === selectedVersion)?.tagTemplates
 
   return (
     <>
@@ -337,8 +388,8 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
           {isToggling
             ? "Atualizando..."
             : isHidden
-              ? "Mostrar Ranking"
-              : "Ocultar Ranking"}
+            ? "Mostrar Ranking"
+            : "Ocultar Ranking"}
         </Button>
       )}
 
@@ -397,6 +448,45 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
               }
             />
           )}
+
+          <div className="mt-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
+            <h2 className="text-2xl font-semibold text-white">
+              Histórico de Tags Modelo
+            </h2>
+            <div className="w-full sm:w-auto flex-shrink-0">
+              <Select
+              value={selectedVersion}
+              onValueChange={setSelectedVersion}
+            >
+              <SelectTrigger className="w-full sm:w-[240px] bg-[#00205e] border-[#0126fb] text-white">
+                <SelectValue placeholder="Selecione um período" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                <SelectItem className="bg-transparent" value="current">
+                  Versão Atual
+                </SelectItem>
+                {allVersions?.filter((v) => !v.isActive).map((version) => (
+                  <SelectItem key={version.id} value={version.id}>
+                    Versão: {version.versionName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            </div>
+          </div>
+            
+
+            <div className="mt-2">
+              <CustomTable<TagTemplateWithAction>
+                title={`Tags Modelo - ${selectedVersion !== 'current' ? `Versão: ${selectedVersion}` : "Versão Atual"}`}
+                columns={tagTemplateColumns}
+                data={displayTagTemplates || []}
+                filterColumns={["name", "description"]}
+                type="onlyView"
+              />
+            </div>
+          </div>
 
           <TimelineView
             versions={allVersions || []}

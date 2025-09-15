@@ -52,6 +52,7 @@ export async function GET() {
             // Inclui a contagem de templates associados
             select: { tagTemplates: true },
           },
+          tagTemplates: { include: { actionType: true } },
         },
       }),
       prisma.semester.findMany({
