@@ -24,7 +24,7 @@ export interface CustomFieldProps<T extends FieldValues> {
   className?: string;
   labelClassName?: string;
   onBlur?: () => void;
-  onKeyDown?: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
+  onKeyDown?: (event: ReactKeyboardEvent) => void;
   disabled?: boolean;
 }
 
