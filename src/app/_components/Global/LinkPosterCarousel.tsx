@@ -46,9 +46,9 @@ const LinkPosterCarousel = ({ slides }: LinkPosterCarouselProps) => {
               <LinkPosterCard linkPoster={slide} />
             </CarouselItem>
           ))}
+        </CarouselContent>
           <CarouselPrevious className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#0126fb]/80" />
           <CarouselNext className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#0126fb]/80" />
-        </CarouselContent>
       </Carousel>
     </div>
   );
