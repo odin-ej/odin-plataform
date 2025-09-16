@@ -33,7 +33,7 @@ const LinkPosterCarousel = ({ slides }: LinkPosterCarouselProps) => {
   }, [api]);
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
       <Carousel opts={{ loop: true }} setApi={setApi} className="w-full">
         <CarouselContent
           className={cn("px-2", slides.length < 4 && "justify-center")}
@@ -47,8 +47,20 @@ const LinkPosterCarousel = ({ slides }: LinkPosterCarouselProps) => {
             </CarouselItem>
           ))}
         </CarouselContent>
-          <CarouselPrevious className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#0126fb]/80" />
-          <CarouselNext className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#0126fb]/80" />
+        <CarouselPrevious
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10
+                 w-10 h-10 flex items-center justify-center
+                 rounded-full border border-[#0126fb]
+                 text-white bg-[#010d26]/50 hover:bg-[#0126fb]/80
+                 transition-colors"
+        />
+        <CarouselNext
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10
+                 w-10 h-10 flex items-center justify-center
+                 rounded-full border border-[#0126fb]
+                 text-white bg-[#010d26]/50 hover:bg-[#0126fb]/80
+                 transition-colors"
+        />
       </Carousel>
     </div>
   );
