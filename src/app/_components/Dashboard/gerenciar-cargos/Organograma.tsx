@@ -49,7 +49,7 @@ const Organograma = ({users, areas, isManagment, onClick}: OrganogramaContent) =
           onClick={() => setSelectedArea("TODOS")}
           variant={selectedArea === "TODOS" ? "default" : "outline"}
           className={cn(
-            "border-blue-800 text-white transition-all ",
+            "border-[#0126fb] text-white transition-all ",
             selectedArea === "TODOS"
               ? "bg-[#f5b719] hover:!text-white hover:bg-[#f5b719]/90"
               : "bg-[0126fb]/30 hover:!text-white hover:bg-[0126fb]/60"
@@ -66,7 +66,7 @@ const Organograma = ({users, areas, isManagment, onClick}: OrganogramaContent) =
               onClick={() => setSelectedArea(area)}
               variant={selectedArea === area ? "default" : "outline"}
               className={cn(
-                "border-blue-800 text-white transition-all",
+                "border-[#0126fb] text-white transition-all",
                 selectedArea === area
                   ? `${config.color} hover:${config.color}/90 text-white`
                   : `${config.color}/30 hover:${config.color}/60 hover:text-white/90`
@@ -96,8 +96,8 @@ const Organograma = ({users, areas, isManagment, onClick}: OrganogramaContent) =
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="text-white bg-blue-900/50 border-blue-800 hover:bg-blue-900/80" />
-          <CarouselNext className="text-white bg-blue-900/50 border-blue-800 hover:bg-blue-900/80" />
+          <CarouselPrevious className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#010d26]/80" />
+          <CarouselNext className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#010d26]/80" />
         </Carousel>
       ) : (
         <div className="text-center py-16 px-6 bg-[#010d26]/50 rounded-lg">

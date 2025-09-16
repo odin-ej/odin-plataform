@@ -4,6 +4,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
@@ -30,10 +32,9 @@ const LinkPosterCarousel = ({ slides }: LinkPosterCarouselProps) => {
     };
   }, [api]);
 
-
   return (
     <div className="w-full">
-      <Carousel setApi={setApi} className="w-full">
+      <Carousel opts={{ loop: true }} setApi={setApi} className="w-full">
         <CarouselContent
           className={cn("px-2", slides.length < 4 && "justify-center")}
         >
@@ -45,6 +46,8 @@ const LinkPosterCarousel = ({ slides }: LinkPosterCarouselProps) => {
               <LinkPosterCard linkPoster={slide} />
             </CarouselItem>
           ))}
+          <CarouselPrevious className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#0126fb]/80" />
+          <CarouselNext className="text-white bg-[#010d26]/50 border-[#0126fb] hover:bg-[#0126fb]/80" />
         </CarouselContent>
       </Carousel>
     </div>
