@@ -114,7 +114,7 @@ export async function PATCH(
         { status: 502 } // 502 Bad Gateway é uma boa opção aqui
       );
     }
-    revalidatePath("/reserva-salinhas");
+    revalidatePath("/central-de-reservas");
     return NextResponse.json(updatedReservation);
   } catch (error) {
     console.error(error);
