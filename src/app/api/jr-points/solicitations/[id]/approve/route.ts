@@ -223,6 +223,7 @@ export async function PATCH(
                   assignerId: authUser.id,
                   userSemesterScoreId: userSemesterScore.id,
                   jrPointsVersionId: activeVersion.id,
+                  generatedBySolicitationId: solicitation.id,
                 },
               });
             }

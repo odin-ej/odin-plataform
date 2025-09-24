@@ -217,7 +217,7 @@ export interface PermissionCheck {
 
 */
 export const checkUserPermission = (
-  user: (User & { roles: Role[]; currentRole?: Role }) | null,
+  user: (User & { roles: Role[]; currentRole?: Role | null }) | null,
   permissions: PermissionCheck
 ): boolean => {
   // 1. Se não houver utilizador, não há permissão.
