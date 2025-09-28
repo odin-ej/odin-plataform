@@ -479,7 +479,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
 
             <div className="mt-2">
               <CustomTable<TagTemplateWithAction>
-                title={`Tags Modelo - ${selectedVersion !== 'current' ? `Versão: ${selectedVersion}` : "Versão Atual"}`}
+                title={`Tags Modelo - ${selectedVersion !== 'current' ? `Versão: ${allVersions.filter((v) => v.id === selectedVersion)[0].versionName}` : "Versão Atual"}`}
                 columns={tagTemplateColumns}
                 data={displayTagTemplates || []}
                 filterColumns={["name", "description"]}
