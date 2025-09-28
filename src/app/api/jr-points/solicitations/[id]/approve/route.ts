@@ -87,11 +87,6 @@ export async function PATCH(
         if (!activeSemester)
           throw new Error("Nenhum semestre ativo encontrado.");
 
-        const activeVersion = await tx.jRPointsVersion.findFirst({
-          where: { isActive: true },
-        });
-        if (!activeVersion) throw new Error("Nenhuma versão ativa.");
-
         const formatedDate = new Date(solicitation.datePerformed);
 
         for (const tagTemplate of solicitation.tags) {
@@ -144,7 +139,7 @@ export async function PATCH(
                 enterprisePointsId: 1,
                 assignerId: authUser.id,
                 enterpriseSemesterScoreId: enterpriseScore.id,
-                jrPointsVersionId: activeVersion.id,
+                jrPointsVersionId: solicitation.jrPointsVersionId,
                 generatedBySolicitationId: solicitation.id,
               },
             });
@@ -222,7 +217,7 @@ export async function PATCH(
                   userPointsId: userPoints.id,
                   assignerId: authUser.id,
                   userSemesterScoreId: userSemesterScore.id,
-                  jrPointsVersionId: activeVersion.id,
+                  jrPointsVersionId: solicitation.jrPointsVersionId,
                   generatedBySolicitationId: solicitation.id,
                 },
               });

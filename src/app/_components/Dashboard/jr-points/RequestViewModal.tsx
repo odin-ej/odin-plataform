@@ -375,6 +375,11 @@ const RequestReviewModal = ({
                   <strong>Data da Realização:</strong>{" "}
                   {format(request.datePerformed, "dd/MM/yyyy")}
                 </p>
+                <p className="text-sm">
+                  <strong>Versão de Criação:</strong>{" "}
+                  {request.jrPointsVersion.versionName}
+                  <span className='text-xs block text-muted-foreground'>Essa será a versão que será linkada a criação da tag</span>
+                </p>
                 {request.tags.length > 0 && (
                   <div>
                     <p className="font-medium text-sm mb-2">
