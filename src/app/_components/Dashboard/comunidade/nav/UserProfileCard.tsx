@@ -54,7 +54,7 @@ const UserProfileCard = ({
               {user.professionalInterests.map((interest) => (
                 <Badge
                   key={interest.id}
-                  className="bg-[#0126fb] text-white hover:bg-[#0126fb]/90 truncate transition-colors"
+                  className="bg-[#0126fb] text-white hover:bg-[#0126fb]/90 truncate transition-colors text-[8px]"
                 >
                   {interest.name}
                 </Badge>

@@ -127,7 +127,7 @@ const ContentSidebarRight = ({setSelectedUser, allUsers, exMembers, setMemberVie
                                   {user.name.substring(0, 2)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-sm font-medium text-gray-300">
+                              <span className="text-xs font-medium text-gray-300">
                                 {user.name}
                               </span>
                             </div>
