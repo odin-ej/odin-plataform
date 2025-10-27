@@ -31,7 +31,7 @@ interface CommandMultiSelectProps {
   label?: string;
   placeholder?: string;
   disabled?: boolean;
-  
+  page?: string;
   // Props para react-hook-form
   form?: UseFormReturn<any>;
   name?: string;
@@ -45,6 +45,7 @@ const CommandMultiSelect = ({
   options,
   label,
   placeholder = "Selecione...",
+  page, // Adicionamos 'page' ao destructuring
   form,
   name,
   value,
@@ -52,15 +53,40 @@ const CommandMultiSelect = ({
 }: CommandMultiSelectProps) => {
   const [open, setOpen] = useState(false);
 
-  // 1. Criamos um componente "núcleo" que contém apenas a UI do Popover/Command.
-  // Ele não tem conhecimento sobre react-hook-form.
+  // 1. O componente "núcleo" agora recebe um array de strings
+  // e duas funções de callback: onSelect (para adicionar) e onDeselect (para remover).
   const renderCoreComponent = (
-    selectedValues: Set<string>,
-    handleSelect: (val: string) => void
+    selectedValues: string[], // Alterado de Set<string> para string[]
+    onSelect: (val: string) => void,
+    onDeselect: (val: string, index?: number) => void
   ) => {
-    const selectedItems = options.filter((opt) =>
-      selectedValues.has(opt.value)
-    );
+    // Lógica para exibir os itens selecionados
+    const getSelectedItems = () => {
+      if (page === "my-points") {
+        // Mapeia CADA valor no array, permitindo duplicados
+        return selectedValues
+          .map((val, index) => {
+            const option = options.find((opt) => opt.value === val);
+            return option
+              ? { ...option, uniqueKey: `${val}-${index}` } // Adiciona uma chave única baseada no índice
+              : null;
+          })
+          .filter(Boolean) as (Option & { uniqueKey: string })[];
+      } else {
+        // Lógica original: mostra apenas itens únicos
+        const uniqueValues = [...new Set(selectedValues)];
+        return uniqueValues
+          .map((val) => {
+            const option = options.find((opt) => opt.value === val);
+            return option
+              ? { ...option, uniqueKey: val } // Chave é o próprio valor
+              : null;
+          })
+          .filter(Boolean) as (Option & { uniqueKey: string })[];
+      }
+    };
+
+    const selectedItems = getSelectedItems();
 
     return (
       <Popover open={open} onOpenChange={setOpen}>
@@ -74,19 +100,22 @@ const CommandMultiSelect = ({
             {selectedItems.length > 0 ? (
               <div className="flex gap-1 flex-wrap">
                 {selectedItems.map((item) => (
-                  <Button
-                    key={item.value}
-                    size="sm"
-                    variant="secondary"
-                    className="rounded-sm bg-[#0126fb] text-white flex items-center gap-1"
+                  <span
+                    key={item.uniqueKey} // Usa a chave única
+                    className="rounded-sm bg-[#0126fb] text-white flex items-center gap-1 py-1 px-2"
                     onClick={(e) => {
                       e.stopPropagation(); // Evita que o popover feche
-                      handleSelect(item.value);
+                      // Extrai o índice da chave, se for 'my-points'
+                      const index =
+                        page === "my-points"
+                          ? parseInt(item.uniqueKey.split("-").pop() || "", 10)
+                          : undefined;
+                      onDeselect(item.value, index);
                     }}
                   >
                     {item.label}
                     <X className="h-3 w-3" />
-                  </Button>
+                  </span>
                 ))}
               </div>
             ) : (
@@ -94,33 +123,40 @@ const CommandMultiSelect = ({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-2 border-[#0126fb] bg-[#00205e] text-white">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-2 border-[#0126fb] bg-[#00205e] text-white focus-visible:ring-0 focus:outline-none">
           <Command className="bg-[#00205e] max-h-[250px]">
             <CommandInput
               placeholder="Procurar..."
-              className="text-white pb-2"
+              className="text-white pb-2 focus:ring-0 focus:outline-none"
             />
-            <CommandList>
+            {/* O scrollbar-thin etc. depende de um plugin (tailwind-scrollbar). */}
+            {/* Se não estiver instalado, o !overflow-y-auto garante o scroll padrão. */}
+            <CommandList className="max-h-[200px] !overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
               <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
-              <CommandGroup className="max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.label} // O valor para busca deve ser o label
-                    onSelect={() => handleSelect(option.value)}
-                    className="cursor-pointer text-white bg-transparent hover:!bg-white/10 hover:!text-[#f5b719] transition-colors"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedValues.has(option.value)
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))}
+              <CommandGroup>
+                {options.map((option) => {
+                  // O 'Check' agora verifica se o valor está incluído no array
+                  const isSelected = selectedValues.includes(option.value);
+
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      value={option.label} // O valor para busca deve ser o label
+                      onSelect={() => onSelect(option.value)}
+                      className="cursor-pointer text-white bg-transparent hover:!bg-white/10 hover:!text-[#f5b719] transition-colors focus:ring-0 focus:outline-none"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          // Se for 'my-points', sempre mostra o check se estiver na lista
+                          // Se não for 'my-points', também (lógica unificada)
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.label}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             </CommandList>
           </Command>
@@ -129,26 +165,48 @@ const CommandMultiSelect = ({
     );
   };
 
-  // 2. No modo de formulário, usamos FormField para obter o contexto
-  // e envolvemos o núcleo com FormItem, FormLabel e FormMessage.
+  // 2. Modo de formulário (react-hook-form)
   if (form && name) {
     return (
       <FormField
         control={form.control}
         name={name}
         render={({ field }) => {
-          const selectedValues = new Set<string>(field.value || []);
+          const selectedValues: string[] = field.value || [];
+
+          // Chamado pelo CommandItem (sempre ADICIONA)
           const handleSelect = (val: string) => {
-            const newSelected = new Set(selectedValues);
-            if (newSelected.has(val)) newSelected.delete(val);
-            else newSelected.add(val);
-            field.onChange(Array.from(newSelected));
+            if (page === "my-points") {
+              // Simplesmente adiciona o valor ao array
+              field.onChange([...selectedValues, val]);
+            } else {
+              // Lógica original (toggle com Set para garantir unicidade)
+              const newSet = new Set(selectedValues);
+              if (newSet.has(val)) newSet.delete(val);
+              else newSet.add(val);
+              field.onChange(Array.from(newSet));
+            }
+          };
+
+          // Chamado pelo badge 'X' (sempre REMOVE)
+          const handleDeselect = (val: string, index?: number) => {
+            if (page === "my-points") {
+              // Remove o item EXATO pelo índice
+              if (index !== undefined) {
+                const newValues = [...selectedValues];
+                newValues.splice(index, 1); // Remove 1 item na posição 'index'
+                field.onChange(newValues);
+              }
+            } else {
+              // Lógica original (remove todas as instâncias desse valor)
+              field.onChange(selectedValues.filter((v) => v !== val));
+            }
           };
 
           return (
             <FormItem className="w-full">
               {label && <FormLabel className="text-white">{label}</FormLabel>}
-              {renderCoreComponent(selectedValues, handleSelect)}
+              {renderCoreComponent(selectedValues, handleSelect, handleDeselect)}
               <FormMessage />
             </FormItem>
           );
@@ -157,15 +215,33 @@ const CommandMultiSelect = ({
     );
   }
 
-  // 3. No modo controlado, usamos elementos simples (div, label) que não
-  // precisam de contexto.
+  // 3. Modo controlado (value/onChange)
   if (value !== undefined && onChange) {
-    const selectedValues = new Set<string>(value);
+    const selectedValues: string[] = value || [];
+
+    // Chamado pelo CommandItem (sempre ADICIONA)
     const handleSelect = (val: string) => {
-      const newSelected = new Set<string>(selectedValues);
-      if (newSelected.has(val)) newSelected.delete(val);
-      else newSelected.add(val);
-      onChange(Array.from(newSelected));
+      if (page === "my-points") {
+        onChange([...selectedValues, val]);
+      } else {
+        const newSet = new Set(selectedValues);
+        if (newSet.has(val)) newSet.delete(val);
+        else newSet.add(val);
+        onChange(Array.from(newSet));
+      }
+    };
+
+    // Chamado pelo badge 'X' (sempre REMOVE)
+    const handleDeselect = (val: string, index?: number) => {
+      if (page === "my-points") {
+        if (index !== undefined) {
+          const newValues = [...selectedValues];
+          newValues.splice(index, 1);
+          onChange(newValues);
+        }
+      } else {
+        onChange(selectedValues.filter((v) => v !== val));
+      }
     };
 
     return (
@@ -175,7 +251,7 @@ const CommandMultiSelect = ({
             {label}
           </label>
         )}
-        {renderCoreComponent(selectedValues, handleSelect)}
+        {renderCoreComponent(selectedValues, handleSelect, handleDeselect)}
       </div>
     );
   }
