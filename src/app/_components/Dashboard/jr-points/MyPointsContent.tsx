@@ -111,6 +111,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       data: FormDataType;
       isForEnterprise: boolean;
     }) => {
+      console.log(data)
       const endpoint =
         requestData.type === "solicitation"
           ? "/api/jr-points/solicitations"
@@ -638,6 +639,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
           accessorKey: "tags",
           header: "Tags Relacionadas",
           type: "command",
+          allowSameItems: true,
           options: options.map((t) => ({ value: t.id, label: t.name })),
           isMulti: true,
         },
@@ -948,8 +950,9 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
         }
         form={requestForm}
         fields={requestFields}
-        onSubmit={handleRequestSubmit}
+      onSubmit={handleRequestSubmit}
         isEditing={true}
+        page="my-points"
         isLoading={isPendingRequest}
         setIsEditing={() => {}}
       />

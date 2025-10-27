@@ -39,8 +39,8 @@ export async function GET(
         assigner: true,
         actionType: true,
         jrPointsVersion: true,
-        generatedBySolicitation: {select: {id:true}},
-        template:true,
+        generatedBySolicitation: { select: { id: true } },
+        template: true,
       },
       orderBy: {
         datePerformed: "desc",
@@ -49,13 +49,26 @@ export async function GET(
 
     // Busca todas as solicitações criadas pelo usuário.
     const solicitations = await prisma.jRPointsSolicitation.findMany({
-      where: { userId: id , userSemesterScore: { semesterPeriodId: activeSemester.id },},
+      where: {
+        userId: id,
+        userSemesterScore: { semesterPeriodId: activeSemester.id },
+      },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
         attachments: true,
         membersSelected: true,
-        tags: { include: { actionType: true } },
-        jrPointsVersion: {select: {versionName:true}},
+        tags: { include: { actionType: true, jrPointsVersion: { select: { versionName: true } }, } },
+        solicitationTags: {
+          include: {
+            tagTemplate: {
+              include: {
+                actionType: true,
+                jrPointsVersion: { select: { versionName: true } },
+              },
+            },
+          },
+        },
+        jrPointsVersion: { select: { versionName: true } },
         reviewer: true,
       },
       orderBy: {
@@ -65,12 +78,21 @@ export async function GET(
 
     // Busca todos os recursos criados pelo usuário.
     const reports = await prisma.jRPointsReport.findMany({
-      where: { userId: id, userSemesterScore: { semesterPeriodId: activeSemester.id }, },
+      where: {
+        userId: id,
+        userSemesterScore: { semesterPeriodId: activeSemester.id },
+      },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
-        tag: { include: { assigner: true, actionType: true, template: {select: {name: true}} } },
+        tag: {
+          include: {
+            assigner: true,
+            actionType: true,
+            template: { select: { name: true } },
+          },
+        },
         attachments: true,
-        jrPointsVersion: {select: {versionName:true}},
+        jrPointsVersion: { select: { versionName: true } },
         reviewer: true,
       },
       orderBy: {
@@ -81,7 +103,7 @@ export async function GET(
     // Retorna o objeto completo que o frontend espera.
     return NextResponse.json({ tags, solicitations, reports });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Erro ao buscar histórico do usuário:", error);
     return NextResponse.json(

@@ -87,6 +87,13 @@ export async function GET() {
           user: { select: { id: true, name: true, imageUrl: true } },
           attachments: true,
           membersSelected: true,
+          solicitationTags: {
+            include: {
+              tagTemplate: {
+                include: { actionType: true, jrPointsVersion: { select: { versionName: true } } },
+              },
+            },
+          },
           tags: {
             include: {
               actionType: true,

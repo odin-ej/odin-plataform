@@ -26,7 +26,7 @@ export async function GET(
               assigner: { select: { name: true } },
               actionType: { select: { name: true } },
               jrPointsVersion: { select: { versionName: true } },
-              template:true
+              template: true,
             },
             orderBy: {
               datePerformed: "desc",
@@ -39,6 +39,16 @@ export async function GET(
               membersSelected: true,
               jrPointsVersion: { select: { versionName: true } },
               reviewer: true,
+              solicitationTags: {
+                include: {
+                  tagTemplate: {
+                    include: {
+                      actionType: true,
+                      jrPointsVersion: true,
+                    },
+                  },
+                },
+              },
             },
           },
           reports: {

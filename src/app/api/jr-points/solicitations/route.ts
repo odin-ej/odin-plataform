@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     }
     
     const performedDateObject = fromZonedTime(datePerformed, 'America/Sao_Paulo');
-    
+    console.log('tags', tags)
     const newSolicitation = await prisma.$transaction(async (tx) => {
       // Objeto de dados base para a nova solicitação
       // 1. Lógica condicional para associar ao placar correto e montar o objeto 'data'
@@ -97,7 +97,14 @@ export async function POST(request: Request) {
           area: "DIRETORIA",
           user: { connect: { id: authUser.id } },
           jrPointsVersion: { connect: { id: activeVersion.id } },
-          tags: { connect: tags?.map((id) => ({ id })) },
+          solicitationTags: tags
+            ? {
+                create: tags.map((tagId) => ({
+                  // Conecta o TagTemplate dentro da criação do SolicitationTag
+                  tagTemplate: { connect: { id: tagId } },
+                })),
+              }
+            : undefined,
           attachments: attachments
             ? { create: attachments.map((file) => ({ ...file })) }
             : undefined,
@@ -134,7 +141,14 @@ export async function POST(request: Request) {
           area: "DIRETORIA",
           user: { connect: { id: authUser.id } },
           jrPointsVersion: { connect: { id: activeVersion.id } },
-          tags: { connect: tags?.map((id) => ({ id })) },
+          solicitationTags: tags
+            ? {
+                create: tags.map((tagId) => ({
+                  // Conecta o TagTemplate dentro da criação do SolicitationTag
+                  tagTemplate: { connect: { id: tagId } },
+                })),
+              }
+            : undefined,
           membersSelected: { connect: membersSelected?.map((id) => ({ id })) },
           attachments: attachments
             ? { create: attachments.map((file) => ({ ...file })) }

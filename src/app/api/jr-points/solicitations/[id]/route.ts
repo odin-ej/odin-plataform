@@ -110,8 +110,14 @@ export async function PATCH(
             })),
           },
           // O mesmo para 'tags'
-          tags: {
-            set: (validation.data.tags || []).map((tagId) => ({ id: tagId })),
+          solicitationTags: {
+            // 1. Apaga todos os links de tags antigos desta solicitação
+            deleteMany: {},
+
+            // 2. Cria os novos links, um para cada ID no array
+            create: (validation.data.tags || []).map((tagId) => ({
+              tagTemplate: { connect: { id: tagId } },
+            })),
           },
           attachments: {
             deleteMany: { id: { in: attachmentsToDelete.map((a) => a.id) } },

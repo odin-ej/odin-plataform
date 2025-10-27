@@ -41,6 +41,16 @@ export async function GET(
                 jrPointsVersion: true,
               },
             },
+            solicitationTags: {
+              include: {
+                tagTemplate: {
+                  include: {
+                    actionType: true,
+                    jrPointsVersion: true,
+                  },
+                },
+              },
+            },
             membersSelected: true,
             jrPointsVersion: { select: { versionName: true } },
             reviewer: true,

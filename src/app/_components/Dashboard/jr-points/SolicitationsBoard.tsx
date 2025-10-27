@@ -33,6 +33,15 @@ export type FullJRPointsSolicitation = Prisma.JRPointsSolicitationGetPayload<{
         email: true; // pode adicionar outros campos se precisar
       };
     };
+    solicitationTags: {
+      include: {
+        tagTemplate: {
+          include: {
+            actionType: true;
+          }
+        };
+      };
+    };
     reviewer: {
       select: {
         id: true;
@@ -120,6 +129,7 @@ const SolicitationsBoard = ({
   );
 
   const filteredData = useMemo(() => {
+   
     setCurrentPage(1); // Reset page when filters change
     let items = allItems;
 

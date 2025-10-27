@@ -19,7 +19,10 @@ const RequestCard = ({
   onCardClick: (item: any) => void;
 }) => (
   <div
-    onClick={() => onCardClick(item)}
+    onClick={() => {
+      console.log(item);
+      onCardClick(item)
+    }}
     className={cn(
       "bg-[#010d26] p-4 rounded-md border border-gray-700 cursor-pointer hover:border-[#0126fb] transition-colors group",
       item.directorsNotes &&

@@ -49,6 +49,9 @@ export async function GET(
       include: {
         roles: true,
         currentRole: true,
+        roleHistory: { include: { role: { select: { name: true } }, managementReport: true } },
+        professionalInterests: { include: { category: true } },
+
       },
     });
 

@@ -166,9 +166,9 @@ const RequestReviewModal = ({
       }
 
       const calculationRequests = uniqueUserIds.flatMap((userId) =>
-        request.tags.map((tag) => ({
+        request.solicitationTags.map((solicitation) => ({
           userId,
-          tagTemplateId: tag.id,
+          tagTemplateId: solicitation.tagTemplate.id,
         }))
       );
 
@@ -262,7 +262,7 @@ const RequestReviewModal = ({
     type: "solicitation";
     template: { name: string };
   } => req.type === "solicitation";
-
+  console.log(request)
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -380,19 +380,19 @@ const RequestReviewModal = ({
                   {request.jrPointsVersion.versionName}
                   <span className='text-xs block text-muted-foreground'>Essa será a versão que será linkada a criação da tag</span>
                 </p>
-                {request.tags.length > 0 && (
+                {request.solicitationTags.length > 0 && (
                   <div>
                     <p className="font-medium text-sm mb-2">
                       Tags Solicitadas:
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {request.tags.map((t) => (
+                      {request.solicitationTags.map((s) => (
                         <Badge
-                          key={t.id + "-tag"}
+                          key={s.id + "-tag"}
                           variant="outline"
                           className="bg-[#0126fb]/80 border-[#0126fb] text-white "
                         >
-                          {t.name} | {t.baseValue} pts
+                          {s.tagTemplate.name} | {s.tagTemplate.baseValue} pts
                         </Badge>
                       ))}
                     </div>
@@ -421,17 +421,17 @@ const RequestReviewModal = ({
                               <div key={m.id + "-streak"} className="text-sm">
                                 <span className="font-semibold">{m.name}:</span>
                                 <div className="flex flex-wrap gap-2 pl-4 pt-1">
-                                  {request.tags.map((t) => {
-                                    const key = `${m.id}-${t.id}`;
+                                  {request.solicitationTags.map((s) => {
+                                    const key = `${m.id}-${s.id}`;
                                     const finalValue =
-                                      streakValues[key] ?? t.baseValue;
-                                    const bonus = finalValue - t.baseValue;
+                                      streakValues[key] ?? s.tagTemplate.baseValue;
+                                    const bonus = finalValue - s.tagTemplate.baseValue;
                                     return (
                                       <Badge
                                         key={key}
                                         className="bg-gray-700 font-normal"
                                       >
-                                        {t.name}: {finalValue} pts
+                                        {s.tagTemplate.name}: {finalValue} pts
                                         {bonus !== 0 && (
                                           <span
                                             className={`ml-1.5 flex items-center ${

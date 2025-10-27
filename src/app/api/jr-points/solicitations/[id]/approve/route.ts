@@ -30,7 +30,16 @@ export async function PATCH(
 
     const solicitation = await prisma.jRPointsSolicitation.findUnique({
       where: { id },
-      include: { user: true, membersSelected: true, tags: true },
+      include: {
+        user: true,
+        membersSelected: true,
+        tags: true,
+        solicitationTags: {
+          include: {
+            tagTemplate: true,
+          },
+        },
+      },
     });
 
     if (!solicitation) {
@@ -89,8 +98,9 @@ export async function PATCH(
 
         const formatedDate = new Date(solicitation.datePerformed);
 
-        for (const tagTemplate of solicitation.tags) {
+        for (const solicitationTag of solicitation.solicitationTags) {
           // --- CASO 1: APROVAÇÃO PARA A EMPRESA ---
+          const tagTemplate = solicitationTag.tagTemplate;
           if (solicitation.isForEnterprise) {
             let finalValue = tagTemplate.baseValue;
             if (
@@ -236,7 +246,7 @@ export async function PATCH(
           ? `Sua solicitação foi ${
               status === "APPROVED" ? "aprovada" : "rejeitada"
             } por ${authUser.name}`
-          : `O status da sua solicitação foi alterado de ${solicitation.status} para ${status} por ${authUser.name}`;
+          : `O status da sua solicitação foi alterado de ${solicitation.status === 'REJECTED' ? 'Rejeitada' : 'Aprovada'} para ${status} por ${authUser.name}`;
 
       let usersToNotify = [solicitation.user].map((u) => ({ id: u.id }));
 

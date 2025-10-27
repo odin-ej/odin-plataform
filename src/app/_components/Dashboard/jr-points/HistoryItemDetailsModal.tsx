@@ -302,9 +302,9 @@ const HistoryItemDetailsModal = ({
                   icon={<Tag size={16} />}
                   value={
                     <div className="flex flex-wrap gap-2">
-                      {data.tags.map((t: any) => (
-                        <Badge key={t.id} className="bg-[#0126fb]">
-                          {t.name}
+                      {data.solicitationTags.map((s: any) => (
+                        <Badge key={s.id} className="bg-[#0126fb]">
+                          {s.tagTemplate.name}
                         </Badge>
                       ))}
                     </div>

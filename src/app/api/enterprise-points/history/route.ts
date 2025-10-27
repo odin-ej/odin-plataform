@@ -29,40 +29,56 @@ export async function GET() {
         assigner: true,
         actionType: true,
         jrPointsVersion: true,
-        template:true,
-        generatedBySolicitation: {select: {id:true}},
+        template: true,
+        generatedBySolicitation: { select: { id: true } },
       },
       orderBy: { datePerformed: "desc" },
     });
 
     // Fetches all solicitations made for the enterprise.
     const solicitations = await prisma.jRPointsSolicitation.findMany({
-      where: { isForEnterprise: true, enterpriseSemesterScore: { semesterPeriodId: activeSemester.id } },
+      where: {
+        isForEnterprise: true,
+        enterpriseSemesterScore: { semesterPeriodId: activeSemester.id },
+      },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
         attachments: true,
         membersSelected: true,
         tags: true,
-        reviewer:true,
+        solicitationTags: {
+          include: {
+            tagTemplate: {
+              include: {
+                actionType: true,
+                jrPointsVersion: { select: { versionName: true } },
+              },
+            },
+          },
+        },
+        reviewer: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
     // Fetches all reports made for the enterprise.
     const reports = await prisma.jRPointsReport.findMany({
-      where: { isForEnterprise: true, enterpriseSemesterScore: { semesterPeriodId: activeSemester.id } },
+      where: {
+        isForEnterprise: true,
+        enterpriseSemesterScore: { semesterPeriodId: activeSemester.id },
+      },
       include: {
         user: { select: { id: true, name: true, imageUrl: true, email: true } },
         tag: { include: { assigner: true, actionType: true } },
         attachments: true,
-         reviewer:true,
+        reviewer: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ tags, solicitations, reports });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Erro ao buscar histórico da empresa:", error);
     return NextResponse.json(

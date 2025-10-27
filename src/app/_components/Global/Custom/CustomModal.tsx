@@ -48,6 +48,7 @@ export interface FieldConfig<T> {
   mask?: "phone" | "date" | null;
   header: string;
   accessorKey: Path<T>;
+  allowSameItems?: boolean;
   options?: { value: string; label: string }[];
   disabled?: boolean;
   isMulti?: boolean;
@@ -251,6 +252,7 @@ const CustomModal = <T extends FieldValues>({
                                     key={accessorKey as string}
                                     form={form}
                                     name={accessorKey as string}
+                                    page={fieldInfo.allowSameItems ? page as string : undefined}
                                     label={fieldInfo.header}
                                     options={fieldInfo.options || []}
                                   />

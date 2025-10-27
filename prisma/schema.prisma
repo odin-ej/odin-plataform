@@ -235,6 +235,7 @@ model User {
   lastMessageDate   DateTime?
   isWorking         Boolean?
   workplace         String?
+  phraseStatus      String?
 
   conversations                 Conversation[]
   roles                         Role[]                       @relation("UserRoles")
@@ -274,23 +275,26 @@ model User {
   channelMemberships ChannelMember[] // Em quais canais o usuário está
 
   // Relações com Mensagens Diretas
-  directConversations DirectConversation[] @relation("DirectConversationParticipants")
-  sentDirectMessages  DirectMessage[]
-  channelMessages      ChannelMessage[]
-  messageReactions     MessageReaction[]
+  directConversations    DirectConversation[] @relation("DirectConversationParticipants")
+  sentDirectMessages     DirectMessage[]
+  channelMessages        ChannelMessage[]
+  messageReactions       MessageReaction[]
+  ownCustomEmojis        CustomEmoji[]
+  ownDirectConversations DirectConversation[]
+  Channel                Channel[]
 }
 
 model UserRoleHistory {
-  id               String          @id @default(uuid())
-  semester         String
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  userId           String
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roleId           String
-  role             Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
-   managementReport   FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
-  managementReportId String?       @unique
+  id                 String          @id @default(uuid())
+  semester           String
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId             String
+  role               Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  managementReport   FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
+  managementReportId String?         @unique
 
   @@index([userId])
   @@index([roleId])
@@ -458,6 +462,7 @@ model TagTemplate {
   jrPointsVersionId String?
   jrPointsVersion   JRPointsVersion?       @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
   solicitations     JRPointsSolicitation[] @relation("SolicitationTagTemplates")
+  solicitationsLinks SolicitationTag[]
   // Relação com todas as instâncias de tags criadas a partir deste molde
   tagInstances      Tag[]
   areas             TagAreas[]             @default([GERAL])
@@ -521,7 +526,9 @@ model FileAttachment {
   jRPointsReportId       String?
   directMessage          DirectMessage?        @relation(fields: [directMessageId], references: [id])
   directMessageId        String?
-  userRoleHistory    UserRoleHistory?
+  userRoleHistory        UserRoleHistory?
+
+  channelMessages ChannelMessage[]
 }
 
 model JRPointsSolicitation {
@@ -539,6 +546,7 @@ model JRPointsSolicitation {
   user                      User                       @relation("SolicitationUser", fields: [userId], references: [id], onDelete: Cascade)
   membersSelected           User[]                     @relation("SolicitationMembers")
   tags                      TagTemplate[]              @relation("SolicitationTagTemplates")
+  solicitationTags SolicitationTag[]
   attachments               FileAttachment[]
   userSemesterScore         UserSemesterScore?         @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
   userSemesterScoreId       String?
@@ -548,6 +556,18 @@ model JRPointsSolicitation {
   reviewerId                String?
   reviewer                  User?                      @relation("SolicitationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
   generatedTags             Tag[]                      @relation("GeneratedTags")
+}
+
+model SolicitationTag {
+  id String @id @default(uuid())
+
+  solicitationId String
+  solicitation   JRPointsSolicitation @relation(fields: [solicitationId], references: [id], onDelete: Cascade)
+
+  tagTemplateId String
+  tagTemplate   TagTemplate @relation(fields: [tagTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
 
 model JRPointsReport {
@@ -911,9 +931,13 @@ model Channel {
   imageUrl    String? // Imagem para canais destacados
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  isPinned    Boolean     @default(false)
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   // Restringe o canal a uma ou mais áreas específicas
   restrictedToAreas AreaRoles[]
+  allowExMembers    Boolean     @default(false)
 
   // Relações
   members  ChannelMember[]
@@ -942,6 +966,7 @@ model ChannelMessage {
   content   String   @db.Text
   isPinned  Boolean  @default(false)
   isDeleted Boolean  @default(false) // Soft delete
+  isEdited  Boolean  @default(false) @map("is_edited")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -958,38 +983,57 @@ model ChannelMessage {
   replies  ChannelMessage[] @relation("MessageReplies")
 
   // Anexos e Reações
-  // attachments FileAttachment[] // Você precisará adicionar a relação no modelo FileAttachment
-  reactions MessageReaction[]
+  attachments FileAttachment[] // Você precisará adicionar a relação no modelo FileAttachment
+  reactions   MessageReaction[]
 
   @@index([channelId])
   @@index([authorId])
 }
 
 model MessageReaction {
-  id    String @id @default(uuid())
-  emoji String // O caractere do emoji, ex: "👍"
+  id String @id @default(uuid())
+
+  emoji String?
 
   // Relações
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  messageId String
-  message   ChannelMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  channelMessageId String?
+  channelMessage   ChannelMessage? @relation(fields: [channelMessageId], references: [id], onDelete: Cascade)
+  directMessageId  String?
+  directMessage    DirectMessage?  @relation(fields: [directMessageId], references: [id], onDelete: Cascade)
+  customEmojiId    String?
+  customEmoji      CustomEmoji?    @relation(fields: [customEmojiId], references: [id]) // O caractere do emoji, ex: "👍"
 
-  @@unique([userId, messageId, emoji]) // Um usuário só pode dar a mesma reação uma vez por mensagem
-  @@index([messageId])
+  @@unique([userId, channelMessageId, customEmojiId]) // Garante reação única por usuário em uma mensagem de CANAL
+  @@unique([userId, directMessageId, customEmojiId]) // Garante reação única por usuário em uma mensagem DIRETA
+  @@index([directMessageId, channelMessageId])
+}
+
+model CustomEmoji {
+  id        String            @id @default(uuid())
+  reactions MessageReaction[]
+  name      String            @unique // Ex: ":odin:"
+  imageUrl  String // URL da imagem no S3
+  creatorId String
+  creator   User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
 }
 
 // --- Conversas Diretas (DMs) ---
 
 model DirectConversation {
   id        String   @id @default(uuid())
+  title     String? // Opcional, pode ser nulo para conversas entre duas pessoas
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relações
   participants User[]          @relation("DirectConversationParticipants")
   messages     DirectMessage[]
+  createdById  String
+  createdBy    User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([updatedAt]) // Para ordenar as conversas pela mais recente
 }
@@ -1000,15 +1044,20 @@ model DirectMessage {
   isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  isEdited  Boolean  @default(false) @map("is_edited")
   // Relações
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   conversationId String
   conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   attachments FileAttachment[]
+  reactions   MessageReaction[]
+
+  parentId String?
+  parent   DirectMessage?  @relation("DirectMessageReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  DirectMessage[] @relation("DirectMessageReplies")
 
   @@index([conversationId])
 }
