@@ -49,7 +49,7 @@ const ContentSidebarRight = ({setSelectedUser, allUsers, exMembers, setMemberVie
   const { mutate: createConversation, isPending: isCreatingConversation } =
     useMutation({
       mutationFn: async (userId: string) => {
-        const response = await axios.post("/api/conversations", userId);
+        const response = await axios.post("/api/community/conversations", userId);
         return response.data;
       },
       onSuccess: (data) => {
