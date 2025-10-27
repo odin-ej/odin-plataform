@@ -1,4 +1,5 @@
-import { MemberWithRoles } from "./schemas/memberFormSchema";
+import { MemberWithFullRoles, MemberWithRoles } from "./schemas/memberFormSchema";
+import { FullUser } from "./server-utils";
 import { PermissionCheck } from "./utils";
 import { AreaRoles, Prisma, Role, User } from "@prisma/client";
 
@@ -117,7 +118,7 @@ export const getAssignableUsers = (
  * @returns Um objeto Prisma.TaskWhereInput para ser usado em `prisma.task.findMany`.
  */
 export const getTasksWhereClauseForUser = (
-  currentUser: (User & { roles: Role[], currentRole: Role }) | null
+  currentUser: FullUser | MemberWithFullRoles | null
 ): Prisma.TaskWhereInput => {
   // Se não houver usuário logado, não retorna nenhuma tarefa.
   if (!currentUser) {
@@ -144,17 +145,17 @@ export const getTasksWhereClauseForUser = (
   // --- CONDIÇÕES DE LIDERANÇA (Apenas para Diretores) ---
 
   // Verifica se o usuário tem o nível de 'Diretoria' em algum de seus cargos.
-  const isDirector = currentUser.currentRole.area.includes(AreaRoles.DIRETORIA);
+  const isDirector = currentUser.currentRole?.area.includes(AreaRoles.DIRETORIA);
 
   // Se o usuário for um Diretor, adicionamos as regras de supervisão.
   if (isDirector) {
     // Pega as áreas de comando do Diretor (ex: PROJETOS, PESSOAS),
     // excluindo a área genérica 'DIRETORIA' para focar na sua especialidade.
-    const commandAreas = currentUser.currentRole.area
+    const commandAreas = currentUser.currentRole?.area
       .filter((area) => area !== AreaRoles.DIRETORIA);
 
     // Adiciona as condições de supervisão ao array principal se houver áreas de comando.
-    if (commandAreas.length > 0) {
+    if (commandAreas !== undefined && commandAreas.length > 0) {
       conditions.push(
         // Condição 3: Tarefas onde OS RESPONSÁVEIS pertencem à área de comando do Diretor.
         {

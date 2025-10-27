@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth/server";
 import { createServerRunner } from "@aws-amplify/adapter-nextjs";
-import { Role, User } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/db";
 
 export const { runWithAmplifyServerContext } = createServerRunner({
@@ -10,13 +10,34 @@ export const { runWithAmplifyServerContext } = createServerRunner({
     Auth: {
       Cognito: {
         userPoolId: process.env.AWS_COGNITO_USER_POOL_ID as string,
-        userPoolClientId: process.env.AWS_COGNITO_USER_POOL_CLIENT_ID as string, 
+        userPoolClientId: process.env.AWS_COGNITO_USER_POOL_CLIENT_ID as string,
       },
     },
   },
 });
 
-export type FullUser = User & { roles: Role[]; currentRole: Role };
+export type FullUser = Prisma.UserGetPayload<{
+  include: {
+    roles: true;
+    currentRole: true;
+    professionalInterests: {
+      include: {
+        category: true;
+      };
+    };
+    roleHistory: {
+      include: {
+        role: {
+          select: { name: true };
+        };
+        managementReport: true;
+      };
+    };
+    favoritedPosts: true;
+    reposts: true;
+    posts: true;
+  };
+}>;
 
 /**
  * Obtém o usuário autenticado no contexto do servidor e enriquece

@@ -1,8 +1,9 @@
 "use client";
+import { getCommunityFileSignedUrl } from "@/lib/actions/community";
 import { cn } from "@/lib/utils";
 import { UploadCloud, LoaderCircle } from "lucide-react";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface DropzoneAreaProps {
@@ -17,7 +18,7 @@ interface DropzoneAreaProps {
 
 const DropzoneArea = React.forwardRef<HTMLDivElement, DropzoneAreaProps>(
   ({ onChange, onFileAccepted, value, progress, defaultImageUrl, error, page }, ref) => {
-    
+    const [signedUrl, setSignedUrl] = useState('')
     // O hook é chamado aqui, no nível superior do componente funcional.
     const { getRootProps, getInputProps } = useDropzone({
       onDrop: (acceptedFiles) => {
@@ -29,6 +30,17 @@ const DropzoneArea = React.forwardRef<HTMLDivElement, DropzoneAreaProps>(
       accept: { "image/jpeg": [], "image/png": [] },
       multiple: false,
     });
+
+    useEffect(() => {
+      const fetchSignedUrl = async () => {
+        if(page === 'community/channels') {
+          if(!defaultImageUrl) return;
+          const signedUrlChannel = await getCommunityFileSignedUrl(defaultImageUrl)
+          setSignedUrl(signedUrlChannel)
+        }
+      }
+      fetchSignedUrl()
+    }, [page, defaultImageUrl])
 
     const previewUrl = (typeof window !== 'undefined' && value instanceof File) 
         ? URL.createObjectURL(value) 
@@ -52,7 +64,7 @@ const DropzoneArea = React.forwardRef<HTMLDivElement, DropzoneAreaProps>(
           </div>
         ) : previewUrl ? (
           <div className="flex items-center space-x-4 text-white">
-            <Image width={100} height={page === 'link-posters' ? 50 : 100} src={previewUrl} alt="Pré-visualização" className={cn("rounded-full object-cover h-20 w-20", page === 'link-posters' && '!w-20 !h-10 !rounded-lg' )}/>
+            <Image width={100} height={page === 'link-posters' ? 50 : 100} src={page === 'community/channels' ? signedUrl : previewUrl} alt="Pré-visualização" className={cn("rounded-full object-cover h-20 w-20", page === 'link-posters' && '!w-20 !h-10 !rounded-lg' )}/>
             <span className="text-sm text-gray-300"><span className='font-semibold text-[#f5b719] underline'>Clique ou arraste</span> para alterar</span>
           </div>
         ) : (

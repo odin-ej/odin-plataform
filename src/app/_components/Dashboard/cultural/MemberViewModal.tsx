@@ -8,12 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
+import { FullUser } from "@/lib/server-utils";
 import { getInitials } from "@/lib/utils";
 import { LinkIcon } from "lucide-react";
 import { useMemo } from "react";
 
 interface MemberViewModalProps {
-  user: MemberWithFullRoles | null;
+  user: MemberWithFullRoles | FullUser | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

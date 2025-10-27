@@ -154,6 +154,25 @@ body:has([data-state="open"]) {
   border-radius: 6px;
 }
 
+.scrollbar-thin-secondary {
+  scrollbar-width: thin;
+  scrollbar-color: #f5b719 transparent;
+}
+
+.scrollbar-thin-secondary::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scrollbar-thin-secondary::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin-secondary::-webkit-scrollbar-thumb {
+  background-color: #f5b719;
+  border-radius: 6px;
+}
+
+
 /* Oculta as setas em navegadores WebKit (Chrome, Safari, Edge) */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {

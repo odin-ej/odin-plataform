@@ -1,12 +1,13 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Role, AreaRoles, LinkAreas, User } from "@prisma/client";
-import { UserProfileValues } from "./schemas/memberFormSchema";
+import { MemberWithFullRoles, UserProfileValues } from "./schemas/memberFormSchema";
 import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
 import { ROUTE_PERMISSIONS } from "./permissions";
 import * as XLSX from "xlsx";
+import { FullUser } from "./server-utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -381,7 +382,7 @@ export const verifyAccess = ({
   user,
 }: {
   pathname: string;
-  user: User & { roles: Role[]; currentRole?: Role };
+  user: FullUser | MemberWithFullRoles;
 }) => {
   const requiredPermission = getPermissionForRoute(pathname, ROUTE_PERMISSIONS);
   if (requiredPermission) {
@@ -419,3 +420,130 @@ export function getSimilarWords(text: string, count: number): string[] {
     .filter(word => word.length > 3 && !stopWords.has(word)) // Filtra palavras curtas e stop words
     .slice(0, count); // Pega as primeiras 'count' palavras
 }
+
+export const defaultEmojis: { emoji: string; name: string }[] = [
+  { emoji: "😂", name: "rindo até chorar" },
+  { emoji: "❤️", name: "coração vermelho" },
+  { emoji: "🤣", name: "rolando de rir" },
+  { emoji: "👍", name: "joinha" },
+  { emoji: "😭", name: "chorando muito" },
+  { emoji: "🙏", name: "mãos em oração" },
+  { emoji: "😘", name: "beijo com coração" },
+  { emoji: "🥰", name: "rosto apaixonado" },
+  { emoji: "😍", name: "olhos de coração" },
+  { emoji: "😊", name: "sorriso tímido" },
+  { emoji: "🎉", name: "confete festa" },
+  { emoji: "😁", name: "sorriso largo" },
+  { emoji: "💕", name: "dois corações" },
+  { emoji: "🥺", name: "olhos de cachorrinho" },
+  { emoji: "😅", name: "sorriso suado" },
+  { emoji: "🔥", name: "fogo" },
+  { emoji: "☺️", name: "sorriso calmo" },
+  { emoji: "🤦", name: "facepalm" },
+  { emoji: "👏", name: "palmas" },
+  { emoji: "💔", name: "coração partido" },
+  { emoji: "💖", name: "coração brilhante" },
+  { emoji: "💙", name: "coração azul" },
+  { emoji: "😆", name: "risada forte" },
+  { emoji: "😢", name: "triste chorando" },
+  { emoji: "✨", name: "brilhos" },
+  { emoji: "😎", name: "rosto de óculos escuros" },
+  { emoji: "🤔", name: "pensativo" },
+  { emoji: "😔", name: "triste pensativo" },
+  { emoji: "😏", name: "sorriso de canto" },
+  { emoji: "😉", name: "piscadinha" },
+  { emoji: "🙂", name: "sorriso simples" },
+  { emoji: "🙃", name: "de cabeça para baixo" },
+  { emoji: "🤗", name: "abraço" },
+  { emoji: "🤩", name: "estrelas nos olhos" },
+  { emoji: "😳", name: "envergonhado" },
+  { emoji: "🤭", name: "ops, mão na boca" },
+  { emoji: "😱", name: "grito de medo" },
+  { emoji: "😴", name: "dormindo" },
+  { emoji: "🤤", name: "baba" },
+  { emoji: "😋", name: "delícia" },
+  { emoji: "😜", name: "língua de fora piscando" },
+  { emoji: "😒", name: "entediado" },
+  { emoji: "🙄", name: "revirando os olhos" },
+  { emoji: "😡", name: "raiva" },
+  { emoji: "🤬", name: "xingando" },
+  { emoji: "🤯", name: "cabeça explodindo" },
+  { emoji: "😇", name: "anjo" },
+  { emoji: "🥳", name: "festa animada" },
+  { emoji: "😷", name: "máscara médica" },
+  { emoji: "💪", name: "músculo forte" },
+  { emoji: "🌹", name: "rosa" },
+  { emoji: "😻", name: "gato apaixonado" },
+  { emoji: "🙈", name: "macaco cobrindo olhos" },
+  { emoji: "🙉", name: "macaco cobrindo ouvidos" },
+  { emoji: "🙊", name: "macaco cobrindo boca" },
+  { emoji: "🎶", name: "notas musicais" },
+  { emoji: "💃", name: "dançarina" },
+  { emoji: "🕺", name: "dançarino" },
+  { emoji: "🌞", name: "sol sorridente" },
+  { emoji: "🌙", name: "lua crescente" },
+  { emoji: "⭐", name: "estrela" },
+  { emoji: "⚡", name: "raio" },
+  { emoji: "☀️", name: "sol" },
+  { emoji: "🌈", name: "arco-íris" },
+  { emoji: "☁️", name: "nuvem" },
+  { emoji: "☔", name: "guarda-chuva chuva" },
+  { emoji: "🌊", name: "onda" },
+  { emoji: "🍕", name: "pizza" },
+  { emoji: "🍔", name: "hambúrguer" },
+  { emoji: "🍟", name: "batata frita" },
+  { emoji: "🍩", name: "rosquinha" },
+  { emoji: "🍎", name: "maçã" },
+  { emoji: "🍓", name: "morango" },
+  { emoji: "🍌", name: "banana" },
+  { emoji: "🍇", name: "uvas" },
+  { emoji: "🍒", name: "cerejas" },
+  { emoji: "🍑", name: "pêssego" },
+  { emoji: "🥑", name: "abacate" },
+  { emoji: "🌽", name: "milho" },
+  { emoji: "🍫", name: "chocolate" },
+  { emoji: "🍺", name: "cerveja" },
+  { emoji: "🍷", name: "taça de vinho" },
+  { emoji: "🥂", name: "brinde" },
+  { emoji: "☕", name: "café" },
+  { emoji: "🥤", name: "refrigerante" },
+  { emoji: "🍹", name: "coquetel" },
+  { emoji: "⚽", name: "bola de futebol" },
+  { emoji: "🏀", name: "bola de basquete" },
+  { emoji: "🏈", name: "bola de futebol americano" },
+  { emoji: "⚾", name: "bola de beisebol" },
+  { emoji: "🎾", name: "raquete tênis" },
+  { emoji: "🏐", name: "bola de vôlei" },
+  { emoji: "🎮", name: "videogame" },
+  { emoji: "🎲", name: "dado" },
+  { emoji: "♟️", name: "peão de xadrez" },
+  { emoji: "🚗", name: "carro" },
+  { emoji: "🚕", name: "táxi" },
+  { emoji: "🚙", name: "SUV" },
+  { emoji: "🚌", name: "ônibus" },
+  { emoji: "🚎", name: "bonde" },
+  { emoji: "🏎️", name: "carro de corrida" },
+  { emoji: "🚓", name: "carro de polícia" },
+  { emoji: "🚑", name: "ambulância" },
+  { emoji: "🚒", name: "caminhão de bombeiros" }
+];
+
+export function getLabelForRoleArea(area: AreaRoles): string {
+  const labels: Record<AreaRoles, string> = {
+    [AreaRoles.CONSELHO]: "Conselho",
+    [AreaRoles.DIRETORIA]: "Diretoria",
+    [AreaRoles.PRESIDENCIA]: "Presidência",
+    [AreaRoles.OPERACOES]: "Operações",
+    [AreaRoles.PROJETOS]: "Projetos",
+    [AreaRoles.MERCADO]: "Mercado",
+    [AreaRoles.PESSOAS]: "Gestão de Pessoas",
+    [AreaRoles.MARKETING]: "Marketing",
+    [AreaRoles.ADMINISTRATIVO_FINANCEIRO]: "Administrativo & Financeiro",
+    [AreaRoles.COMERCIAL]: "Comercial",
+    [AreaRoles.TATICO]: "Tático",
+    [AreaRoles.CONSULTORIA]: "Consultoria",
+    [AreaRoles.OUTRO]: "Outro",
+  };
+  return labels[area] || area;
+}
+

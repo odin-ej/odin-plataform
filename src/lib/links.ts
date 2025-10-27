@@ -16,6 +16,7 @@ import {
   MessageSquare,
   TicketCheck,
   Users,
+  UsersRound
 } from "lucide-react";
 import { JrPointIconWhite } from "@/app/_components/Global/JrPointsIcon";
 
@@ -83,6 +84,12 @@ export const generalLinks: Links[] = [
     icon: EyeIcon,
     exMemberCanAccess: false,
   },
+  {
+    name: 'Comunidade',
+    href: '/comunidade',
+    icon: UsersRound,
+    exMemberCanAccess: true,
+  }
 ];
 
 export const personalLinks: Links[] = [

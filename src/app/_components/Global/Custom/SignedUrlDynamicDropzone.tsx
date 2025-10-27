@@ -1,3 +1,4 @@
+// DynamicSignedUrlDropzone.tsx
 "use client";
 
 import { FieldValues, Path, Control } from "react-hook-form";
@@ -8,21 +9,21 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import DropzoneArea from "./DropzoneArea";
+import SignedUrlDropzoneArea from "./SignedUrlDropzoneArea"; // <-- Importa a nova versão
 
-interface DynamicDropzoneProps<T extends FieldValues> {
+interface DynamicSignedUrlDropzoneProps<T extends FieldValues> {
   control: Control<T>;
   name: Path<T>;
   label: string;
   progress: number;
   onFileAccepted: () => void;
   onFileSelect?: (file: File) => void;
-  defaultImageUrl?: string;
   page?: string;
   disabled?: boolean;
+  // Não precisa mais do defaultImageUrl aqui, pois será passado pelo 'value' do form
 }
 
-const DynamicDropzone = <T extends FieldValues>({
+const DynamicSignedUrlDropzone = <T extends FieldValues>({
   control,
   name,
   label,
@@ -30,9 +31,8 @@ const DynamicDropzone = <T extends FieldValues>({
   onFileAccepted,
   onFileSelect,
   disabled,
-  defaultImageUrl,
   page,
-}: DynamicDropzoneProps<T>) => {
+}: DynamicSignedUrlDropzoneProps<T>) => {
   return (
     <FormField
       control={control}
@@ -42,20 +42,22 @@ const DynamicDropzone = <T extends FieldValues>({
         <FormItem>
           <FormLabel className="text-white font-semibold">{label}</FormLabel>
           <FormControl>
-            <DropzoneArea
+            {/* Usa o SignedUrlDropzoneArea */}
+            <SignedUrlDropzoneArea
               page={page}
-              onChange={(file) => {
-                if (onFileSelect) {
-                  onFileSelect(file); // Chama a função do modal se ela existir
+              onChange={(fileOrNull) => {
+                if (fileOrNull && onFileSelect) {
+                  onFileSelect(fileOrNull); // Chama crop modal
                 } else {
-                  field.onChange(file); // Comportamento padrão se não houver interceptação
+                  field.onChange(fileOrNull); // Atualiza form (File ou null para limpar)
                 }
               }}
               onFileAccepted={onFileAccepted}
+              // O field.value aqui será File (novo), string (chave S3) ou null
               value={field.value}
               error={!!fieldState.error}
               progress={progress}
-              defaultImageUrl={defaultImageUrl}
+              disabled={disabled}
             />
           </FormControl>
           <FormMessage />
@@ -65,4 +67,4 @@ const DynamicDropzone = <T extends FieldValues>({
   );
 };
 
-export default DynamicDropzone;
+export default DynamicSignedUrlDropzone;
