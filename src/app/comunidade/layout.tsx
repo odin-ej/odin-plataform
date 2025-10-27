@@ -13,7 +13,7 @@ async function getCommunityLayoutData() {
   if (!authUser)
     return { users: [], exMembers: [], channels: [], conversations: [] };
   const users = await prisma.user.findMany({
-    where: { isExMember: false },
+    where: { isExMember: false, id: { not: process.env.ADMIN_ID } },
     include: {
       currentRole: true,
       professionalInterests: {

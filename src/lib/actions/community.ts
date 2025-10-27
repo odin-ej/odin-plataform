@@ -895,6 +895,7 @@ export async function searchUsers(query: string) {
   // Apenas um exemplo, ajuste a busca
   const users = await prisma.user.findMany({
     where: {
+      id: { not: process.env.ADMIN_USER_ID as string}, // Exclui admin
       name: {
         contains: query,
         mode: "insensitive",
