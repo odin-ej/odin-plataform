@@ -12,7 +12,6 @@ export async function POST(req: Request) {
       if (!Array.isArray(memberIds) || memberIds.length === 0) {
          return NextResponse.json({ error: "Invalid input" }, { status: 400 });
       }
-
       const allMemberIds = Array.from(new Set([authUser.id, ...memberIds]));
 
       const memberExists = await prisma.user.findMany({
@@ -33,6 +32,7 @@ export async function POST(req: Request) {
          },
       });
       revalidatePath('/comunidade/conversas')
+      revalidatePath('/comunidade')
       return NextResponse.json(conversation, { status: 201 });
 
    } catch (error) {

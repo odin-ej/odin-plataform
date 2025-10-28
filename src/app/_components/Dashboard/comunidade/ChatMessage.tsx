@@ -115,6 +115,8 @@ const ChatMessage = ({
       toast.error("Falha ao reagir", { description: err.message }),
   });
 
+  
+
   return (
     <div
       className={cn(
@@ -154,7 +156,7 @@ const ChatMessage = ({
               !isOwner && "text-[#f5b719]"
             )}
           >
-            {message.author.name}
+            {message.author.name.split(" ")[0] + (isOwner ? " (Você)" : "")}
           </span>
           {/* --- Conteúdo da Mensagem (Renderização não muda) --- */}
           {decryptedContent === null ? (

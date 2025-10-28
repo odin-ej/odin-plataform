@@ -8,6 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Prisma } from "@prisma/client";
 import ConversationDetailsModal from "./ConversationDetailsModal";
 import { getConversationById, getCustomEmojis } from "@/lib/actions/community";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export type FullDirectConversation = Prisma.DirectConversationGetPayload<{
   include: {
@@ -79,8 +81,8 @@ const DirectConversationContent = ({
   return (
     <>
       <div className="flex flex-col h-full bg-[#0c1a4b]/50">
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="p-4 border-b border-gray-700 flex bg-[#010d26] items-center justify-between">
+          <div className="flex items-center gap-3 ">
             {isGroupChat ? (
               <Users className="h-8 w-8 text-white" />
             ) : (
@@ -95,7 +97,23 @@ const DirectConversationContent = ({
             )}
             <h2 className="text-xl font-bold">
               {title ||
-                (isGroupChat ? "Grupo sem Título" : otherParticipant?.name)}
+                (isGroupChat ? (
+                  "Grupo sem Título"
+                ) : (
+                  <span>
+                    {otherParticipant?.name}{" "}
+                    <Badge className="bg-[#f5b719]/10 text-[#f5b719] ml-2 text-xs">
+                      {!otherParticipant?.isExMember
+                        ? otherParticipant?.currentRole?.name
+                        : "Ex-Membro"}
+                    </Badge>{" "}
+                    {otherParticipant?.alumniDreamer && (
+                      <Badge className="text-xs bg-purple-500/10 text-purple-400">
+                        Alumni Dreamer
+                      </Badge>
+                    )}
+                  </span>
+                ))}
             </h2>
           </div>
           {isGroupChat && (
@@ -106,7 +124,9 @@ const DirectConversationContent = ({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className={cn("flex-1 overflow-y-auto p-4 space-y-4 relative")}>
+          <div className="absolute inset-0 z-0 bg-[url('/logo-amarela.png')] bg-center bg-no-repeat bg-[length:300px_auto] opacity-5 pointer-events-none"></div>{" "}
+          {/* Ajuste bg-size e opacity */}
           {messages.map((message) => (
             <ChatMessage
               customEmojis={customEmojis ?? []}
