@@ -8,11 +8,12 @@ import {
   User,
   FilePlus,
   ShieldAlert,
+  FileDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import Pagination from "../../Global/Custom/Pagination";
 import RequestCard from "./RequestCard";
-import { cn } from "@/lib/utils";
+import { cn, exportToExcel } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -38,7 +39,7 @@ export type FullJRPointsSolicitation = Prisma.JRPointsSolicitationGetPayload<{
         tagTemplate: {
           include: {
             actionType: true;
-          }
+          };
         };
       };
     };
@@ -129,7 +130,6 @@ const SolicitationsBoard = ({
   );
 
   const filteredData = useMemo(() => {
-   
     setCurrentPage(1); // Reset page when filters change
     let items = allItems;
 
@@ -185,21 +185,64 @@ const SolicitationsBoard = ({
     }
 
     return items;
-  }, [allItems, activeTab, requestType, targetFilter, searchTerm, selectedTagIds]);
+  }, [
+    allItems,
+    activeTab,
+    requestType,
+    targetFilter,
+    searchTerm,
+    selectedTagIds,
+  ]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * Number(itemsPerPage);
     return filteredData.slice(startIndex, startIndex + Number(itemsPerPage));
   }, [filteredData, currentPage, itemsPerPage]);
 
-  const totalPages =
-    Math.ceil(filteredData.length / Number(itemsPerPage)) || 1;
+  const totalPages = Math.ceil(filteredData.length / Number(itemsPerPage)) || 1;
 
   const TABS = [
     { status: "PENDING", label: "Pendentes" },
     { status: "APPROVED", label: "Aprovadas" },
     { status: "REJECTED", label: "Rejeitadas" },
   ];
+
+  const onExportClick = () => {
+    const requestsToExport = filteredData.map((item) => {
+      if (item.type === "solicitation") {
+        return {
+          Tipo: "Solicitação",
+          ID: item.id,
+          Solicitante: item.user.name,
+          Descrição: item.description,
+          "Nota da Diretoria": item.directorsNotes,
+          "Tags Solicitadas": item.solicitationTags.map((s) => s.tagTemplate.name).join(", "),
+          Versão: item.jrPointsVersion.versionName,
+          Membros: item.membersSelected.map((member) => member.name).join(", "),
+          Auditor: item.reviewer?.name ?? "Não auditado",
+          "Data de Realização": item.datePerformed,
+          "É para a empresa? (FALSE - Não) (TRUE - Sim)": item.isForEnterprise,
+          Status: item.status,
+          "Criado Em": item.createdAt.toLocaleString(),
+        };
+      } else {
+        return {
+          Tipo: "Recurso",
+          ID: item.id,
+          Contestador: item.user.name,
+          Descrição: item.description,
+          "Tag Contestada": item.tag.template?.name || "",
+          Versão: item.jrPointsVersion.versionName,
+          Status: item.status,
+          Auditor: item.reviewer?.name ?? "Não auditado",
+          "É para a empresa? (FALSE - Não) (TRUE - Sim)": item.isForEnterprise,
+          "Nota da Diretoria": item.directorsNotes,
+          "Criado Em": item.createdAt.toLocaleString(),
+        };
+      }
+    });
+    exportToExcel(requestsToExport, "solicitacoes_e_recursos_jrPoints");
+  };
 
   return (
     <div className="min-w-full rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] p-4 sm:p-6 text-white shadow-lg mt-6">
@@ -208,7 +251,15 @@ const SolicitationsBoard = ({
         <h2 className="text-2xl font-bold text-center sm:text-left text-[#0126fb]">
           Painel de Requisições
         </h2>
-        <div className="w-full sm:w-auto min-w-[220px]">
+        <div className="w-full flex gap-2 sm:w-auto min-w-[220px]">
+          <Button
+            variant="outline"
+            className="bg-transparent border-green-500 text-green-500 hover:!bg-green-500/10 hover:border-green-400 hover:!text-green-400"
+            onClick={onExportClick}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Exportar
+          </Button>
           <Select value={itemsPerPage} onValueChange={setItemsPerPage}>
             <SelectTrigger className="w-full bg-[#00205e]/50 border-[#00205e] text-white">
               <SelectValue placeholder={`${itemsPerPage} itens por página`} />
@@ -260,7 +311,7 @@ const SolicitationsBoard = ({
 
         {/* Coluna Direita: Filtros de Botão */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-          <div className='col-span-1'>
+          <div className="col-span-1">
             <label className="text-sm font-medium text-white mb-2 block">
               Tipo de Requisição
             </label>
@@ -297,7 +348,7 @@ const SolicitationsBoard = ({
               </Button>
             </div>
           </div>
-          <div className='col-span-1'>
+          <div className="col-span-1">
             <label className="text-sm font-medium text-white mb-2 block">
               Alvo da Requisição
             </label>
@@ -351,7 +402,8 @@ const SolicitationsBoard = ({
                   : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500"
               )}
             >
-              {tab.label} ({allItems.filter((r) => r.status === tab.status).length})
+              {tab.label} (
+              {allItems.filter((r) => r.status === tab.status).length})
             </button>
           ))}
         </nav>
