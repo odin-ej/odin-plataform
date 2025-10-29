@@ -121,6 +121,10 @@ export async function PATCH(request: Request) {
       where: { id },
       data: {
         ...dataToUpdate,
+        ...(isExMember && { isExMember: isExMember === "Sim" ? true : false }),
+        ...(alumniDreamer && {
+          alumniDreamer: alumniDreamer === "Sim" ? true : false,
+        }),
         ...(isWorking && { isWorking: isWorking === "Sim" ? true : false }),
         ...(imageUrl && { imageUrl }),
         ...(otherRole && { otherRole: realOtherRole }), // só atualiza se vier
