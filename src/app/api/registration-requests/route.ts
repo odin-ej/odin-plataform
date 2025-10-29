@@ -153,7 +153,7 @@ export async function POST(request: Request) {
       data: {
         name,
         email,
-        emailEJ,
+        emailEJ: emailEJ.length === 0 ? email : emailEJ,
         password, // Lembre-se de fazer o hash da senha em produção!
         birthDate: parsedBirthDate, // << USANDO A DATA CORRETA
         phone,

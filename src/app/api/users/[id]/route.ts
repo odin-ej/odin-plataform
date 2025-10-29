@@ -101,6 +101,14 @@ export async function PATCH(
 
     const bodyToValidate = roleId ? { ...rest, currentRoleId: roleId } : rest;
 
+    if(!userToUpdate.isExMember && !roleId) {
+      return NextResponse.json(
+        { message: "Selecione um cargo atual." },
+        { status: 400 }
+      );
+
+    }
+
     // A validação Zod usa o schema correto com base no status do usuário no banco
 
     const validation = userToUpdate.isExMember

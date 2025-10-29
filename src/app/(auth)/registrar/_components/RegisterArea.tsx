@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ExMemberForm from "../../../_components/Global/Form/ExMemberForm";
 import MemberForm from "../../../_components/Global/Form/MemberForm";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { memberSchema, memberType } from "@/lib/schemas/memberFormSchema";
 import { exMemberSchema, ExMemberType } from "@/lib/schemas/exMemberFormSchema";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import RegistrationSentStep from "@/app/_components/Global/Form/RegistrationSent
 import { Role } from "@prisma/client";
 import { orderRolesByHiearchy } from "@/lib/utils";
 import ImageCropModal from "@/app/_components/Global/ImageCropModal";
+import { useSearchParams } from "next/navigation";
 
 interface RegisterAreaProps {
   roles: Role[];
@@ -21,8 +22,19 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [tabSelected, setTabSelected] = useState<string >("novo");
   // Estado para armazenar a referência do formulário para poder usar o setValue
   const [formRef, setFormRef] = useState<any>(null);
+  const query = useSearchParams();
+
+  useEffect(() => {
+    const tab = query.get("tab");
+    if (tab === "ex") {
+      setTabSelected("ex");
+    } else {
+      setTabSelected("novo");
+    }
+  }, [query])
   // Função genérica para submeter o pedido de registo para a nossa API
   const handleSubmitRegistration = async (
     data: memberType | (ExMemberType & { image?: File })
@@ -121,25 +133,28 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
 
   return (
     <Tabs
-      defaultValue="new"
+      value={tabSelected}
+      onValueChange={setTabSelected}
       className="w-[300px] sm:w-[500px] md:w-[600px] lg:w-[800px] align-center rounded-lg"
     >
       <TabsList className="grid w-full grid-cols-2 bg-[#00205e] text-white font-semibold border-2 border-[#f5b719] p-0 focus:outline-none focus-visible:ring-0 shadow-none">
         <TabsTrigger
-          value="new"
+          value="novo"
+          onClick={() => setTabSelected("novo")}
           className="data-[state=active]:!bg-[#f5b719] !text-white rounded-r-none"
         >
           Novo sócio(a)
         </TabsTrigger>
         <TabsTrigger
           value="ex"
+          onClick={() => setTabSelected("ex")}
           className="data-[state=active]:!bg-[#f5b719] !text-white rounded-l-none"
         >
           Ex-membro
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="new">
+      <TabsContent value="novo">
         <div className="my-8 text-center text-[#f5b719] font-semibold">
           <h2 className="text-3xl lg:text-5xl mb-4">Olá, novo sócio(a)!</h2>
           <p className="text-white text-md font-light italic">

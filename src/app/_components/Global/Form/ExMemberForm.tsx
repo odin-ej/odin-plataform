@@ -170,7 +170,7 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           <CustomInput
             form={form}
             field={"emailEJ" as Path<z.infer<T>>}
-            label="E-mail EJ"
+            label="E-mail EJ (Não obrigatório)"
             type="email"
           />
         </div>

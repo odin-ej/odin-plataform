@@ -5,7 +5,7 @@ export const exMemberSchema = z
     name: z.string().min(3, "Nome completo é obrigatório"),
     birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
     email: z.string().email("E-mail pessoal inválido"),
-    emailEJ: z.string().email("E-mail institucional inválido"),
+    emailEJ: z.string().optional(),
     password: z
       .string()
       .min(8, "A senha deve ter no mínimo 8 caracteres.")

@@ -30,7 +30,7 @@ const baseMemberSchema = z.object({
   linkedin: z.string().optional(),
   about: z.string().min(3, "Conte algo sobre você").optional(),
   course: z.string().min(3, "Conte algo sobre você"),
-  roleId: z.string({ required_error: "Por favor, selecione um cargo." }),
+  roleId: z.string({ required_error: "Por favor, selecione um cargo." }).min(1, "Por favor, selecione um cargo."),
   roles: z.array(z.string()).optional(),
   image: z
     .custom<File>((file) => file instanceof File && file.size > 0, {
