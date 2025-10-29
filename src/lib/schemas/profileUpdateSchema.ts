@@ -12,7 +12,7 @@ const baseProfileSchema = z.object({
     .string()
     .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
   course: z.string().min(1, "Curso é obrigatório"),
-  semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório"),
+  semesterEntryEj: z.string().regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)").min(1, "Semestre de entrada é obrigatório"),
   about: z.string().optional(),
   image: z.any().optional(), // Para upload
   imageUrl: z.string().url().optional().or(z.literal("")),
@@ -47,7 +47,7 @@ export const memberUpdateSchema = baseProfileSchema.extend({
 // Schema para Ex-Membros
 export const exMemberUpdateSchema = baseProfileSchema
   .extend({
-    semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório"),
+    semesterLeaveEj: z.string().regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)").min(1, "Semestre de saída é obrigatório"),
     aboutEj: z.string().optional(),
     roles: z.array(z.string()).min(1, "Selecione pelo menos um cargo ocupado."),
     otherRole: z.string().optional(),

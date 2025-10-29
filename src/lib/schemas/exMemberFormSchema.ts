@@ -17,8 +17,8 @@ export const exMemberSchema = z
         "A senha deve conter pelo menos um caractere especial (ex: !@#$%)."
       ),
     confPassword: z.string(),
-    semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório"),
-    semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório"),
+    semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório").regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+    semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório").regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
     course: z.string().min(1, "Curso é obrigatório"),
     phone: z
       .string()
