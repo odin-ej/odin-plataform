@@ -260,7 +260,10 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
       throw new Error("Canal não encontrado");
     }
 
-    if (authUser.id !== channel?.createdById && !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (
+      authUser.id !== channel?.createdById &&
+      !checkUserPermission(authUser, DIRECTORS_ONLY)
+    ) {
       throw new Error("Somente o criador pode deletar o canal.");
     }
 
@@ -970,10 +973,7 @@ export async function removeChannelMember(data: {
     select: { createdById: true },
   });
 
-  if (
-    memberCreator?.createdById === data.memberId ||
-    memberCreator?.createdById === authUser.id
-  )
+  if (memberCreator?.createdById === data.memberId)
     throw new Error("O criador do canal não pode ser excluido");
 
   const deletedMember = await prisma.channelMember.delete({

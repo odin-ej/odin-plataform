@@ -478,7 +478,10 @@ const ChannelDetailsModal = ({
                                 size="icon"
                                 variant="ghost"
                                 className="text-red-500 hover:text-red-400"
-                                onClick={() => setMemberToDelete(member)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setMemberToDelete(member);
+                                }}
                                 disabled={
                                   member.user.id === channel.createdById ||
                                   member.userId === currentUserId ||
