@@ -51,15 +51,16 @@ const ContentSidebarLeft = ({
 }: ContentSidebarLeftProps) => {
   const pathname = usePathname();
   const [focusedChannel, setFocusedChannel] = useState<FullChannel | null>(null);
+  const [isLoadingUrls, setIsLoadingUrls] = useState(true);
+
   const isActive = (href: string) => pathname === href;
   const isDirector = checkUserPermission(user!, DIRECTORS_ONLY);
   //Somente donos podem editar/deletar canais
-  const canEdit = user.id === focusedChannel?.createdById || isDirector;
+  const canEdit = user.id === focusedChannel?.createdById || isDirector || focusedChannel?.members.some(m => m.userId === user.id && m.role === 'ADMIN');
   const canDelete = user.id === focusedChannel?.createdById || isDirector;
   const [signedUrlImages, setSignedUrlImages] = useState<
     Record<string, string>
   >({});
-  const [isLoadingUrls, setIsLoadingUrls] = useState(true);
 
   const visibleChannels = channels.filter((channel) => {
     // Regra 5: Exclui ex-membro se não permitido pelo canal

@@ -158,9 +158,12 @@ const ChannelDetailsModal = ({
   });
 
   const safeUserOptions = userOptions ?? [];
-  const filteredUserOptions = (form.watch('allowExMembers') === true && safeUserOptions.length > 0)
-    ? safeUserOptions.map((u) => ({ label: u.label, value: u.value }))
-    : safeUserOptions.filter(u => !u.isExMember).map((u) => ({ label: u.label, value: u.value }));
+  const filteredUserOptions =
+    form.watch("allowExMembers") === true && safeUserOptions.length > 0
+      ? safeUserOptions.map((u) => ({ label: u.label, value: u.value }))
+      : safeUserOptions
+          .filter((u) => !u.isExMember)
+          .map((u) => ({ label: u.label, value: u.value }));
 
   useEffect(() => {
     if (isOpen) {
@@ -387,7 +390,9 @@ const ChannelDetailsModal = ({
                       name="imageUrl" // O valor deste campo será string (chave S3) ou File
                       label=""
                       progress={isUploadingImage ? 100 : 0}
-                      onFileSelect={(file) => setImageToCrop(URL.createObjectURL(file))}
+                      onFileSelect={(file) =>
+                        setImageToCrop(URL.createObjectURL(file))
+                      }
                       onFileAccepted={() => {}}
                       page="community/channels" // Passa a page para ativar useQuery
                       disabled={!isAdmin || isUploadingImage}
@@ -442,6 +447,8 @@ const ChannelDetailsModal = ({
                                 {member.role === "ADMIN"
                                   ? "Administrador"
                                   : "Membro"}
+                                {member.user.id === channel.createdById &&
+                                  " • Criador do Canal"}
                               </p>
                             </div>
                           </div>
@@ -661,7 +668,7 @@ const ChannelDetailsModal = ({
           onClose={() => setImageToCrop(null)}
           onCropComplete={handleImageCrop}
           cropShape="round"
-          aspect={1/1} // Aspecto de banner
+          aspect={1 / 1} // Aspecto de banner
         />
       )}
 
