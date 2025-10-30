@@ -132,7 +132,7 @@ const MemberViewModal = ({
             </Avatar>
 
             <h2 className="mt-4 text-2xl text-white font-bold">
-              {formatedName}
+              {formatedName} {user.name === 'Yan Oliveira Ferreira' && (<> | <Badge className='text-red-400 bg-red-500/10'>Criador</Badge></>)}
             </h2>
             <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
               {user.isExMember && (
