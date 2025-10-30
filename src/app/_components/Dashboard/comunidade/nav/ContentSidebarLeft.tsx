@@ -50,8 +50,12 @@ const ContentSidebarLeft = ({
   onAction,
 }: ContentSidebarLeftProps) => {
   const pathname = usePathname();
+  const [focusedChannel, setFocusedChannel] = useState<FullChannel | null>(null);
   const isActive = (href: string) => pathname === href;
   const isDirector = checkUserPermission(user!, DIRECTORS_ONLY);
+  //Somente donos podem editar/deletar canais
+  const canEdit = user.id === focusedChannel?.createdById || isDirector;
+  const canDelete = user.id === focusedChannel?.createdById || isDirector;
   const [signedUrlImages, setSignedUrlImages] = useState<
     Record<string, string>
   >({});
@@ -156,7 +160,7 @@ const ContentSidebarLeft = ({
           <AccordionContent className="pt-1 space-y-1">
             {pinnedChannels.map((channel) => (
               <ContextMenu key={channel.id}>
-                <ContextMenuTrigger>
+                <ContextMenuTrigger onClick={() => setFocusedChannel(channel)}>
                   <Link href={`/comunidade/canais/${channel.id}`} passHref>
                     <span
                       className={cn(
@@ -200,7 +204,7 @@ const ContentSidebarLeft = ({
                       Remover do Destaque
                     </ContextMenuItem>
                   )}
-                  {isDirector && (
+                  {canEdit && (
                     <ContextMenuItem
                       onSelect={() => onAction("editChannel", { channel })}
                     >
@@ -208,7 +212,7 @@ const ContentSidebarLeft = ({
                       Editar
                     </ContextMenuItem>
                   )}
-                  {isDirector && (
+                  {canDelete && (
                     <ContextMenuItem
                       onSelect={() => onAction("deleteChannel", channel)}
                       className="text-red-500"
@@ -246,7 +250,7 @@ const ContentSidebarLeft = ({
           <AccordionContent className="pt-1 space-y-1">
             {regularChannels.map((channel) => (
               <ContextMenu key={channel.id}>
-                <ContextMenuTrigger>
+                <ContextMenuTrigger onClick={() => setFocusedChannel(channel)}>
                   <Link href={`/comunidade/canais/${channel.id}`} passHref>
                     <span
                       className={cn(
@@ -279,7 +283,7 @@ const ContentSidebarLeft = ({
                       Fixar no Destaque
                     </ContextMenuItem>
                   )}
-                  {isDirector && (
+                  {canEdit && (
                     <ContextMenuItem
                       onSelect={() => onAction("editChannel", { channel })}
                     >
@@ -287,7 +291,7 @@ const ContentSidebarLeft = ({
                       Editar
                     </ContextMenuItem>
                   )}
-                  {isDirector && (
+                  {canDelete && (
                     <ContextMenuItem
                       onSelect={() => onAction("deleteChannel", channel)}
                       className="text-red-500"
