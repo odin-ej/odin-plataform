@@ -92,8 +92,9 @@ async function getCommunityLayoutData() {
           replies: { include: { author: true } },
         },
       },
+      createdBy: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { name: "asc" },
   });
   const conversations = await prisma.directConversation.findMany({
     where: {

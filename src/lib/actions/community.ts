@@ -944,12 +944,13 @@ export async function updateMemberRole(data: {
   if (memberCreator?.createdById === data.memberId)
     throw new Error("O criador do canal não pode ter seu papel alterado");
 
-  await prisma.channelMember.update({
+  const updatedMember = await prisma.channelMember.update({
     where: { id: data.memberId },
     data: { role: data.role },
   });
 
   revalidatePath("/comunidade/canais");
+  revalidatePath(`/comunidade/canais/${updatedMember.channelId}`);
   return { success: true };
 }
 
@@ -987,7 +988,8 @@ export async function removeChannelMember(data: {
     targetUserId: deletedMember.userId,
   });
 
-  revalidatePath(`/comunidade/canal/${deletedMember.channelId}`);
+  revalidatePath("/comunidade/canais");
+  revalidatePath(`/comunidade/canais/${deletedMember.channelId}`);
   return { success: true };
 }
 

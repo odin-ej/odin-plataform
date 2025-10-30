@@ -221,10 +221,10 @@ const ChannelDetailsModal = ({
     },
     onError: (err: any) =>
       toast.error("Falha ao remover membro", { description: err.message }),
+    onSettled: () => setMemberToDelete(null),
   }); // --- Handlers ---
 
   const onSubmit = (data: DetailsForm) => {
-    console.log("Submitting form data:", data); // Log para depuração
     const { imageUrl, ...detailsData } = data;
 
     // Limpa campos não relevantes baseado no tipo ANTES de enviar
@@ -448,7 +448,7 @@ const ChannelDetailsModal = ({
                                   ? "Administrador"
                                   : "Membro"}
                                 {member.user.id === channel.createdById &&
-                                  " • Criador do Canal"}
+                                  " • Criador(a) do Canal"}
                               </p>
                             </div>
                           </div>

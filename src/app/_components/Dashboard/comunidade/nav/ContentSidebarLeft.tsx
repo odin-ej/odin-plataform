@@ -50,14 +50,19 @@ const ContentSidebarLeft = ({
   onAction,
 }: ContentSidebarLeftProps) => {
   const pathname = usePathname();
-  const [focusedChannel, setFocusedChannel] = useState<FullChannel | null>(null);
   const [isLoadingUrls, setIsLoadingUrls] = useState(true);
 
   const isActive = (href: string) => pathname === href;
   const isDirector = checkUserPermission(user!, DIRECTORS_ONLY);
   //Somente donos podem editar/deletar canais
-  const canEdit = user.id === focusedChannel?.createdById || isDirector || focusedChannel?.members.some(m => m.userId === user.id && m.role === 'ADMIN');
-  const canDelete = user.id === focusedChannel?.createdById || isDirector;
+  const canEditChannel = (channel: FullChannel) =>
+    user.id === channel.createdById ||
+    isDirector ||
+    channel.members.some((m) => m.userId === user.id && m.role === "ADMIN");
+
+  const canDeleteChannel = (channel: FullChannel) =>
+    user.id === channel.createdById || isDirector;
+
   const [signedUrlImages, setSignedUrlImages] = useState<
     Record<string, string>
   >({});
@@ -127,7 +132,7 @@ const ContentSidebarLeft = ({
   const visibleConversations = conversations.filter((conv) => {
     // Inclui a conversa se o usuário for participante
     return conv.participants.some((p) => p.id === user.id);
-  })
+  });
 
   return (
     <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700/50 pr-2 space-y-4">
@@ -161,7 +166,7 @@ const ContentSidebarLeft = ({
           <AccordionContent className="pt-1 space-y-1">
             {pinnedChannels.map((channel) => (
               <ContextMenu key={channel.id}>
-                <ContextMenuTrigger onClick={() => setFocusedChannel(channel)}>
+                <ContextMenuTrigger>
                   <Link href={`/comunidade/canais/${channel.id}`} passHref>
                     <span
                       className={cn(
@@ -205,7 +210,7 @@ const ContentSidebarLeft = ({
                       Remover do Destaque
                     </ContextMenuItem>
                   )}
-                  {canEdit && (
+                  {canEditChannel(channel) && (
                     <ContextMenuItem
                       onSelect={() => onAction("editChannel", { channel })}
                     >
@@ -213,7 +218,8 @@ const ContentSidebarLeft = ({
                       Editar
                     </ContextMenuItem>
                   )}
-                  {canDelete && (
+
+                  {canDeleteChannel(channel) && (
                     <ContextMenuItem
                       onSelect={() => onAction("deleteChannel", channel)}
                       className="text-red-500"
@@ -251,7 +257,7 @@ const ContentSidebarLeft = ({
           <AccordionContent className="pt-1 space-y-1">
             {regularChannels.map((channel) => (
               <ContextMenu key={channel.id}>
-                <ContextMenuTrigger onClick={() => setFocusedChannel(channel)}>
+                <ContextMenuTrigger>
                   <Link href={`/comunidade/canais/${channel.id}`} passHref>
                     <span
                       className={cn(
@@ -284,7 +290,7 @@ const ContentSidebarLeft = ({
                       Fixar no Destaque
                     </ContextMenuItem>
                   )}
-                  {canEdit && (
+                  {canEditChannel(channel) && (
                     <ContextMenuItem
                       onSelect={() => onAction("editChannel", { channel })}
                     >
@@ -292,7 +298,8 @@ const ContentSidebarLeft = ({
                       Editar
                     </ContextMenuItem>
                   )}
-                  {canDelete && (
+
+                  {canDeleteChannel(channel) && (
                     <ContextMenuItem
                       onSelect={() => onAction("deleteChannel", channel)}
                       className="text-red-500"
