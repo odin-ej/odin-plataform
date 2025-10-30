@@ -41,12 +41,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   if (!channel) return <NotFound />;
 
-  if (channel.restrictedToAreas && channel.restrictedToAreas.length === 0) return <NotFound />;
-
   if (!channel.restrictedToAreas && !channel.members.some((m) => m.id === user.id))
     return <NotFound />;
 
-  if(user.isExMember && !channel.allowExMembers) return <NotFound />
+  if (channel.restrictedToAreas.length > 0 && !channel.restrictedToAreas.some((area) => Boolean(user.currentRole?.area?.includes(area))))
+    return <NotFound />;
+
+  if (user.isExMember && !channel.allowExMembers) return <NotFound />
 
   
 
