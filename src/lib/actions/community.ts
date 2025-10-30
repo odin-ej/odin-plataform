@@ -254,16 +254,14 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
 
     const channel = await prisma.channel.findFirst({
       where: { id: channelId },
-    
     });
-
 
     if (!channel) {
       throw new Error("Canal não encontrado");
     }
 
-       if(authUser.id !== channel?.createdById) {
-      throw new Error('Somente o criador pode deletar o canal.')
+    if (authUser.id !== channel?.createdById && !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+      throw new Error("Somente o criador pode deletar o canal.");
     }
 
     // Deleta o canal para todos os membros
@@ -876,10 +874,12 @@ export async function togglePinChannel(data: {
 
   await createNotification({
     type: NotificationType.NEW_MENTION,
-    description: `O canal foi ${data.isPinned ? 'fixado' : 'desfixado'} na lista de canais.`,
+    description: `O canal foi ${
+      data.isPinned ? "fixado" : "desfixado"
+    } na lista de canais.`,
     link: `/comunidade`,
     targetUsersIds: allMembersIds.map((member) => member.userId),
-  })
+  });
 
   revalidatePath(`/comunidade`);
   return { success: true };
@@ -895,7 +895,7 @@ export async function searchUsers(query: string) {
   // Apenas um exemplo, ajuste a busca
   const users = await prisma.user.findMany({
     where: {
-      id: { not: process.env.ADMIN_USER_ID as string}, // Exclui admin
+      id: { not: process.env.ADMIN_USER_ID as string }, // Exclui admin
       name: {
         contains: query,
         mode: "insensitive",
@@ -905,12 +905,16 @@ export async function searchUsers(query: string) {
       id: true,
       name: true,
       imageUrl: true,
-      isExMember: true
+      isExMember: true,
     },
     take: 10,
   });
 
-  return users.map((user) => ({ label: user.name, value: user.id, isExMember: user.isExMember }));
+  return users.map((user) => ({
+    label: user.name,
+    value: user.id,
+    isExMember: user.isExMember,
+  }));
 }
 
 /**
@@ -981,7 +985,7 @@ export async function removeChannelMember(data: {
     description: `Você foi removido do canal.`,
     link: `/comunidade`,
     targetUserId: deletedMember.userId,
-  })
+  });
 
   revalidatePath(`/comunidade/canal/${deletedMember.channelId}`);
   return { success: true };
@@ -993,43 +997,42 @@ type NotificationData = {
   link: string;
   targetUserId?: string;
   targetUsersIds?: string[];
-}
+};
 
 export async function createNotification(data: NotificationData) {
   const authUser = await getAuthenticatedUser();
   if (!authUser) throw new Error("Não autorizado");
 
-  if(data.targetUserId){
-  await prisma.notification.create({
-    data: {
-      type: data.type,
-      notification: data.description,
-      link: data.link,
-      notificationUsers: {
-        create: {
-          userId: data.targetUserId,
-        }
-      }
-    },
-  });
+  if (data.targetUserId) {
+    await prisma.notification.create({
+      data: {
+        type: data.type,
+        notification: data.description,
+        link: data.link,
+        notificationUsers: {
+          create: {
+            userId: data.targetUserId,
+          },
+        },
+      },
+    });
   }
-  if(data.targetUsersIds && data.targetUsersIds.length > 0){
-    const notificationsData = data.targetUsersIds.map(userId => ({
+  if (data.targetUsersIds && data.targetUsersIds.length > 0) {
+    const notificationsData = data.targetUsersIds.map((userId) => ({
       type: data.type,
       notification: data.description,
       link: data.link,
       notificationUsers: {
         create: {
           userId: userId,
-        }
-      }
-    }))
+        },
+      },
+    }));
     await prisma.notification.createMany({
-      data: notificationsData
+      data: notificationsData,
     });
   }
 
-  revalidatePath('/')
+  revalidatePath("/");
   return { success: true };
-
 }
