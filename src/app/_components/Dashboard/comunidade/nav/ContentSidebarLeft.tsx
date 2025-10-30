@@ -119,6 +119,11 @@ const ContentSidebarLeft = ({
   const pinnedChannels = visibleChannels.filter((c) => c.isPinned);
   const regularChannels = visibleChannels.filter((c) => !c.isPinned);
 
+  const visibleConversations = conversations.filter((conv) => {
+    // Inclui a conversa se o usuário for participante
+    return conv.participants.some((p) => p.id === user.id);
+  })
+
   return (
     <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700/50 pr-2 space-y-4">
       <nav className="mt-2">
@@ -312,7 +317,7 @@ const ContentSidebarLeft = ({
             </span>
           </AccordionTrigger>
           <AccordionContent className="pt-1 space-y-1">
-            {conversations.map((conv) => {
+            {visibleConversations.map((conv) => {
               // 1. Filtra para pegar TODOS os outros participantes, não apenas o primeiro
               const otherParticipants = conv.participants.filter(
                 (p) => p.id !== user.id
