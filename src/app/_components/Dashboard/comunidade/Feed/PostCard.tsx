@@ -76,8 +76,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const canEdit = !isRepost && isOwnerOfOriginal;
   // Pode deletar o repost (se for dono) ou o post original (se dono ou diretor)
   const canDelete =
-    isOwnerOfWrapper ||
-    (isOwnerOfOriginal && checkUserPermission(user, DIRECTORS_ONLY));
+    isOwnerOfWrapper || isOwnerOfOriginal || checkUserPermission(user, DIRECTORS_ONLY);
   // --- Mutações com Atualização Otimista ---
   const { mutate: likePost } = useMutation({
     mutationFn: () => togglePostLike(interactionTargetPost.id),
@@ -584,7 +583,7 @@ const { mutate: handleToggleRepost, isPending: isTogglingRepost } = useMutation(
                   onClick={() => handleDeletePost()}
                   className="text-red-500 hover:!text-red-400 cursor-pointer"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> {isOwnerOfOriginal && !isOwnerOfWrapper ? "Excluir Post" : "Excluir Repost"}
+                  <Trash2 className="mr-2 h-4 w-4" /> {post.type === PostType.ORIGINAL ? "Excluir Post" : "Excluir Repost"}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
