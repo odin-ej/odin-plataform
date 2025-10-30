@@ -475,7 +475,7 @@ export async function deletePost(postId: string) {
 
   if (!post) throw new Error("Post não encontrado.");
   if (
-    post.authorId !== authUser.id ||
+    post.authorId !== authUser.id &&
     !checkUserPermission(authUser, DIRECTORS_ONLY)
   ) {
     throw new Error("Acesso negado.");
@@ -519,7 +519,7 @@ export async function deleteComment(commentId: string) {
 
   if (!comment) throw new Error("Comentário não encontrado.");
   if (
-    comment.authorId !== authUser.id ||
+    comment.authorId !== authUser.id &&
     !checkUserPermission(authUser, DIRECTORS_ONLY)
   ) {
     throw new Error("Acesso negado.");

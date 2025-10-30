@@ -139,7 +139,6 @@ const CreatePostInput = ({ currentUser }: CreatePostInputProps) => {
                       disabled={isLoading}
                       onClick={() => setIsExpanded(true)} // Expande ao clicar
                       {...field}
-                      onBlur={() => !field.value && attachments.length === 0 && setIsExpanded(false)} // Recolhe se vazio ao perder foco (opcional)
                     />
                   </FormControl>
                   <FormMessage />
