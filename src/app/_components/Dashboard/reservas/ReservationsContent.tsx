@@ -48,7 +48,7 @@ const ReservationsContent = ({
   const [activeTab, setActiveTab] = useState("salinhas");
 
   const queryClient = useQueryClient();
-  const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+  const canMutate = checkUserPermission(user, DIRECTORS_ONLY) || checkUserPermission(user, {allowedRoles: ['Assessor(a) de Conexões']});
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -192,7 +192,7 @@ const ReservationsContent = ({
         rooms,
         reservations: roomReservations,
       }}
-      isDirector={isDirector}
+      isDirector={canMutate}
     />
   );
   const eaufbaContent = (
@@ -206,7 +206,7 @@ const ReservationsContent = ({
         items: reservableItems,
         reservations: itemReservations,
       }}
-      isDirector={isDirector}
+      isDirector={canMutate}
     />
   );
 
