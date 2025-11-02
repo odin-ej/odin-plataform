@@ -295,7 +295,10 @@ const ReservationsContent = ({
       {selectedDate && (
         <CreateReservationModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedDate(null);
+          }}
           selectedDate={selectedDate}
           createRoomReservation={createReservation}
           createItemReservation={createItem}
