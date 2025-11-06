@@ -4,11 +4,7 @@
 import { getCommunityFileSignedUrl } from "@/lib/actions/community";
 import { FileAttachment } from "@prisma/client";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Download,
-  File as FileIcon,
-  Loader2,
-} from "lucide-react";
+import { Download, File as FileIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -20,9 +16,13 @@ interface RenderAttachmentProps {
     fileName: string;
     fileType: string;
   };
+  variant?: "chat" | "grid";
 }
 
-const RenderAttachment = ({ attachment }: RenderAttachmentProps) => {
+const RenderAttachment = ({
+  attachment,
+  variant = "chat",
+}: RenderAttachmentProps) => {
   // Busca a URL assinada para o arquivo no S3. A URL é temporária.
   const {
     data: signedUrl,
@@ -55,19 +55,42 @@ const RenderAttachment = ({ attachment }: RenderAttachmentProps) => {
 
   // Se for uma imagem, exibe a imagem
   if (attachment.fileType.startsWith("image/")) {
+    // 3. SE a variante for 'grid' (para o PostCard)
+    if (variant === "grid") {
+      return (
+        <Link
+          href={signedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          // 4. Link preenche todo o container (que é 'relative' no PostCard)
+          className="absolute inset-0 block overflow-hidden rounded-md"
+        >
+          <Image
+            src={signedUrl}
+            alt={`Anexo ${attachment.fileName}`}
+            fill // <-- USA FILL
+            className="object-cover cursor-pointer transition-transform hover:scale-105" // <-- Remove w/h fixos
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw" // Otimização
+            unoptimized={true} // Mantido do seu código
+          />
+        </Link>
+      );
+    }
+
+    // 5. SE for a variante 'chat' (Padrão - não precisa mudar nada no ChatMessage)
     return (
       <Link
         href={signedUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 block"
+        className="mt-2 block" // Mantém classes originais
       >
         <Image
           src={signedUrl}
           alt={`Anexo ${attachment.fileName}`}
-          width={300}
-          height={200}
-          className="rounded-md object-cover max-w-full h-auto cursor-pointer"
+          width={300} // <-- Mantém width fixo
+          height={200} // <-- Mantém height fixo
+          className="rounded-md object-cover max-w-full h-auto cursor-pointer" // Mantém classes originais
           unoptimized={true}
         />
       </Link>

@@ -150,36 +150,164 @@ const CreatePostInput = ({ currentUser }: CreatePostInputProps) => {
           {/* Área de Anexos e Botões (só aparece quando expandido) */}
           {isExpanded && (
             <>
-              {/* Preview de Anexos */}
               {attachments.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-13">
-                  {" "}
-                  {/* Padding left para alinhar com textarea */}
-                  {attachments.map((file, index) => (
-                    <div key={index} className="relative aspect-square">
-                      <Image
-                        src={URL.createObjectURL(file)}
-                        alt={`Preview ${index + 1}`}
-                        fill
-                        className="object-cover rounded-md"
-                        onLoad={(e) =>
-                          URL.revokeObjectURL(
-                            (e.target as HTMLImageElement).src
-                          )
-                        }
-                      />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="destructive"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-80 hover:opacity-100"
-                        onClick={() => removeAttachment(index)}
-                        disabled={isLoading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                <div className="flex justify-center w-full">
+                  <div
+                    className={cn(
+                      "mt-2 grid gap-1 rounded-md overflow-hidden max-w-[700px] w-full",
+                      attachments.length === 1 && "grid-cols-1",
+                      attachments.length === 2 && "grid-cols-2",
+                      attachments.length === 3 &&
+                        "grid-cols-[2fr_1fr] grid-rows-2 max-h-[400px]",
+                      attachments.length >= 4 && "grid-cols-2 grid-rows-2"
+                    )}
+                  >
+                    {/* --- Caso 1: 1 imagem --- */}
+                    {attachments.length === 1 && (
+                      <div className="relative w-full aspect-video">
+                        <Image
+                          src={URL.createObjectURL(attachments[0])}
+                          alt="Preview 1"
+                          fill
+                          className="object-cover rounded-md"
+                          onLoad={(e) =>
+                            URL.revokeObjectURL(
+                              (e.target as HTMLImageElement).src
+                            )
+                          }
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 z-20"
+                          onClick={() => removeAttachment(0)}
+                          disabled={isLoading}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* --- Caso 2: 2 imagens --- */}
+                    {attachments.length === 2 &&
+                      attachments.map((file, i) => (
+                        <div key={i} className="relative aspect-square">
+                          <Image
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${i + 1}`}
+                            fill
+                            className="object-cover rounded-md"
+                            onLoad={(e) =>
+                              URL.revokeObjectURL(
+                                (e.target as HTMLImageElement).src
+                              )
+                            }
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 z-20"
+                            onClick={() => removeAttachment(i)}
+                            disabled={isLoading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                    {/* --- Caso 3: 3 imagens (LinkedIn style) --- */}
+                    {attachments.length === 3 && (
+                      <>
+                        {/* Grande à esquerda ocupando duas linhas */}
+                        <div className="relative row-span-2 aspect-[3/4] h-full">
+                          <Image
+                            src={URL.createObjectURL(attachments[0])}
+                            alt="Preview 1"
+                            fill
+                            className="object-cover rounded-md"
+                            onLoad={(e) =>
+                              URL.revokeObjectURL(
+                                (e.target as HTMLImageElement).src
+                              )
+                            }
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 z-[30]"
+                            onClick={() => removeAttachment(0)}
+                            disabled={isLoading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Duas empilhadas à direita */}
+                        {[1, 2].map((i) => (
+                          <div key={i} className="relative aspect-video">
+                            <Image
+                              src={URL.createObjectURL(attachments[i])}
+                              alt={`Preview ${i + 1}`}
+                              fill
+                              className="object-cover rounded-md"
+                              onLoad={(e) =>
+                                URL.revokeObjectURL(
+                                  (e.target as HTMLImageElement).src
+                                )
+                              }
+                            />
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="destructive"
+                              className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 z-[30]"
+                              onClick={() => removeAttachment(i)}
+                              disabled={isLoading}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* --- Caso 4+: grade 2x2 --- */}
+                    {attachments.length >= 4 &&
+                      attachments.slice(0, 4).map((file, i) => (
+                        <div key={i} className="relative aspect-square">
+                          <Image
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${i + 1}`}
+                            fill
+                            className="object-cover rounded-md"
+                            onLoad={(e) =>
+                              URL.revokeObjectURL(
+                                (e.target as HTMLImageElement).src
+                              )
+                            }
+                          />
+                          {/* Overlay +X */}
+                          {i === 3 && attachments.length > 4 && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-2xl font-bold z-10 pointer-events-none">
+                              +{attachments.length - 4}
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="destructive"
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100 z-[30]"
+                            onClick={() => removeAttachment(i)}
+                            disabled={isLoading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               )}
 

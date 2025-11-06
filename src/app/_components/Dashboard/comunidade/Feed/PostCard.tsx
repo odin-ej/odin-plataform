@@ -76,7 +76,9 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const canEdit = !isRepost && isOwnerOfOriginal;
   // Pode deletar o repost (se for dono) ou o post original (se dono ou diretor)
   const canDelete =
-    isOwnerOfWrapper || isOwnerOfOriginal || checkUserPermission(user, DIRECTORS_ONLY);
+    isOwnerOfWrapper ||
+    isOwnerOfOriginal ||
+    checkUserPermission(user, DIRECTORS_ONLY);
   // --- Mutações com Atualização Otimista ---
   const { mutate: likePost } = useMutation({
     mutationFn: () => togglePostLike(interactionTargetPost.id),
@@ -318,92 +320,140 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
     },
   });
 
-const { mutate: handleToggleRepost, isPending: isTogglingRepost } = useMutation({
-    mutationFn: () => toggleRepost(interactionTargetPost.id), // Chama a nova action toggle
-    onMutate: async () => {
+  const { mutate: handleToggleRepost, isPending: isTogglingRepost } =
+    useMutation({
+      mutationFn: () => toggleRepost(interactionTargetPost.id), // Chama a nova action toggle
+      onMutate: async () => {
         // --- Atualização Otimista para Repost ---
-        await queryClient.cancelQueries({ queryKey: ['feedPosts', currentUserId] });
-        await queryClient.cancelQueries({ queryKey: ['initialFeedData', currentUserId] });
+        await queryClient.cancelQueries({
+          queryKey: ["feedPosts", currentUserId],
+        });
+        await queryClient.cancelQueries({
+          queryKey: ["initialFeedData", currentUserId],
+        });
 
-        const previousFeedData: any = queryClient.getQueryData(['feedPosts', currentUserId]);
-        const previousInitialData: any = queryClient.getQueryData(['initialFeedData', currentUserId]);
+        const previousFeedData: any = queryClient.getQueryData([
+          "feedPosts",
+          currentUserId,
+        ]);
+        const previousInitialData: any = queryClient.getQueryData([
+          "initialFeedData",
+          currentUserId,
+        ]);
 
         // Função para atualizar o estado de 'repostedBy'
         const updatePostRepostState = (targetPost: FullPost) => {
-            const currentlyReposted = targetPost.repostedBy?.some(u => u.id === currentUserId);
-            return {
-                ...targetPost,
-                // Simula adicionar/remover da lista repostedBy
-                repostedBy: currentlyReposted
-                    ? targetPost.repostedBy?.filter(u => u.id !== currentUserId) ?? []
-                    : [...(targetPost.repostedBy ?? []), { id: currentUserId }], // Adiciona placeholder
-                // Atualiza contagem
-                _count: {
-                    ...targetPost._count,
-                    reposts: currentlyReposted
-                        ? (targetPost._count?.reposts ?? 1) - 1
-                        : (targetPost._count?.reposts ?? 0) + 1,
-                },
-            };
+          const currentlyReposted = targetPost.repostedBy?.some(
+            (u) => u.id === currentUserId
+          );
+          return {
+            ...targetPost,
+            // Simula adicionar/remover da lista repostedBy
+            repostedBy: currentlyReposted
+              ? targetPost.repostedBy?.filter((u) => u.id !== currentUserId) ??
+                []
+              : [...(targetPost.repostedBy ?? []), { id: currentUserId }], // Adiciona placeholder
+            // Atualiza contagem
+            _count: {
+              ...targetPost._count,
+              reposts: currentlyReposted
+                ? (targetPost._count?.reposts ?? 1) - 1
+                : (targetPost._count?.reposts ?? 0) + 1,
+            },
+          };
         };
 
         // Função genérica para aplicar nos caches
         const updateCacheData = (oldData: any) => {
-             if (!oldData) return oldData;
-             const applyUpdate = (p: FullPost) => {
-                  // Atualiza o post original ou o post que *é* o original (se não for repost)
-                  if (p.id === interactionTargetPost.id) {
-                      return updatePostRepostState(p);
-                  }
-                  // Se o item 'p' for um repost *deste* post original, atualiza o original aninhado
-                  if (p.originalPost?.id === interactionTargetPost.id) {
-                       const original = p.originalPost;
-                       // Normaliza campos que podem estar ausentes para satisfazer o tipo FullPost
-                       const normalizedOriginal: FullPost = {
-                           ...original,
-                           likedBy: (original as any).likedBy ?? [],
-                           favoritedBy: (original as any).favoritedBy ?? [],
-                           repostedBy: (original as any).repostedBy ?? [],
-                           originalPost: (original as any).originalPost ?? null,
-                       } as FullPost;
-                       return { ...p, originalPost: updatePostRepostState(normalizedOriginal) };
-                  }
-                  return p;
-             }
+          if (!oldData) return oldData;
+          const applyUpdate = (p: FullPost) => {
+            // Atualiza o post original ou o post que *é* o original (se não for repost)
+            if (p.id === interactionTargetPost.id) {
+              return updatePostRepostState(p);
+            }
+            // Se o item 'p' for um repost *deste* post original, atualiza o original aninhado
+            if (p.originalPost?.id === interactionTargetPost.id) {
+              const original = p.originalPost;
+              // Normaliza campos que podem estar ausentes para satisfazer o tipo FullPost
+              const normalizedOriginal: FullPost = {
+                ...original,
+                likedBy: (original as any).likedBy ?? [],
+                favoritedBy: (original as any).favoritedBy ?? [],
+                repostedBy: (original as any).repostedBy ?? [],
+                originalPost: (original as any).originalPost ?? null,
+              } as FullPost;
+              return {
+                ...p,
+                originalPost: updatePostRepostState(normalizedOriginal),
+              };
+            }
+            return p;
+          };
 
-             if (oldData.pages) { // Infinite query
-                 return { ...oldData, pages: oldData.pages.map((page: any) => ({ ...page, items: page.items.map(applyUpdate) })) };
-             } else if (oldData.initialFeed || oldData.pinnedPosts) { // Initial data
-                 return {
-                     ...oldData,
-                     pinnedPosts: oldData.pinnedPosts?.map(applyUpdate) ?? [],
-                     initialFeed: oldData.initialFeed ? { ...oldData.initialFeed, items: oldData.initialFeed.items?.map(applyUpdate) ?? [] } : undefined,
-                 };
-             }
-             return oldData;
+          if (oldData.pages) {
+            // Infinite query
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page: any) => ({
+                ...page,
+                items: page.items.map(applyUpdate),
+              })),
+            };
+          } else if (oldData.initialFeed || oldData.pinnedPosts) {
+            // Initial data
+            return {
+              ...oldData,
+              pinnedPosts: oldData.pinnedPosts?.map(applyUpdate) ?? [],
+              initialFeed: oldData.initialFeed
+                ? {
+                    ...oldData.initialFeed,
+                    items: oldData.initialFeed.items?.map(applyUpdate) ?? [],
+                  }
+                : undefined,
+            };
+          }
+          return oldData;
         };
 
-        queryClient.setQueryData(['feedPosts', currentUserId], updateCacheData);
-        queryClient.setQueryData(['initialFeedData', currentUserId], updateCacheData);
+        queryClient.setQueryData(["feedPosts", currentUserId], updateCacheData);
+        queryClient.setQueryData(
+          ["initialFeedData", currentUserId],
+          updateCacheData
+        );
 
         return { previousFeedData, previousInitialData };
-    },
-    onError: (err, _vars, context) => {
+      },
+      onError: (err, _vars, context) => {
         // --- Rollback ---
-        if (context?.previousFeedData) queryClient.setQueryData(['feedPosts', currentUserId], context.previousFeedData);
-        if (context?.previousInitialData) queryClient.setQueryData(['initialFeedData', currentUserId], context.previousInitialData);
-        toast.error("Erro ao repostar", { description: (err as Error).message });
-    },
-    onSettled: (data) => { // data aqui é o retorno da action: { success, reposted }
+        if (context?.previousFeedData)
+          queryClient.setQueryData(
+            ["feedPosts", currentUserId],
+            context.previousFeedData
+          );
+        if (context?.previousInitialData)
+          queryClient.setQueryData(
+            ["initialFeedData", currentUserId],
+            context.previousInitialData
+          );
+        toast.error("Erro ao repostar", {
+          description: (err as Error).message,
+        });
+      },
+      onSettled: (data) => {
+        // data aqui é o retorno da action: { success, reposted }
         // --- Revalidação Final ---
-        queryClient.invalidateQueries({ queryKey: ['feedPosts', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['initialFeedData', currentUserId] });
+        queryClient.invalidateQueries({
+          queryKey: ["feedPosts", currentUserId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["initialFeedData", currentUserId],
+        });
         // Opcional: Mostrar toast específico de repost/desfeito
         if (data?.success) {
-            toast.info(data.reposted ? "Repostado!" : "Repost desfeito.");
+          toast.info(data.reposted ? "Repostado!" : "Repost desfeito.");
         }
-    },
-});
+      },
+    });
 
   const { mutate: handleDeletePost } = useMutation({
     mutationFn: () => deletePost(post.id),
@@ -482,13 +532,19 @@ const { mutate: handleToggleRepost, isPending: isTogglingRepost } = useMutation(
   });
   const likedByCurrentUser =
     interactionTargetPost.likedBy?.length > 0 &&
-    interactionTargetPost.likedBy.some((l: { id: string }) => l.id === currentUserId);
+    interactionTargetPost.likedBy.some(
+      (l: { id: string }) => l.id === currentUserId
+    );
   const savedByCurrentUser =
     interactionTargetPost.favoritedBy?.length > 0 &&
-    interactionTargetPost.favoritedBy.some((f: { id: string }) => f.id === currentUserId);
+    interactionTargetPost.favoritedBy.some(
+      (f: { id: string }) => f.id === currentUserId
+    );
   const repostedByCurrentUser =
     interactionTargetPost.repostedBy?.length > 0 &&
-    interactionTargetPost.repostedBy.some((r: { id: string }) => r.id === currentUserId);
+    interactionTargetPost.repostedBy.some(
+      (r: { id: string }) => r.id === currentUserId
+    );
 
   const likeCount = interactionTargetPost._count?.likedBy ?? 0;
   const commentCount = interactionTargetPost._count?.comments ?? 0;
@@ -583,7 +639,10 @@ const { mutate: handleToggleRepost, isPending: isTogglingRepost } = useMutation(
                   onClick={() => handleDeletePost()}
                   className="text-red-500 hover:!text-red-400 cursor-pointer"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> {post.type === PostType.ORIGINAL ? "Excluir Post" : "Excluir Repost"}
+                  <Trash2 className="mr-2 h-4 w-4" />{" "}
+                  {post.type === PostType.ORIGINAL
+                    ? "Excluir Post"
+                    : "Excluir Repost"}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -645,48 +704,62 @@ const { mutate: handleToggleRepost, isPending: isTogglingRepost } = useMutation(
       )}
 
       {/* Anexos (Imagens Grid) */}
-      {displayPost.attachments && displayPost.attachments.length > 0 && (
+{displayPost.attachments && displayPost.attachments.length > 0 && (
+  <div
+    className={cn(
+      "mt-2 grid gap-1 overflow-hidden rounded-lg",
+      displayPost.attachments.length === 1 && "grid-cols-1",
+      displayPost.attachments.length === 2 && "grid-cols-2",
+      displayPost.attachments.length === 3 && "grid-cols-[2fr_1fr]",
+      displayPost.attachments.length === 4 && "grid-cols-2",
+    )}
+  >
+    {displayPost.attachments.slice(0, 4).map((file, index) => {
+      const total = displayPost.attachments.length;
+
+      // Layout especial para 3 imagens
+      if (total === 3) {
+        if (index === 0) {
+          // Primeira imagem (grande à esquerda)
+          return (
+            <div
+              key={file.id}
+              className="row-span-2 aspect-[16/10] relative overflow-hidden rounded-md"
+            >
+              <RenderAttachment attachment={file} variant="grid" />
+            </div>
+          );
+        } else {
+          // As duas imagens empilhadas à direita
+          return (
+            <div
+              key={file.id}
+              className="aspect-[4/3] relative col-span-1 overflow-hidden rounded-md"
+            >
+              <RenderAttachment attachment={file} variant="grid" />
+            </div>
+          );
+        }
+      }
+
+      // Layout padrão (1, 2 ou 4+ imagens)
+      return (
         <div
+          key={file.id}
           className={cn(
-            "grid gap-1 mt-2",
-            displayPost.attachments.length === 1
-              ? "grid-cols-1"
-              : displayPost.attachments.length === 2
-              ? "grid-cols-2"
-              : displayPost.attachments.length === 3
-              ? "grid-cols-3" // Ou layout 2+1
-              : "grid-cols-2 grid-rows-2" // Layout 2x2 para 4+ imagens
+            "relative overflow-hidden rounded-md",
+            total === 1 && "aspect-[4/3]",
+            total === 2 && "aspect-[4/3]",
+            total >= 4 && "aspect-[4/3]"
           )}
         >
-          {displayPost.attachments.slice(0, 4).map(
-            (
-              att,
-              index // Limita a 4 previews
-            ) => (
-              <div
-                key={att.id}
-                className={cn(
-                  "relative aspect-video bg-black/20 flex items-center justify-center", // aspect-video ou aspect-square
-                  displayPost.attachments.length === 3 && index === 0
-                    ? "col-span-3" // Exemplo layout 1+2
-                    : displayPost.attachments.length > 4 && index === 3
-                    ? "brightness-50"
-                    : "" // Escurece a última se houver mais
-                )}
-              >
-                {/* Reutilizar RenderAttachment ou adaptar a lógica dele aqui */}
-                {/* Idealmente, RenderAttachment já lida com signed URLs se 'att.url' for chave S3 */}
-                <RenderAttachment attachment={att} />
-                {displayPost.attachments.length > 4 && index === 3 && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold">
-                    +{displayPost.attachments.length - 4}
-                  </div>
-                )}
-              </div>
-            )
-          )}
+          <RenderAttachment attachment={file} variant="grid" />
         </div>
-      )}
+      );
+    })}
+  </div>
+)}
+
 
       {/* Contagem de Likes e Comentários */}
       <div className="px-4 py-2 flex justify-between items-center text-xs text-gray-400">
