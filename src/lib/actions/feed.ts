@@ -3,7 +3,7 @@
 
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { PostType, Prisma } from "@prisma/client";
+import { NotificationType, PostType, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import {
   postIncludes,
@@ -17,6 +17,7 @@ import { s3Client } from "@/lib/aws"; // Import S3 client and command
 import { checkUserPermission } from "../utils";
 import { DIRECTORS_ONLY } from "../permissions";
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { createNotification } from "./notifications";
 
 // --- Constantes ---
 const POSTS_PER_PAGE = 10;
