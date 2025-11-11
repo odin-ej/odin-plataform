@@ -22,6 +22,7 @@ import {
 import ExMemberHomeContent from "./ExMemberHomeContent";
 import LinkPosterCarousel from "../../Global/LinkPosterCarousel";
 import { DIRECTORS_ONLY, TATICOS_ONLY } from "@/lib/permissions";
+import NotificationPanel from "../../Global/NotificationPanel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -233,7 +234,10 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
 
           {viewMode === "member" ? (
             <>
-              <div className="w-full min-h-[200px]">
+             <div className='w-full'>
+              <NotificationPanel />
+            </div>
+              <div className="w-full min-h-[200px] mt-6">
                 <LinkPosterCarousel slides={memberLinkPosters} />
               </div>
 
@@ -322,7 +326,11 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
         <>
           {!user?.isExMember ? (
             <>
-              <div className="w-full">
+            <div className='w-full'>
+              <NotificationPanel />
+            </div>
+
+              <div className="w-full mt-6">
                 <LinkPosterCarousel slides={memberLinkPosters} />
               </div>
 
