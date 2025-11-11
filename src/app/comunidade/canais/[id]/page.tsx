@@ -2,6 +2,7 @@ import ChannelContent from "@/app/_components/Dashboard/comunidade/ChannelConten
 import NotFound from "@/app/_components/Dashboard/comunidade/NotFound";
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { ChannelType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -41,13 +42,34 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   if (!channel) return <NotFound />;
 
-  if (!channel.restrictedToAreas && !channel.members.some((m) => m.id === user.id))
-    return <NotFound />;
 
-  if (channel.restrictedToAreas.length > 0 && !channel.restrictedToAreas.some((area) => Boolean(user.currentRole?.area?.includes(area))))
+  if (user.isExMember && !channel.allowExMembers) {
     return <NotFound />;
+  }
 
-  if (user.isExMember && !channel.allowExMembers) return <NotFound />
+  // Regra 4: Lógica para Canal PRIVADO
+  if (channel.type === ChannelType.PRIVATE) {
+    const isMember = channel.members.some((m) => m.userId === user.id);
+    if (!isMember) {
+      return <NotFound />; // Se for privado e não for membro (e não for Diretor), bloqueia
+    }
+  }
+  // Lógica para Canal PÚBLICO
+  else {
+    // Regra 3: Se é público E restrito por áreas
+    if (channel.restrictedToAreas && channel.restrictedToAreas.length > 0) {
+      
+      
+      const hasMatchingArea = channel.restrictedToAreas.some((restrictedArea) =>
+        user.currentRole?.area?.includes(restrictedArea)
+      );
+      if (!hasMatchingArea && (!user.isExMember && !channel.allowExMembers)) {
+        return <NotFound />; // Se for restrito e não tiver a área, bloqueia
+      }
+    }
+    // Regra 2: Se for público e NÃO restrito (restrictedToAreas.length === 0),
+    // o acesso é permitido (pois já passou pelo filtro de ex-membro).
+  }
 
   
 

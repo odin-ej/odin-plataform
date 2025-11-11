@@ -145,6 +145,15 @@ export async function createPost(formData: FormData) {
 
   const { content } = validatedData.data;
 
+  const allMembersIds = await prisma.user.findMany({select: {id: true}})
+
+  await createNotification({
+    type: NotificationType.NEW_MENTION,
+    description: `Um novo post foi criado por ${authUser.name}.`,
+    link: `/comunidade/feed`,
+    targetUsersIds: allMembersIds.map(user => user.id),
+  })
+
   await prisma.post.create({
     data: {
       content,

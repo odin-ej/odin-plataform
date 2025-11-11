@@ -8,7 +8,6 @@ import {
   AreaRoles,
   ChannelMemberRole,
   ChannelType,
-  Prisma,
 } from "@prisma/client"; // Importe Prisma
 import { revalidatePath } from "next/cache";
 
@@ -62,44 +61,12 @@ export async function POST(request: Request) {
       }));
     } else {
       // --- LÓGICA PARA CANAL PÚBLICO (CORRIGIDA) ---
-      let whereClause: Prisma.UserWhereInput;
-      const restrictedToAreasList = restrictedToAreas || [];
-
-      if (restrictedToAreasList.length === 0) {
-        // 1. Canal Público GERAL (sem áreas restritas)
-        if (allowExMembers) {
-          // Pega TODOS (ativos + ex-membros)
-          whereClause = {};
-        } else {
-          // Pega APENAS ativos
-          whereClause = { isExMember: false };
-        }
-      } else {
-        // 2. Canal Público RESTRITO (com áreas)
-        whereClause = {
-          OR: [
-            // Usuários ativos que pertencem às áreas
-            {
-              isExMember: false,
-              currentRole: {
-                area: { hasSome: restrictedToAreasList },
-              },
-            },
-            // Ex-membros (APENAS se 'allowExMembers' for true)
-            ...(allowExMembers ? [{ isExMember: true }] : []),
-          ],
-        };
-      }
-
-      const allUsers = await prisma.user.findMany({ where: whereClause });
-
-      membersToCreate = allUsers.map((user) => ({
-        user: { connect: { id: user.id } },
-        role:
-          user.id === authUser.id
-            ? ChannelMemberRole.ADMIN
-            : ChannelMemberRole.MEMBER,
-      }));
+      membersToCreate = [
+        {
+          user: { connect: { id: authUser.id } },
+          role: ChannelMemberRole.ADMIN,
+        },
+      ];
     }
 
     // Cria o canal com a lista de membros correta

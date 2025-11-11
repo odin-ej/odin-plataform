@@ -28,6 +28,7 @@ import {
 } from "@prisma/client";
 import { checkUserPermission, getLabelForRoleArea } from "../utils";
 import { DIRECTORS_ONLY } from "../permissions";
+import { createNotification } from "./notifications";
 
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
@@ -226,6 +227,11 @@ export async function deleteConversation({
         id: conversationId,
         participants: { some: { id: authUser.id } },
       },
+      include: {
+        participants: {
+          select: { id: true },
+        },
+      }
     });
 
     if (authUser.id !== conversation?.createdById) {
@@ -237,6 +243,14 @@ export async function deleteConversation({
     }
     // Deleta a conversa para todos os participantes
     await prisma.directConversation.delete({ where: { id: conversationId } });
+
+    await createNotification({
+      type: NotificationType.NEW_MENTION,
+      description: `A conversa "${conversation.title || "Sem Título"}" foi deletada pelo criador(a).`,
+      link: `/comunidade`,
+      targetUsersIds: conversation.participants.map(p => p.id)
+    })
+
     return { success: true, message: "Conversa deletada com sucesso!" };
   } catch (error) {
     console.error(error);
@@ -266,6 +280,16 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
     ) {
       throw new Error("Somente o criador pode deletar o canal.");
     }
+
+    await createNotification({
+      type: NotificationType.NEW_MENTION,
+      description: `O canal "${channel.name}" foi deletado pelo criador(a).`,
+      link: `/comunidade`,
+      targetUsersIds: (await prisma.channelMember.findMany({
+        where: { channelId },
+        select: { userId: true },
+      })).map(member => member.userId),
+    })
 
     // Deleta o canal para todos os membros
     await prisma.channel.delete({ where: { id: channelId } });
@@ -403,6 +427,27 @@ export async function sendMessage(
         // isPinned: false, // Default
       },
     });
+
+    let notificationMessage = ''
+
+    const channel = await prisma.channel.findUnique({
+      where: { id: contextId },
+    });
+
+    const conversation = await prisma.directConversation.findUnique({
+      where: {id: contextId}
+    })
+
+    if(channel) notificationMessage = `Nova mensagem no canal: ${channel.name} que você participa.`
+    else if(conversation) notificationMessage = `Nova mensagem na conversa: ${conversation.title || "Sem Título"} que você participa.`
+
+
+    await createNotification({
+      type: NotificationType.NEW_MENTION,
+      description: notificationMessage,
+      link: contextType === "channel" ? `/comunidade/canais/${contextId}` : `/comunidade/conversas/${contextId}`,
+    })
+
     revalidatePath(`/comunidade/canal/${contextId}`);
   } else {
     throw new Error("Tipo de contexto inválido.");
@@ -993,48 +1038,3 @@ export async function removeChannelMember(data: {
   return { success: true };
 }
 
-type NotificationData = {
-  type: NotificationType;
-  description: string;
-  link: string;
-  targetUserId?: string;
-  targetUsersIds?: string[];
-};
-
-export async function createNotification(data: NotificationData) {
-  const authUser = await getAuthenticatedUser();
-  if (!authUser) throw new Error("Não autorizado");
-
-  if (data.targetUserId) {
-    await prisma.notification.create({
-      data: {
-        type: data.type,
-        notification: data.description,
-        link: data.link,
-        notificationUsers: {
-          create: {
-            userId: data.targetUserId,
-          },
-        },
-      },
-    });
-  }
-  if (data.targetUsersIds && data.targetUsersIds.length > 0) {
-    const notificationsData = data.targetUsersIds.map((userId) => ({
-      type: data.type,
-      notification: data.description,
-      link: data.link,
-      notificationUsers: {
-        create: {
-          userId: userId,
-        },
-      },
-    }));
-    await prisma.notification.createMany({
-      data: notificationsData,
-    });
-  }
-
-  revalidatePath("/");
-  return { success: true };
-}
