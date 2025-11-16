@@ -75,11 +75,25 @@ export async function POST(request: Request) {
     }
     
     const performedDateObject = fromZonedTime(datePerformed, 'America/Sao_Paulo');
-    console.log('tags', tags)
+    
     const newSolicitation = await prisma.$transaction(async (tx) => {
-      // Objeto de dados base para a nova solicitação
-      // 1. Lógica condicional para associar ao placar correto e montar o objeto 'data'
       let data: Prisma.JRPointsSolicitationCreateInput;
+
+       const userSemesterScore = await tx.userSemesterScore.upsert({
+          where: {
+            userId_semesterPeriodId: {
+              userId: authUser.id,
+              semesterPeriodId: activeSemester.id,
+            },
+          },
+          update: {},
+          create: {
+            userId: authUser.id,
+            semester: activeSemester.name,
+            totalPoints: 0,
+            semesterPeriodId: activeSemester.id,
+          },
+        });
 
       if (isForEnterprise) {
         const enterpriseScore = await tx.enterpriseSemesterScore.upsert({
@@ -110,6 +124,7 @@ export async function POST(request: Request) {
             : undefined,
           isForEnterprise: isForEnterprise || false,
           enterpriseSemesterScore: { connect: { id: enterpriseScore.id } },
+          userSemesterScore: {connect: { id: userSemesterScore.id } },
         };
       } else {
         if (!membersSelected)
@@ -120,21 +135,7 @@ export async function POST(request: Request) {
             },
             { status: 400 }
           );
-        const userSemesterScore = await tx.userSemesterScore.upsert({
-          where: {
-            userId_semesterPeriodId: {
-              userId: authUser.id,
-              semesterPeriodId: activeSemester.id,
-            },
-          },
-          update: {},
-          create: {
-            userId: authUser.id,
-            semester: activeSemester.name,
-            totalPoints: 0,
-            semesterPeriodId: activeSemester.id,
-          },
-        });
+      
         data = {
           description,
           datePerformed: performedDateObject,

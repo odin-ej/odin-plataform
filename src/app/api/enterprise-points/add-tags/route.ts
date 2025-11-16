@@ -77,6 +77,23 @@ export async function POST(request: Request) {
         update: {},
         create: { semester: activeSemester.name, value: 0, semesterPeriodId: activeSemester.id },
       });
+
+        const userSemesterScore = await tx.userSemesterScore.upsert({
+                where: {
+                  userId_semesterPeriodId: {
+                    userId: authUser.id,
+                    semesterPeriodId: activeSemester.id,
+                  },
+                },
+                update: {},
+                create: {
+                  userId: authUser.id,
+                  semester: activeSemester.name,
+                  totalPoints: 0,
+                  semesterPeriodId: activeSemester.id,
+                },
+              });
+
       await tx.jRPointsSolicitation.create({
         data: {
           userId: authUser.id,
@@ -93,7 +110,8 @@ export async function POST(request: Request) {
           jrPointsVersionId: activeVersion.id,
           area: "DIRETORIA",
           reviewerId: authUser.id,
-          enterpriseSemesterScoreId: enterpriseSemesterScore.id
+          enterpriseSemesterScoreId: enterpriseSemesterScore.id,
+          userSemesterScoreId: userSemesterScore.id
         },
       });
       let totalValueToAdd = 0;
