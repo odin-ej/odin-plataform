@@ -86,24 +86,28 @@ const STEPS = [
 ];
 
 const SOCIO = [
-  { key: "S", label: "Sentido", description: "Por que estamos fazendo isso?" },
+  { key: "S", name:'sentido', label: "Sentido", description: "Por que estamos fazendo isso?" },
   {
     key: "O",
+    name: 'organizacao',
     label: "Organização",
     description: "Como estamos hoje e o que queremos mudar?",
   },
   {
     key: "C",
+    name: 'cultura',
     label: "Cultura",
     description: "Como isso vai virar hábito e não só uma iniciativa pontual?",
   },
   {
     key: "I",
+    name: 'influencia',
     label: "Influência",
     description: "Quem vai puxar e mobilizar para isso acontecer?",
   },
   {
     key: "O",
+    name: 'operacao',
     label: "Operação",
     description: "Como faremos isso rodar bem e como vamos medir?",
   },
@@ -781,11 +785,11 @@ const onFormSubmit = (values: CreateInovationValues) => {
                         </p>
                       </div>
                       <div className="grid grid-cols-1 gap-4 max-h-[350px] overflow-y-auto">
-                        {SOCIO.map(({ key, label, description }) => (
+                        {SOCIO.map(({ key, label, name, description }) => (
                           <FormField
                             key={label}
                             control={form.control}
-                            name={label.toLowerCase() as any}
+                            name={name as any}
                             render={({ field }) => (
                               <SocioInput
                                 letter={key}
