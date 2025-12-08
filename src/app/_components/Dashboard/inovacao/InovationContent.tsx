@@ -131,6 +131,7 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     onSuccess: () => {
       // Invalidate or refetch queries if needed
       queryClient.invalidateQueries({ queryKey: ["inovation-initiatives"] });
+      setItemToDelete(null);
       toast.success("Iniciativa deletada com sucesso!");
     },
     onError: () => {
