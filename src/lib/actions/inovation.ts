@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { s3Client } from "../aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 } from "uuid";
+import { createNotification } from "./notifications";
 
 async function uploadFileToS3(
   file: File | string | null | undefined
@@ -195,6 +196,30 @@ export async function createInovationInitiative(data: CreateInovationValues) {
       },
     });
 
+    const gerProd = await prisma.user.findFirst({
+      where: { currentRole: { name: "Gerente de Produtos" } },
+      select: { id: true },
+    });
+
+    const gerDes = await prisma.user.findFirst({
+      where: { currentRole: { name: "Gerente de Desenvolvimento" } },
+      select: { id: true },
+    });
+
+    const doper = await prisma.user.findFirst({
+      where: { currentRole: { name: "Diretor(a) de Operações" } },
+      select: { id: true },
+    });
+
+    createNotification({
+      targetUsersIds: [gerProd, gerDes, doper]
+        .filter(Boolean)
+        .map((u) => u!.id),
+      type: "NEW_MENTION",
+      description: `Iniciativa "${data.title}" foi criada e está aguardando aprovação.`,
+      link: "/inovacao",
+    });
+
     revalidatePath("/inovacao"); // Ajuste o caminho da página
     return { success: true };
   } catch (error) {
@@ -300,7 +325,7 @@ export async function auditInovationInitiative({
     throw new Error("Unauthorized");
 
   try {
-    await prisma.inovationInitiative.update({
+    const initiative = await prisma.inovationInitiative.update({
       where: { id },
       data: {
         status,
@@ -308,6 +333,13 @@ export async function auditInovationInitiative({
         reviewerId: authUser.id,
         dateChecked: new Date().toISOString(), // Data da auditoria
       },
+    });
+
+    createNotification({
+      targetUserId: initiative.authorId,
+      type: "NEW_MENTION",
+      description: `A Iniciativa "${initiative.title}" foi auditada por ${authUser.name}.`,
+      link: "/inovacao",
     });
 
     revalidatePath("/inovacao");

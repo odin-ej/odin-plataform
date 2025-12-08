@@ -6,6 +6,8 @@ import CommunitySidebarRight from "@/app/_components/Dashboard/comunidade/nav/Co
 import MobileBottomNav from "@/app/_components/Dashboard/comunidade/nav/MobileBottomNav";
 import { constructMetadata } from "@/lib/metadata";
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = constructMetadata({ title: "Comunidade" });
 
 async function getCommunityLayoutData() {
