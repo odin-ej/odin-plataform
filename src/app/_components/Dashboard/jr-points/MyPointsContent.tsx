@@ -223,7 +223,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       requestForm.reset({
         description: sol.description,
         datePerformed: format(new Date(sol.datePerformed), "yyyy-MM-dd"),
-        tags: sol.tags.map((t: any) => t.id),
+        tags: sol.solicitationTags.map((t: any) => t.id),
         membersSelected: sol.membersSelected.map((m: any) => m.id),
       });
     } else {
