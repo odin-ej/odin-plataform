@@ -94,6 +94,7 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   const [semesterFilter, setSemesterFilter] = useState<string>("all");
   const [subAreaFilter, setSubAreaFilter] = useState<string>("all");
   const [fixedFilter, setFixedFilter] = useState<string>("all");
+  const [ownFilter, setOwnFilter] = useState<string>("all");
   const [isWizardOpen, setIsWizardOpen] = useState(false); // Novo State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState("4");
@@ -147,6 +148,8 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     setStatusFilter("all");
     setAreaFilter("all");
     setSemesterFilter("all");
+    setSubAreaFilter("all");
+    setOwnFilter("all");
     setFixedFilter("all");
   };
 
@@ -184,6 +187,10 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
       if (item.type !== activeTab) {
         return false;
       }
+
+      if (ownFilter === "Proprio") {
+      return item.authorId === user!.id;
+    }
 
       // 1. Busca por texto (Título)
       if (
@@ -235,7 +242,9 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
       return true;
     });
   }, [
+    user,
     initiatives,
+    ownFilter,
     activeTab, // Adicionado às dependências
     searchQuery,
     fixedFilter,
@@ -279,7 +288,8 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     areaFilter !== "all" ||
     subAreaFilter !== "all" ||
     fixedFilter !== "all" ||
-    semesterFilter !== "all";
+    semesterFilter !== "all" || 
+    ownFilter !== "all";
 
   // Extrair opções únicas para os selects baseado nos dados (opcional, ou use estáticos)
   const semesterOptions = Array.from(
@@ -455,6 +465,25 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
                                     : opt}
                                 </SelectItem>
                               ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <h4 className="text-white font-semibold">Pessoal:</h4>
+                          <Select
+                            value={ownFilter}
+                            onValueChange={setOwnFilter}
+                          >
+                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+                              <div className="flex items-center gap-2">
+                                <Filter size={10} className="text-amber-400" />
+                                <SelectValue placeholder="Status" />
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
+                              <SelectItem value="all">Todos</SelectItem>
+                              <SelectItem value="Proprio">Próprio</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

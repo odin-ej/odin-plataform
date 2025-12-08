@@ -220,9 +220,16 @@ export const InnovationCard = ({
         </div>
 
         <div className="absolute bottom-2 right-3">
-          <span className="text-[10px] font-bold text-amber-400/60">
+          <div className="flex items-center gap-2">
+            {userId === data.authorId && (
+              <Badge className="bg-amber-400 text-black hover:bg-amber-500 font-bold px-2 py-0.5 text-[10px] uppercase">
+                Próprio
+              </Badge>
+            )}
+            <span className="text-[10px] font-bold text-amber-400/60">
             {data.semester.name}
           </span>
+          </div>
         </div>
       </CardFooter>
     </Card>
