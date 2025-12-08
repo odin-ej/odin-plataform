@@ -11,6 +11,7 @@ import {
   Goal,
   HomeIcon,
   LayoutDashboard,
+  Lightbulb,
   Link,
   Megaphone,
   MessageSquare,
@@ -89,6 +90,12 @@ export const generalLinks: Links[] = [
     href: '/comunidade',
     icon: UsersRound,
     exMemberCanAccess: true,
+  },
+  {
+    name: 'Inovação',
+    href: '/inovacao',
+    icon: Lightbulb,
+    exMemberCanAccess: false,
   }
 ];
 

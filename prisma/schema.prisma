@@ -209,7 +209,7 @@ model ProfessionalInterest {
 }
 
 model User {
-  id                String    @id
+id                String    @id
   name              String
   email             String    @unique
   emailEJ           String    @unique
@@ -270,10 +270,12 @@ model User {
   oraculoFolders                OraculoFolder[]
   favoritedPosts                Post[]                       @relation("PostFavorites")
   reposts                       Post[]                       @relation("PostReposts")
-
+  inovationInitiatives           InovationInitiative[]       @relation("InovationAuthor")
+  reviewedInovationInitiatives   InovationInitiative[]       @relation("InovationReviewer")
+  initiativesAssociated          InovationInitiative[]       @relation("InitiativesMembers")
   // Relações com Canais
   channelMemberships ChannelMember[] // Em quais canais o usuário está
-
+  
   // Relações com Mensagens Diretas
   directConversations    DirectConversation[] @relation("DirectConversationParticipants")
   sentDirectMessages     DirectMessage[]
@@ -345,6 +347,8 @@ model Semester {
   isActive  Boolean   @default(false) // Apenas um pode ser ativo por vez
   createdAt DateTime  @default(now())
 
+  //Iniciativas inovadores do semestre
+  inovationInitiatives  InovationInitiative[]
   // Relações com os placares daquele semestre
   userScores       UserSemesterScore[]
   enterpriseScores EnterpriseSemesterScore[]
@@ -1060,4 +1064,105 @@ model DirectMessage {
   replies  DirectMessage[] @relation("DirectMessageReplies")
 
   @@index([conversationId])
+}
+
+model InovationInitiative {
+  id       String @id @default(uuid())
+  type     InovationInitiativeType 
+  imageUrl  String?
+  status     InovationInitiativeStatus @default(PENDING)
+  title      String //Plataforma Interna de Inovação
+  description String @db.Text // Plataforma com varias abas uteis
+  isFixed     Boolean  @default(false)
+  shortDescription String @db.Text
+  inovationHorizon  InovationHorizonTypes?
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references:[id], onDelete: Cascade)
+  tags       String[] //Tecnologia, Inovação
+  links      Link[] 
+  dateImplemented String?
+  dateColected String? 
+  dateChecked  String?
+  isRunning   Boolean  @default(false)
+  reviewNotes String? @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  /*Relations*/
+  authorId   String
+  author     User   @relation("InovationAuthor",fields: [authorId], references: [id], onDelete: Cascade)
+  reviewerId String?
+  reviewer   User?   @relation("InovationReviewer",fields: [reviewerId], references: [id], onDelete: Cascade)
+  relatedFrom InitiativeRelation[] @relation("InitiativeFrom")
+  relatedTo   InitiativeRelation[] @relation("InitiativeTo")
+  areas       AreaInovationInitiative[]
+  subAreas    SubAreaInovationInitiative[]
+  members     User[] @relation("InitiativesMembers")
+  sentido     String?  @db.Text
+  organizacao String?  @db.Text
+  cultura     String?  @db.Text
+  influencia  String?  @db.Text
+  operacao    String?  @db.Text
+}
+
+model Link {
+  id        String   @id @default(uuid())
+  label     String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  initiativeId String
+  initiative   InovationInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+}
+
+model InitiativeRelation {
+  id          String @id @default(uuid())
+
+  fromId      String
+  from        InovationInitiative @relation("InitiativeFrom", fields: [fromId], references: [id], onDelete: Cascade) 
+
+  toId        String
+  to          InovationInitiative @relation("InitiativeTo", fields: [toId], references: [id], onDelete: Cascade) 
+
+  @@unique([fromId, toId])
+}
+
+
+enum AreaInovationInitiative {
+  Geral
+  Mercado
+  Projetos
+  Presidência
+  Pessoas
+  Operações
+}
+
+enum InovationInitiativeType {
+  Iniciativa
+  Evento
+  Nucleo
+  Pilula
+}
+
+enum SubAreaInovationInitiative {
+  Eventos
+  Performance
+  Marketing
+  Comercial
+  Inovação
+}
+
+enum InovationInitiativeStatus {
+  PENDING
+  APPROVED
+  RUNNING
+  REJECTED
+}
+
+enum InovationHorizonTypes {
+  Incremental 
+  Arquitetural
+  Disruptiva
+  Modular
 }

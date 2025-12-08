@@ -64,7 +64,7 @@ const DropzoneArea = React.forwardRef<HTMLDivElement, DropzoneAreaProps>(
           </div>
         ) : previewUrl ? (
           <div className="flex items-center space-x-4 text-white">
-            <Image width={100} height={page === 'link-posters' ? 50 : 100} src={page === 'community/channels' ? signedUrl : previewUrl} alt="Pré-visualização" className={cn("rounded-full object-cover h-20 w-20", page === 'link-posters' && '!w-20 !h-10 !rounded-lg' )}/>
+            <Image width={100} height={page === 'link-posters' ? 50 : 100} src={page === 'community/channels' ? signedUrl : previewUrl} alt="Pré-visualização" className={cn("rounded-full object-cover h-20 w-20", (page === 'link-posters' || page === 'inovation') && '!w-20 !h-10 !rounded-lg' )}/>
             <span className="text-sm text-gray-300"><span className='font-semibold text-[#f5b719] underline'>Clique ou arraste</span> para alterar</span>
           </div>
         ) : (

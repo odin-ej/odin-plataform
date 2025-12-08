@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { AreaInovationInitiative, InovationInitiativeStatus, InovationInitiativeType, SubAreaInovationInitiative } from "@prisma/client";
+
 const {
   AdminCreateUserCommand,
   AdminGetUserCommand,
@@ -403,42 +405,221 @@ async function main() {
   //   ],
   // });
 
-    const semesters = [];
+  //   const semesters = [];
 
-  const deletedSemester = await prisma.semester.deleteMany({})
-  if(deletedSemester.length > 1) console.log('Semestres deletados')
+  // const deletedSemester = await prisma.semester.deleteMany({})
+  // if(deletedSemester.length > 1) console.log('Semestres deletados')
 
-  for (let year = 1989; year <= 2025; year++) {
-    // Primeiro semestre (1º de janeiro a 30 de junho)
-    semesters.push({
-      name: `${year}.1`,
-      startDate: new Date(year, 0, 1),   // 01/jan
-      endDate: new Date(year, 5, 30),    // 30/jun
-      isActive: false,
-    });
+  // for (let year = 1989; year <= 2025; year++) {
+  //   // Primeiro semestre (1º de janeiro a 30 de junho)
+  //   semesters.push({
+  //     name: `${year}.1`,
+  //     startDate: new Date(year, 0, 1),   // 01/jan
+  //     endDate: new Date(year, 5, 30),    // 30/jun
+  //     isActive: false,
+  //   });
 
-    // Segundo semestre (1º de julho a 31 de dezembro)
-    // Obs: como você pediu só até 2025.1, não criaremos o 2025.2
-    if (year < 2025) {
-      semesters.push({
-        name: `${year}.2`,
-        startDate: new Date(year, 6, 1),   // 01/jul
-        endDate: new Date(year, 11, 31),   // 31/dez
-        isActive: false,
-      });
+  //   // Segundo semestre (1º de julho a 31 de dezembro)
+  //   // Obs: como você pediu só até 2025.1, não criaremos o 2025.2
+  //   if (year < 2025) {
+  //     semesters.push({
+  //       name: `${year}.2`,
+  //       startDate: new Date(year, 6, 1),   // 01/jul
+  //       endDate: new Date(year, 11, 31),   // 31/dez
+  //       isActive: false,
+  //     });
+  //   }
+  // }
+
+  // // Upsert para não duplicar caso já exista
+  // for (const semester of semesters) {
+  //   await prisma.semester.upsert({
+  //     where: { name: semester.name },
+  //     update: {},
+  //     create: semester,
+  //   });
+  // }
+
+  // console.log(`✅ Criados/atualizados ${semesters.length} semestres`);
+
+  // 1. BUSCAR OU CRIAR SEMESTRE 2025.2
+  // Tenta achar o que você disse que já tem, senão cria um fallback
+  let semester = await prisma.semester.findUnique({
+    where: { name: '2025.2' }
+  })
+
+  if (!semester) {
+    console.log('⚠️ Semestre 2025.2 não encontrado. Criando um para teste...')
+    semester = await prisma.semester.create({
+      data: {
+        name: '2025.2',
+        startDate: new Date('2025-07-01'),
+        endDate: new Date('2025-12-31'),
+        isActive: true,
+      }
+    })
+  }
+
+  // 2. BUSCAR OU CRIAR UM USUÁRIO AUTOR (ADMIN ODIN)
+  // Precisamos de um ID válido para o campo authorId
+  const userEmail = 'plataforma@empresajr.org'
+  let author = await prisma.user.findUnique({
+    where: { email: userEmail }
+  })
+
+  if (!author) {
+    console.log('👤 Criando usuário autor Mock...')
+    author = await prisma.user.create({
+      data: {
+        id: 'user-admin-odin-01',
+        name: 'Admin Odin',
+        email: userEmail,
+        emailEJ: 'odin@empresajr.com',
+        phone: '99999999999',
+        password: 'hash-password-placeholder', // Em produção use bcrypt
+        imageUrl: 'https://github.com/shadcn.png',
+        semesterEntryEj: '2023.1',
+        birthDate: new Date('2000-01-01'),
+      }
+    })
+  }
+
+  console.log('🧹 Limpando iniciativas antigas de teste (opcional)...')
+  // Opcional: deletar iniciativas criadas anteriormente para não duplicar
+ await prisma.initiativeRelation.deleteMany({})
+
+  // 2. SEGUNDO: Deletar os Links (Embora tenha Cascade no schema, é seguro garantir)
+  // Se o Cascade do banco estiver funcionando, isso é opcional, mas evita erros se o DB estiver desatualizado
+  await prisma.link.deleteMany({
+    where: {
+      initiative: {
+        semesterId: semester.id
+      }
     }
-  }
+  })
 
-  // Upsert para não duplicar caso já exista
-  for (const semester of semesters) {
-    await prisma.semester.upsert({
-      where: { name: semester.name },
-      update: {},
-      create: semester,
-    });
-  }
+  // 3. TERCEIRO: Agora sim podemos deletar as Iniciativas
+  await prisma.inovationInitiative.deleteMany({
+    where: { semesterId: semester.id }
+  })
 
-  console.log(`✅ Criados/atualizados ${semesters.length} semestres`);
+  // 3. CRIAR INICIATIVAS
+
+  // --- ITEM 1: EVENTO (InovaDay) ---
+  const inovaDay = await prisma.inovationInitiative.create({
+    data: {
+      title: 'InovaDay 2025.2',
+      type: InovationInitiativeType.Evento,
+      status: InovationInitiativeStatus.RUNNING,
+      shortDescription: 'Imersão completa da empresa em metodologias ágeis e design thinking.',
+      description: 'Um dia inteiro focado em destravar a criatividade dos membros através de dinâmicas de grupo e palestras com ex-membros. O evento contou com a participação de 100% da empresa.',
+      isFixed: true,
+      isRunning: true,
+      semesterId: semester.id,
+      authorId: author.id,
+      dateImplemented: new Date('2025-10-10'),
+      tags: ['Inovação', 'Cultura', 'Agile', 'Imersão'],
+      areas: [AreaInovationInitiative.Geral, AreaInovationInitiative.Pessoas],
+      subAreas: [SubAreaInovationInitiative.Eventos, SubAreaInovationInitiative.Inovação],
+      // Método S.O.C.I.O
+      sentido: 'Fazer a empresa subir mais um degrau em seu crescimento como organização - EVOLUÇÃO.',
+      organizacao: 'Integração de todas as áreas em um propósito único de inovação.',
+      cultura: 'Entusiasmo dos membros em participar ativamente da construção do futuro.',
+      influencia: 'Aumentar a retenção de membros através do senso de pertencimento.',
+      operacao: 'Geração de 15 novas ideias de melhoria de processos.',
+      // Links
+      links: {
+        create: [
+          { label: 'Álbum de Fotos', url: 'https://photos.google.com' },
+          { label: 'Miro Board', url: 'https://miro.com' }
+        ]
+      }
+    }
+  })
+
+  // --- ITEM 2: PÍLULA (Power BI) ---
+  const pilulaBI = await prisma.inovationInitiative.create({
+    data: {
+      title: 'Pílula: Power BI Avançado',
+      type: InovationInitiativeType.Pilula,
+      status: InovationInitiativeStatus.APPROVED,
+      shortDescription: 'Capacitação rápida de 30min sobre DAX e visualização de dados.',
+      description: 'Apresentação realizada durante a Reunião Geral para nivelar o conhecimento em dados da diretoria de projetos e mercado.',
+      semesterId: semester.id,
+      authorId: author.id,
+      dateImplemented: new Date('2025-09-15'),
+      tags: ['Dados', 'Performance', 'BI'],
+      areas: [AreaInovationInitiative.Projetos, AreaInovationInitiative.Mercado],
+      subAreas: [SubAreaInovationInitiative.Performance],
+      sentido: 'Melhorar a qualidade das entregas finais para o cliente através de dados visuais.',
+      links: {
+        create: [
+          { label: 'Slide Deck (Canva)', url: 'https://canva.com' }
+        ]
+      }
+    }
+  })
+
+  // --- ITEM 3: NÚCLEO (Plataforma Odin) ---
+  const nucleoOdin = await prisma.inovationInitiative.create({
+    data: {
+      title: 'Plataforma Odin',
+      type: InovationInitiativeType.Nucleo,
+      status: InovationInitiativeStatus.RUNNING,
+      shortDescription: 'Centralização de toda a gestão da EJ em um único sistema proprietário.',
+      description: 'Plataforma interna para gestão de metas, reservas, cultura e inovação. Substitui diversas planilhas e centraliza a informação.',
+      isFixed: true, // Itens do núcleo costumam ser fixos
+      semesterId: semester.id,
+      authorId: author.id,
+      dateImplemented: new Date('2025-07-01'),
+      tags: ['Tecnologia', 'Programação', 'Next.js', 'Gestão'],
+      areas: [AreaInovationInitiative.Geral],
+      subAreas: [SubAreaInovationInitiative.Inovação],
+      // Método S.O.C.I.O
+      sentido: 'Transformação digital completa da operação da EJ.',
+      organizacao: 'Eliminação de 15 planilhas de controle paralelas e redução de ruído na comunicação.',
+      cultura: 'Cultura Data-Driven estabelecida e orgulho de ter um sistema próprio.',
+      operacao: 'Automação de reservas e reports semanais.',
+      links: {
+        create: [
+          { label: 'Acessar Odin', url: 'https://odin.sistema.com' },
+          { label: 'Repositório GitHub', url: 'https://github.com' }
+        ]
+      }
+    }
+  })
+
+  // --- ITEM 4: INICIATIVA GERAL (Consultoria de Processos) ---
+  const iniciativaProcessos = await prisma.inovationInitiative.create({
+    data: {
+      title: 'Nova Metodologia de Vendas',
+      type: InovationInitiativeType.Iniciativa,
+      status: InovationInitiativeStatus.PENDING,
+      shortDescription: 'Implementação do SPIN Selling no processo de negociação.',
+      description: 'Mudança no script de vendas para focar nas dores do cliente utilizando a metodologia SPIN.',
+      semesterId: semester.id,
+      authorId: author.id,
+      dateImplemented: new Date('2025-11-20'),
+      tags: ['Vendas', 'Comercial', 'Metodologia'],
+      areas: [AreaInovationInitiative.Mercado],
+      subAreas: [SubAreaInovationInitiative.Comercial],
+      sentido: 'Aumentar a taxa de conversão de leads em projetos fechados.'
+    }
+  })
+
+  // 4. CRIAR RELACIONAMENTOS (InitiativeRelation)
+  // Exemplo: O InovaDay (Evento) apresentou a Plataforma Odin (Núcleo)
+  
+  console.log('🔗 Criando relacionamentos entre iniciativas...')
+  
+  await prisma.initiativeRelation.create({
+    data: {
+      fromId: inovaDay.id,
+      toId: nucleoOdin.id
+    }
+  })
+
+  console.log('✅ Seed concluído com sucesso!')
 
   console.log("Seed concluído com sucesso!");
 

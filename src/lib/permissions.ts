@@ -43,6 +43,11 @@ export const TACTICAL_AND_COMMITTEE_LEADERS: PermissionCheck = {
   allowExMembers: false,
 };
 
+export const INOVATION_LEADERS: PermissionCheck = {
+  allowedRoles: ['Gerente de Produtos', 'Gerente de Desenvolvimento', 'Diretor(a) de Projetos', 'Diretor(a) de Mercado', 'Diretor(a) de Operações', 'Diretor(a) de Presidência', "Diretor(a) de Gestão de Pessoas"],
+  allowExMembers: false,
+}
+
 export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/usuarios": DIRECTORS_ONLY,
   "/atualizar-estrategia": DIRECTORS_ONLY,
@@ -52,6 +57,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   '/gerenciar-cargos': DIRECTORS_ONLY,
   '/gerenciar-jr-points': DIRECTORS_ONLY,
   "/tarefas": MEMBERS_ONLY,
+  "/inovacao": MEMBERS_ONLY,
   "/chat": MEMBERS_ONLY,
   '/oraculo': MEMBERS_ONLY,
   "/jr-points": MEMBERS_ONLY,

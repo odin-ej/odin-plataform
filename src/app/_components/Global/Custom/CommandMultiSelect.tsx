@@ -49,6 +49,7 @@ const CommandMultiSelect = ({
   form,
   name,
   value,
+  disabled,
   onChange,
 }: CommandMultiSelectProps) => {
   const [open, setOpen] = useState(false);
@@ -95,6 +96,7 @@ const CommandMultiSelect = ({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            disabled={disabled}
             className="w-full justify-start bg-transparent hover:bg-white/10 text-[#f5b719] h-auto min-h-10 flex-wrap hover:text-[#f5b719]"
           >
             {selectedItems.length > 0 ? (
@@ -171,6 +173,7 @@ const CommandMultiSelect = ({
       <FormField
         control={form.control}
         name={name}
+        disabled={disabled}
         render={({ field }) => {
           const selectedValues: string[] = field.value || [];
 
