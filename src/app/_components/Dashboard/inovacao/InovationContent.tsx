@@ -9,9 +9,6 @@ import {
   Mic,
   Zap,
   LayoutGrid,
-  Search,
-  Filter,
-  X,
   Plus,
   Settings,
   Check,
@@ -31,14 +28,6 @@ import {
   InovationInitiativeType,
   SubAreaInovationInitiative,
 } from "@prisma/client";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { InitiativeWizard } from "./InitiativeWizard";
 import { checkUserPermission, cn } from "@/lib/utils";
@@ -47,6 +36,7 @@ import { INOVATION_LEADERS } from "@/lib/permissions";
 import Pagination from "../../Global/Custom/Pagination";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { toast } from "sonner";
+import InovationFilters from "./InovationFilters";
 
 interface InovationContentProps {
   initialData: FullInovationInitiative[];
@@ -86,18 +76,30 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   const [activeTab, setActiveTab] = useState<InovationInitiativeType>(
     InovationInitiativeType.Iniciativa
   );
-
-  // --- Estados de Filtro ---
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [areaFilter, setAreaFilter] = useState<string>("all");
-  const [semesterFilter, setSemesterFilter] = useState<string>("all");
-  const [subAreaFilter, setSubAreaFilter] = useState<string>("all");
-  const [fixedFilter, setFixedFilter] = useState<string>("all");
-  const [ownFilter, setOwnFilter] = useState<string>("all");
+  const [myInitiativesFilter, setMyInitiativesFilter] = useState<
+    Record<string, any>
+  >({
+    searchQuery: "",
+    statusFilter: "all",
+    areaFilter: "all",
+    semesterFilter: "all",
+    subAreaFilter: "all",
+  });
+  const [enterpriseInitiativesFilter, setEnterpriseInitiativesFilter] =
+    useState<Record<string, any>>({
+      searchQuery: "",
+      statusFilter: "all",
+      areaFilter: "all",
+      semesterFilter: "all",
+      subAreaFilter: "all",
+      fixedFilter: "all",
+      memberFilter: "all",
+    });
   const [isWizardOpen, setIsWizardOpen] = useState(false); // Novo State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState("4");
+  const [myCurrentPage, setMyCurrentPage] = useState(1);
+  const [myItemsPerPage, setMyItemsPerPage] = useState("4");
   const [isReviewMode, setIsReviewMode] = useState(false);
 
   const { user } = useAuth();
@@ -145,13 +147,25 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   };
 
   const clearFilters = () => {
-    setSearchQuery("");
-    setStatusFilter("all");
-    setAreaFilter("all");
-    setSemesterFilter("all");
-    setSubAreaFilter("all");
-    setOwnFilter("all");
-    setFixedFilter("all");
+    setEnterpriseInitiativesFilter({
+      searchQuery: "",
+      statusFilter: "all",
+      areaFilter: "all",
+      semesterFilter: "all",
+      subAreaFilter: "all",
+      fixedFilter: "all",
+      memberFilter: "all",
+    });
+  };
+
+  const clearMyFilters = () => {
+    setMyInitiativesFilter({
+      searchQuery: "",
+      statusFilter: "all",
+      areaFilter: "all",
+      semesterFilter: "all",
+      subAreaFilter: "all",
+    });
   };
 
   const onAction = (action: string, data: FullInovationInitiative) => {
@@ -178,66 +192,53 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     }
   };
 
-  // --- Lógica de Filtragem (Memoizada) ---
-  const filteredInitiatives = useMemo(() => {
+  // --- Lógica de Filtragem Memorizdas das Minhas inicitivas
+
+  const myFilteredInitiatives = useMemo(() => {
     if (!initiatives) return [];
 
     return initiatives.filter((item) => {
-      // 0. Filtro de Aba (CRUCIAL PARA PAGINAÇÃO CORRETA)
-      // Se não filtrarmos aqui, o totalPages conta itens de outras abas.
       if (item.type !== activeTab) {
         return false;
       }
 
-      if (ownFilter === "Proprio") {
-      return item.authorId === user!.id;
-    }
+      if (item.authorId !== user?.id) return false; // Excluir minhas iniciativas
 
       // 1. Busca por texto (Título)
       if (
-        searchQuery &&
-        !item.title.toLowerCase().includes(searchQuery.toLowerCase())
+        myInitiativesFilter.searchQuery &&
+        !item.title.toLowerCase().includes(myInitiativesFilter.searchQuery.toLowerCase())
       ) {
         return false;
       }
 
-      // 2. Filtro de Fixação
-      if (fixedFilter !== "all") {
-        if (fixedFilter === "Sim" && !item.isFixed) return false;
-        if (fixedFilter === "Não" && item.isFixed) return false;
-      }
-
-      // 3. Filtro de Status (Com lógica de isReviewMode)
-      const hasPrivilegedAccess = isManaging || isReviewMode;
-
-      // Se NÃO for gerente/auditor e o filtro for "todos",
-      // mostra apenas o que é público (Aprovado/Rodando)
-      if (statusFilter === "all" && !hasPrivilegedAccess) {
-        if (item.status !== "APPROVED" && item.status !== "RUNNING") {
-          return false;
-        }
-      }
-
       // Se for gerente/auditor e filtro "todos", mostra tudo (incluindo PENDING/REJECTED).
       // Se tiver um filtro específico selecionado (ex: PENDING), respeita ele.
-      if (statusFilter !== "all" && item.status !== statusFilter) return false;
+      if (
+        myInitiativesFilter.statusFilter !== "all" &&
+        item.status !== myInitiativesFilter.statusFilter
+      )
+        return false;
 
       // 4. Filtro de Sub-Area
       if (
-        subAreaFilter !== "all" &&
-        !item.subAreas.some((a: any) => a === subAreaFilter)
+        myInitiativesFilter.subAreaFilter !== "all" &&
+        !item.subAreas.some((a: any) => a === myInitiativesFilter.subAreaFilter)
       )
         return false;
 
       // 5. Filtro de Área
       if (
-        areaFilter !== "all" &&
-        !item.areas.some((a: any) => a === areaFilter)
+        myInitiativesFilter.areaFilter !== "all" &&
+        !item.areas.some((a: any) => a === myInitiativesFilter.areaFilter)
       )
         return false;
 
       // 6. Filtro de Semestre
-      if (semesterFilter !== "all" && item.semester?.name !== semesterFilter)
+      if (
+        myInitiativesFilter.semesterFilter !== "all" &&
+        item.semester?.name !== myInitiativesFilter.semesterFilter
+      )
         return false;
 
       return true;
@@ -245,17 +246,97 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   }, [
     user,
     initiatives,
-    ownFilter,
     activeTab, // Adicionado às dependências
-    searchQuery,
-    fixedFilter,
-    statusFilter,
-    areaFilter,
-    subAreaFilter,
-    semesterFilter,
+    myInitiativesFilter,
+  ]);
+
+  // --- Lógica de Filtragem (Memorizada) ---
+  const filteredInitiatives = useMemo(() => {
+    if (!initiatives) return [];
+
+    return initiatives.filter((item) => {
+      if (item.type !== activeTab) {
+        return false;
+      }
+
+      if (item.authorId === user?.id) return false; // Excluir minhas iniciativas
+
+      // 1. Busca por texto (Título)
+      if (
+        enterpriseInitiativesFilter.searchQuery &&
+        !item.title.toLowerCase().includes(enterpriseInitiativesFilter.searchQuery.toLowerCase())
+      ) {
+        return false;
+      }
+
+      // 2. Filtro de Fixação
+      if (enterpriseInitiativesFilter.fixedFilter !== "all") {
+        if (enterpriseInitiativesFilter.fixedFilter === "Sim" && !item.isFixed)
+          return false;
+        if (enterpriseInitiativesFilter.fixedFilter === "Não" && item.isFixed)
+          return false;
+      }
+
+      // 3. Filtro de Status (Com lógica de isReviewMode)
+      const hasPrivilegedAccess = isManaging || isReviewMode;
+
+      // Se NÃO for gerente/auditor e o filtro for "todos",
+      // mostra apenas o que é público (Aprovado/Rodando)
+      if (
+        enterpriseInitiativesFilter.statusFilter === "all" &&
+        !hasPrivilegedAccess
+      ) {
+        if (item.status !== "APPROVED" && item.status !== "RUNNING") {
+          return false;
+        }
+      }
+
+      // Se for gerente/auditor e filtro "todos", mostra tudo (incluindo PENDING/REJECTED).
+      // Se tiver um filtro específico selecionado (ex: PENDING), respeita ele.
+      if (
+        enterpriseInitiativesFilter.statusFilter !== "all" &&
+        item.status !== enterpriseInitiativesFilter.statusFilter
+      )
+        return false;
+
+      // 4. Filtro de Sub-Area
+      if (
+        enterpriseInitiativesFilter.subAreaFilter !== "all" &&
+        !item.subAreas.some(
+          (a: any) => a === enterpriseInitiativesFilter.subAreaFilter
+        )
+      )
+        return false;
+
+      // 5. Filtro de Área
+      if (
+        enterpriseInitiativesFilter.areaFilter !== "all" &&
+        !item.areas.some((a: any) => a === enterpriseInitiativesFilter.areaFilter)
+      )
+        return false;
+
+      // 6. Filtro de Semestre
+      if (enterpriseInitiativesFilter.semesterFilter !== "all" && item.semester?.name !== enterpriseInitiativesFilter.semesterFilter)
+        return false;
+
+      return true;
+    });
+  }, [
+    user,
+    initiatives,
+    activeTab, // Adicionado às dependências
+    enterpriseInitiativesFilter,
     isManaging,
     isReviewMode, // Adicionado às dependências
   ]);
+
+  const myPaginatedData = useMemo(() => {
+    const startIndex = (myCurrentPage - 1) * Number(myItemsPerPage);
+    return myFilteredInitiatives.slice(
+      startIndex,
+      startIndex + Number(myItemsPerPage)
+    );
+  }, [myFilteredInitiatives, myCurrentPage, myItemsPerPage]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * Number(itemsPerPage);
@@ -265,8 +346,21 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     );
   }, [filteredInitiatives, currentPage, itemsPerPage]);
 
-  const totalPages =
-    Math.ceil(filteredInitiatives.length / Number(itemsPerPage)) || 1;
+  const totalPages = useMemo(() => {
+    const enterprise = Math.ceil(
+      filteredInitiatives.length / Number(itemsPerPage)
+    );
+    const user = Math.ceil(
+      myFilteredInitiatives.length / Number(myItemsPerPage)
+    );
+
+    return { enterprise, user };
+  }, [
+    filteredInitiatives,
+    myFilteredInitiatives,
+    itemsPerPage,
+    myItemsPerPage,
+  ]);
 
   const categories = [
     {
@@ -284,18 +378,29 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   ];
 
   const hasActiveFilters =
-    searchQuery !== "" ||
-    statusFilter !== "all" ||
-    areaFilter !== "all" ||
-    subAreaFilter !== "all" ||
-    fixedFilter !== "all" ||
-    semesterFilter !== "all" || 
-    ownFilter !== "all";
+    enterpriseInitiativesFilter.searchQuery !== "" ||
+    enterpriseInitiativesFilter.statusFilter !== "all" ||
+    enterpriseInitiativesFilter.areaFilter !== "all" ||
+    enterpriseInitiativesFilter.subAreaFilter !== "all" ||
+    enterpriseInitiativesFilter.fixedFilter !== "all" ||
+    enterpriseInitiativesFilter.semesterFilter !== "all" ||
+    enterpriseInitiativesFilter.memberFilter !== "all";
+  const hasMyActiveFilters =
+    myInitiativesFilter.searchQuery !== "" ||
+    myInitiativesFilter.statusFilter !== "all" ||
+    myInitiativesFilter.areaFilter !== "all" ||
+    myInitiativesFilter.subAreaFilter !== "all" ||
+    myInitiativesFilter.semesterFilter !== "all";
 
   // Extrair opções únicas para os selects baseado nos dados (opcional, ou use estáticos)
   const semesterOptions = Array.from(
     new Set(initiatives?.map((i) => i.semester?.name).filter(Boolean))
   );
+
+  const memberOptions = Array.from(
+    new Set(initiatives?.map((i) => i.author.name).filter(Boolean))
+  );
+
   // Adapte para pegar suas áreas reais do Enum ou do banco
   const areaOptions = AreaInovationInitiative
     ? Object.values(AreaInovationInitiative)
@@ -392,260 +497,154 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
 
           {categories.map((cat) => {
             const catData = paginatedData.filter((i) => i.type === cat.id);
+            const myCatData = myPaginatedData.filter((i) => i.type === cat.id);
             const info = CATEGORY_INFO[cat.id];
 
             return (
               <TabsContent key={cat.id} value={cat.id} className="mt-0">
                 <div className="bg-[#010d26] rounded-3xl border border-blue-900/20 p-8 min-h-[500px]">
-                  {/* Header da Aba com Toolbar de Filtros Inserida */}
-                  <div className="flex flex-col justify-center items-start gap-6 mb-8 border-b border-blue-900/20 pb-6">
-                    <div className="max-w-2xl">
-                      <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
-                        <cat.icon className="text-amber-400" />
-                        {cat.label}{" "}
-                        <span className="text-slate-500 text-lg font-normal">
-                          - {info.description}
-                        </span>
-                      </h2>
-                      <p className="text-slate-400 text-sm">
-                        {info.subDescription}
-                      </p>
-                    </div>
-
-                    {/* BARRA DE FILTROS */}
-                    <div className="flex flex-col mt-3 lg:flex-row gap-3 w-full">
-                      <div className="flex gap-2 w-full">
-                        <div className="relative w-full flex items-center 2xl:w-100">
-                          <Search
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                            size={14}
-                          />
-                          <Input
-                            placeholder="Pesquisar por nome..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-[#020817] border-blue-900/30 pl-9 text-slate-200 placeholder:text-slate-600 h-9 text-sm focus-visible:ring-amber-400/50"
-                          />
-                        </div>
-                        {hasActiveFilters && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={clearFilters}
-                            className="h-9 w-9 text-slate-400 hover:text-red-400 hover:bg-red-900/10"
-                          >
-                            <X size={16} />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap lg:flex-nowrap items-center justify-center gap-2">
-                        <div>
-                          <h4 className="text-white font-semibold">Status:</h4>
-                          <Select
-                            value={statusFilter}
-                            onValueChange={setStatusFilter}
-                          >
-                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <div className="flex items-center gap-2">
-                                <Filter size={10} className="text-amber-400" />
-                                <SelectValue placeholder="Status" />
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              <SelectItem value="all">Todos</SelectItem>
-                              {statusOptions.map((opt) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt === "PENDING"
-                                    ? "Pendente"
-                                    : opt === "APPROVED"
-                                    ? "Aprovado"
-                                    : opt === "RUNNING"
-                                    ? "Rodando"
-                                    : opt === "REJECTED"
-                                    ? "Rejeitado"
-                                    : opt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <h4 className="text-white font-semibold">Pessoal:</h4>
-                          <Select
-                            value={ownFilter}
-                            onValueChange={setOwnFilter}
-                          >
-                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <div className="flex items-center gap-2">
-                                <Filter size={10} className="text-amber-400" />
-                                <SelectValue placeholder="Status" />
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              <SelectItem value="all">Todos</SelectItem>
-                              <SelectItem value="Proprio">Próprio</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <h4 className="text-white font-semibold">Área:</h4>
-                          <Select
-                            value={areaFilter}
-                            onValueChange={setAreaFilter}
-                          >
-                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <SelectValue placeholder="Área" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              <SelectItem value="all">Todas</SelectItem>
-                              {subAreaOptions.map((opt) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <h4 className="text-white font-semibold">Subárea:</h4>
-                          <Select
-                            value={subAreaFilter}
-                            onValueChange={setSubAreaFilter}
-                          >
-                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <SelectValue placeholder="Área" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              <SelectItem value="all">Todas</SelectItem>
-                              {areaOptions.map((opt) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <h4 className="text-white font-semibold">
-                            Semestre:
-                          </h4>
-                          <Select
-                            value={semesterFilter}
-                            onValueChange={setSemesterFilter}
-                          >
-                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <SelectValue placeholder="Semestre" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              <SelectItem value="all">Todos</SelectItem>
-                              {semesterOptions.map((opt: any) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <h4 className="text-white font-semibold">Fixado:</h4>
-                          <Select
-                            value={fixedFilter}
-                            onValueChange={setFixedFilter}
-                          >
-                            <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <SelectValue placeholder="Semestre" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              <SelectItem value="all">Todos</SelectItem>
-                              {["Sim", "Não"].map((opt: any) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <h4 className="text-white font-semibold">Itens:</h4>
-                          <Select
-                            value={itemsPerPage}
-                            onValueChange={setItemsPerPage}
-                          >
-                            <SelectTrigger className="w-fit bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
-                              <SelectValue
-                                placeholder={`${itemsPerPage} itens por página`}
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#0b1629] border-blue-900/30 text-slate-200">
-                              {Array.from(
-                                { length: 5 },
-                                (_, i) => (i + 1) * 4
-                              ).map((num) => (
-                                <SelectItem
-                                  key={num}
-                                  value={String(num)}
-                                  className="hover:bg-[#0126fb]/50"
-                                >
-                                  {num} por página
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="max-w-2xl">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
+                      <cat.icon className="text-amber-400" />
+                      {cat.label}{" "}
+                      <span className="text-slate-500 text-lg font-normal">
+                        - {info.description}
+                      </span>
+                    </h2>
+                    <p className="text-slate-400 text-sm">
+                      {info.subDescription}
+                    </p>
                   </div>
 
-                  {/* Grid de Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {catData.map((initiative) => (
-                      <InnovationCard
-                        key={initiative.id}
-                        data={initiative}
-                        isManaging={isManaging}
-                        onAction={(action, data) => onAction(action, data)}
-                        userId={user!.id}
-                        onClick={() => handleCardClick(initiative)}
-                      />
-                    ))}
+                  {/* Minhas Iniciativas */}
+                  <div>
+                    {/* Header da Aba com Toolbar de Filtros Inserida */}
+                    <InovationFilters
+                      
+                      label={cat.label}
+                     
+                      areaOptions={areaOptions}
+                      subAreaOptions={subAreaOptions}
+                      semesterOptions={semesterOptions}
+                      itemsPerPage={myItemsPerPage}
+                      setItemsPerPage={setMyItemsPerPage}
+                      statusOptions={[
+                        "PENDING",
+                        "RUNNING",
+                        "APPROVED",
+                        "REJECTED",
+                      ]}
+                      type="my"
+                      initiativesFilter={myInitiativesFilter}
+                      setInitiativesFilter={setMyInitiativesFilter}
+                      hasActiveFilters={hasMyActiveFilters}
+                      clearFilters={clearMyFilters}
+                    />
 
-                    {/* Estado Vazio caso não tenha itens */}
-                    {catData.length === 0 && (
-                      <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-500">
-                        <LayoutGrid size={48} className="mb-4 opacity-20" />
-                        <p>
-                          {hasActiveFilters
-                            ? "Nenhuma iniciativa encontrada com esses filtros."
-                            : "Nenhuma iniciativa encontrada nesta categoria."}
-                        </p>
-                        {hasActiveFilters && (
-                          <Button
-                            variant="link"
-                            onClick={clearFilters}
-                            className="text-amber-400 mt-2 h-auto p-0"
-                          >
-                            Limpar filtros
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                    {/* Grid de Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+                      {myCatData.map((initiative) => (
+                        <InnovationCard
+                          key={initiative.id}
+                          data={initiative}
+                          isManaging={isManaging}
+                          onAction={(action, data) => onAction(action, data)}
+                          userId={user!.id}
+                          onClick={() => handleCardClick(initiative)}
+                        />
+                      ))}
+
+                      {/* Estado Vazio caso não tenha itens */}
+                      {myCatData.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-500">
+                          <LayoutGrid size={48} className="mb-4 opacity-20" />
+                          <p>
+                            {hasActiveFilters
+                              ? "Nenhuma iniciativa encontrada com esses filtros."
+                              : "Nenhuma iniciativa encontrada nesta categoria."}
+                          </p>
+                          {hasActiveFilters && (
+                            <Button
+                              variant="link"
+                              onClick={clearFilters}
+                              className="text-amber-400 mt-2 h-auto p-0"
+                            >
+                              Limpar filtros
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <Pagination
+                      currentPage={myCurrentPage}
+                      totalPages={totalPages.user}
+                      onPageChange={setMyCurrentPage}
+                    />
+                  </div>
+
+                  {/* Iniciativas da Casinha */}
+                  <div className="mt-8">
+                    <InovationFilters
+                      label={cat.label}
+                      areaOptions={areaOptions}
+                      subAreaOptions={subAreaOptions}
+                      semesterOptions={semesterOptions}
+                      itemsPerPage={itemsPerPage}
+                      setItemsPerPage={setItemsPerPage}
+                      statusOptions={statusOptions}
+                      type="all"
+                      initiativesFilter={enterpriseInitiativesFilter}
+                      setInitiativesFilter={setEnterpriseInitiativesFilter}
+                      hasActiveFilters={hasActiveFilters}
+                      clearFilters={clearFilters}
+                      memberOptions={memberOptions}
+                    />
+
+                    {/* Grid de Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {catData.map((initiative) => (
+                        <InnovationCard
+                          key={initiative.id}
+                          data={initiative}
+                          isManaging={isManaging}
+                          onAction={(action, data) => onAction(action, data)}
+                          userId={user!.id}
+                          onClick={() => handleCardClick(initiative)}
+                        />
+                      ))}
+
+                      {/* Estado Vazio caso não tenha itens */}
+                      {catData.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-500">
+                          <LayoutGrid size={48} className="mb-4 opacity-20" />
+                          <p>
+                            {hasActiveFilters
+                              ? "Nenhuma iniciativa encontrada com esses filtros."
+                              : "Nenhuma iniciativa encontrada nesta categoria."}
+                          </p>
+                          {hasActiveFilters && (
+                            <Button
+                              variant="link"
+                              onClick={clearFilters}
+                              className="text-amber-400 mt-2 h-auto p-0"
+                            >
+                              Limpar filtros
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages.enterprise}
+                      onPageChange={setCurrentPage}
+                    />
                   </div>
                 </div>
               </TabsContent>
             );
           })}
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
         </Tabs>
       </div>
 

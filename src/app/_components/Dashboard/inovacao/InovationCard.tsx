@@ -214,7 +214,7 @@ export const InnovationCard = ({
               key={tag+index}
               className="text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded-full font-bold"
             >
-              {tag}
+              {tag[0].toUpperCase() + tag.slice(1)}
             </span>
           ))}
         </div>
