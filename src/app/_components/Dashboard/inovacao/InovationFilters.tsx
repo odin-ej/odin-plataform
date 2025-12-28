@@ -107,7 +107,7 @@ const InovationFilters = ({
               onClick={clearFilters}
               className="h-9 w-9 text-slate-400 hover:text-red-400 hover:bg-red-900/10"
             >
-              Limpar Filtros <X size={16} />
+            <X size={16} />
             </Button>
           )}
         </div>
@@ -124,7 +124,7 @@ const InovationFilters = ({
                 }))
               }
             >
-              <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+              <SelectTrigger className="w-[130px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
                 <div className="flex items-center gap-2">
                   <Filter size={10} className="text-amber-400" />
                   <SelectValue placeholder="Status" />
@@ -153,7 +153,7 @@ const InovationFilters = ({
           <div>
             <h4 className="text-white font-semibold">Área:</h4>
             <Select
-              value={initiativesFilter.area}
+              value={initiativesFilter.areaFilter}
               onValueChange={(val) =>
                 setInitiativesFilter((prev: any) => ({
                   ...prev,
@@ -161,7 +161,7 @@ const InovationFilters = ({
                 }))
               }
             >
-              <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+              <SelectTrigger className="w-[130px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
                 <div className="flex items-center gap-2">
                   <Filter size={10} className="text-amber-400" />
                   <SelectValue placeholder="Área" />
@@ -181,7 +181,7 @@ const InovationFilters = ({
           <div>
             <h4 className="text-white font-semibold">Subárea:</h4>
             <Select
-              value={initiativesFilter.subArea}
+              value={initiativesFilter.subAreaFilter}
               onValueChange={(val) =>
                 setInitiativesFilter((prev: any) => ({
                   ...prev,
@@ -189,7 +189,7 @@ const InovationFilters = ({
                 }))
               }
             >
-              <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+              <SelectTrigger className="w-[130px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
                 <div className="flex items-center gap-2">
                   <Filter size={10} className="text-amber-400" />
                   <SelectValue placeholder="Subárea" />
@@ -209,7 +209,7 @@ const InovationFilters = ({
           <div>
             <h4 className="text-white font-semibold">Semestre:</h4>
             <Select
-              value={initiativesFilter.semester}
+              value={initiativesFilter.semesterFilter}
               onValueChange={(val) =>
                 setInitiativesFilter((prev: any) => ({
                   ...prev,
@@ -217,7 +217,7 @@ const InovationFilters = ({
                 }))
               }
             >
-              <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+              <SelectTrigger className="w-[130px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
                 <div className="flex items-center gap-2">
                   <Filter size={10} className="text-amber-400" />
                   <SelectValue placeholder="Semestre" />
@@ -247,7 +247,7 @@ const InovationFilters = ({
                   }))
                 }
               >
-                <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+                <SelectTrigger className="w-[130px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
                   <div className="flex items-center gap-2">
                     <Filter size={10} className="text-amber-400" />
                     <SelectValue placeholder="Todos" />
@@ -269,7 +269,7 @@ const InovationFilters = ({
             <div>
               <h4 className="text-white font-semibold">Sócios(as):</h4>
               <Select
-                value={initiativesFilter.member}
+                value={initiativesFilter.memberFilter}
                 onValueChange={(val) =>
                   setInitiativesFilter((prev: any) => ({
                     ...prev,
@@ -277,7 +277,7 @@ const InovationFilters = ({
                   }))
                 }
               >
-                <SelectTrigger className="w-[110px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
+                <SelectTrigger className="w-[130px] bg-[#020817] border-blue-900/30 text-slate-300 h-8 text-xs">
                   <div className="flex items-center gap-2">
                     <Filter size={10} className="text-amber-400" />
                     <SelectValue placeholder="Todos" />

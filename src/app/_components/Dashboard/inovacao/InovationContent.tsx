@@ -394,11 +394,11 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
 
   // Extrair opções únicas para os selects baseado nos dados (opcional, ou use estáticos)
   const semesterOptions = Array.from(
-    new Set(initiatives?.map((i) => i.semester?.name).filter(Boolean))
+    new Set(initiatives?.filter((i) => i.status === "APPROVED" || i.status === "RUNNING").map((i) => i.semester?.name).filter(Boolean))
   );
 
   const memberOptions = Array.from(
-    new Set(initiatives?.map((i) => i.author.name).filter(Boolean))
+    new Set(initiatives?.filter((i) => i.status === "APPROVED" || i.status === "RUNNING").map((i) => i.author.name).filter(Boolean))
   );
 
   // Adapte para pegar suas áreas reais do Enum ou do banco
