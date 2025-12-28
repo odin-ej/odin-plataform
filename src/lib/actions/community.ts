@@ -432,10 +432,12 @@ export async function sendMessage(
 
     const channel = await prisma.channel.findUnique({
       where: { id: contextId },
+      include: { members: true }
     });
 
     const conversation = await prisma.directConversation.findUnique({
-      where: {id: contextId}
+      where: {id: contextId},
+      include: {participants: true}
     })
 
     if(channel) notificationMessage = `Nova mensagem no canal: ${channel.name} que você participa.`
@@ -446,9 +448,11 @@ export async function sendMessage(
       type: NotificationType.NEW_MENTION,
       description: notificationMessage,
       link: contextType === "channel" ? `/comunidade/canais/${contextId}` : `/comunidade/conversas/${contextId}`,
+      ...(channel && {targetUsersIds: channel?.members.filter((member) => member.id !== authUser.id).map((member) => member.userId)}),
+      ...(conversation && {targetUsersIds: conversation?.participants.filter((participant) => participant.id !== authUser.id).map((participant) => participant.id)}),
     })
 
-    revalidatePath(`/comunidade/canal/${contextId}`);
+    revalidatePath(`/comunidade/canais/${contextId}`);
   } else {
     throw new Error("Tipo de contexto inválido.");
   }
