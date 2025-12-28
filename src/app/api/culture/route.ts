@@ -26,7 +26,7 @@ export async function GET() {
         include: {
           roles: true,
           currentRole: true,
-          roleHistory: { include: { role: true } },
+          roleHistory: { include: { role: true, managementReport: true, } },
           professionalInterests: { include: { category: true } },
         },
         orderBy: {

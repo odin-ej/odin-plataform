@@ -97,11 +97,11 @@ export async function PATCH(
       );
     }
 
-    const { roleId, isExMember, ...rest } = body;
+    const { currentRoleId, isExMember, ...rest } = body;
 
-    const bodyToValidate = roleId ? { ...rest, currentRoleId: roleId } : rest;
+    const bodyToValidate = currentRoleId ? { ...rest, currentRoleId: currentRoleId } : rest;
 
-    if(!userToUpdate.isExMember && !roleId) {
+    if(!userToUpdate.isExMember && !currentRoleId) {
       return NextResponse.json(
         { message: "Selecione um cargo atual." },
         { status: 400 }
@@ -200,6 +200,7 @@ export async function PATCH(
                 data: {
                   user: { connect: { id } },
                   role: { connect: { id: historyData.roleId } },
+                  managementReportLink: historyData.managementReportLink,
                   semester: historyData.semester,
                 },
               });

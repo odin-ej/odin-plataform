@@ -10,7 +10,7 @@ import {
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { FullUser } from "@/lib/server-utils";
 import { getInitials } from "@/lib/utils";
-import { LinkIcon } from "lucide-react";
+import { FileDown, LinkIcon } from "lucide-react";
 import { useMemo } from "react";
 
 interface MemberViewModalProps {
@@ -69,8 +69,8 @@ const MemberViewModal = ({
       ? user.instagram.startsWith("http")
         ? user.instagram
         : user.instagram.includes("@")
-          ? `https://instagram.com/${user.instagram.split("@")[1]}`
-          : `https://instagram.com/${user.instagram}`
+        ? `https://instagram.com/${user.instagram.split("@")[1]}`
+        : `https://instagram.com/${user.instagram}`
       : "";
 
   const formatedLinkedin =
@@ -78,18 +78,24 @@ const MemberViewModal = ({
       ? user.linkedin.startsWith("http")
         ? user.linkedin
         : user.linkedin.startsWith("www.")
-          ? `https://${user.linkedin}`
-          : user.linkedin.startsWith("linkedin.com")
-            ? `https://${user.linkedin}`
-            : `https://linkedin.com/in/${user.linkedin}`
+        ? `https://${user.linkedin}`
+        : user.linkedin.startsWith("linkedin.com")
+        ? `https://${user.linkedin}`
+        : `https://linkedin.com/in/${user.linkedin}`
       : "";
 
   const roleHistorys = user.roleHistory
     .filter((roleH) => roleH.role)
     .map((roleH) => ({
       name: roleH.role.name,
+      managementReportLink: roleH.managementReportLink || null,
+      managementReportUrl: roleH.managementReport
+        ? roleH.managementReport.url
+        : null,
       semester: roleH.semester,
     }));
+
+    console.log(user.roleHistory)
 
   // 2. Cria um conjunto (Set) com os nomes dos cargos que já estão no histórico.
   //    Isso serve para uma verificação rápida e eficiente.
@@ -104,6 +110,8 @@ const MemberViewModal = ({
     .map((role) => ({
       name: role.name,
       semester: "N/A",
+      managementReportLink: null,
+      managementReportUrl: null,
     }));
 
   // 4. Combina as duas listas: o histórico completo + os cargos atuais sem histórico.
@@ -132,7 +140,14 @@ const MemberViewModal = ({
             </Avatar>
 
             <h2 className="mt-4 text-2xl text-white font-bold">
-              {formatedName} {user.name === 'Yan Oliveira Ferreira' && (<> | <Badge className='text-red-400 bg-red-500/10'>Criador</Badge></>)}
+              {formatedName}{" "}
+              {user.name === "Yan Oliveira Ferreira" && (
+                <>
+                  {" "}
+                  |{" "}
+                  <Badge className="text-red-400 bg-red-500/10">Criador</Badge>
+                </>
+              )}
             </h2>
             <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
               {user.isExMember && (
@@ -297,10 +312,28 @@ const MemberViewModal = ({
               <div className="flex flex-wrap gap-2">
                 {rolesArray.map((role) => (
                   <Badge
-                    className="bg-[#0126fb]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full"
+                    className="bg-[#0126fb]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1"
                     key={role.name}
                   >
-                    {role.name} - {role.semester}
+                    {role.name} {" "} ({role.semester}){" "}
+                    {role.managementReportLink && (
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href={role.managementReportLink}
+                      >
+                        <LinkIcon className="w-4 h-4 text-[#f5b719]" />
+                      </a>
+                    )}{" "}
+                    {role.managementReportUrl && (
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href={role.managementReportUrl}
+                      >
+                        <FileDown className="w-4 h-4 text-[#f5b719]" />
+                      </a>
+                    )}
                   </Badge>
                 ))}
                 {user.otherRole && (

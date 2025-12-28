@@ -296,6 +296,7 @@ model UserRoleHistory {
   roleId             String
   role               Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
   managementReport   FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
+  managementReportLink String?
   managementReportId String?         @unique
 
   @@index([userId])

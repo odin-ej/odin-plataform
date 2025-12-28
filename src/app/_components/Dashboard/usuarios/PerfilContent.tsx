@@ -196,6 +196,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
           semester: history.semester,
           // PASSE O OBJETO DO RELATÓRIO PARA O FORMULÁRIO
           managementReport: history.managementReport,
+          managementReportLink: history.managementReportLink ?? '',
         })) ?? [],
       // Ex-Membro
       semesterLeaveEj: user.semesterLeaveEj ?? "",

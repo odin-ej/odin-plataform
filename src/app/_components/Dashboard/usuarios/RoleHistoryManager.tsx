@@ -28,7 +28,7 @@ const ReportUploader = ({ index }: { index: number }) => {
   const hasNewFile = currentReport instanceof File;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 min-w-1/2 lg:w-1/2">
       <FormLabel className="text-white text-sm font-medium">
         Relatório de Gestão (Opcional)
       </FormLabel>
@@ -109,6 +109,7 @@ const ReportUploader = ({ index }: { index: number }) => {
 };
 
 const RoleHistoryManager = ({ roles }: RoleHistoryManagerProps) => {
+
   const { control } = useFormContext();
 
   const { fields, append, remove } = useFieldArray({
@@ -154,7 +155,19 @@ const RoleHistoryManager = ({ roles }: RoleHistoryManagerProps) => {
               </div>
 
               {/* LÓGICA DE EXIBIÇÃO DO ARQUIVO */}
-              <ReportUploader index={index} />
+
+              <div className="flex-1 flex items-center justify-center gap-2 relative">
+    
+                  <ReportUploader index={index} />
+               
+                  <CustomInput
+                    field={`roleHistory.${index}.managementReportLink`}
+                    placeholder="Cole o link do relatório aqui"
+                    label="Link do Relatório de Gestão (Opcional)"
+                    control={control}
+                  />
+               
+              </div>
 
               <Button
                 type="button"

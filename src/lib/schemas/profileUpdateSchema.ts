@@ -31,6 +31,11 @@ const baseProfileSchema = z.object({
           .string()
           .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
         managementReport: z.any().optional().nullable(),
+        managementReportLink: z
+          .string()
+          .url({ message: "Por favor, insira uma URL válida." })
+          .optional()
+          .or(z.literal("")),
       })
     )
     .optional(),
