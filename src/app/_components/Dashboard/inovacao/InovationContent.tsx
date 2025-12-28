@@ -347,17 +347,19 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   }, [filteredInitiatives, currentPage, itemsPerPage]);
 
   const totalPages = useMemo(() => {
-    const enterprise = Math.ceil(
+    let enterprise = Math.ceil(
       filteredInitiatives.length / Number(itemsPerPage)
     );
-    const user = Math.ceil(
+    if(enterprise === 0) enterprise = 1;
+    let user = Math.ceil(
       myFilteredInitiatives.length / Number(myItemsPerPage)
     );
+    if(user === 0) user = 1;
 
     return { enterprise, user };
   }, [
-    filteredInitiatives,
-    myFilteredInitiatives,
+    filteredInitiatives.length,
+    myFilteredInitiatives.length,
     itemsPerPage,
     myItemsPerPage,
   ]);

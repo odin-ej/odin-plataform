@@ -123,7 +123,6 @@ export const InitiativeWizard = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  console.log(dataToEdit)
   // Adiciona o passo de auditoria se estiver no modo auditoria
   const activeSteps = isAuditMode
     ? [
