@@ -345,7 +345,7 @@ const onFormSubmit = (values: CreateInovationValues) => {
   );
 
   const inovationInitiativeOptions = data?.inovationInitiatives ?? [];
-  const memberOptions = data?.users.filter((u) => u.id !== process.env.ADMIN_ID) ?? [];
+  const memberOptions = data?.users.filter((u) => u.value !== process.env.ADMIN_ID) ?? [];
   const semesterOptions =
     data?.semesters.map((semester) => ({
       label: semester.name,
