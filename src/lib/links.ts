@@ -17,6 +17,7 @@ import {
   MessageSquare,
   TicketCheck,
   Users,
+  Trophy,
   UsersRound
 } from "lucide-react";
 import { JrPointIconWhite } from "@/app/_components/Global/JrPointsIcon";
@@ -95,6 +96,11 @@ export const generalLinks: Links[] = [
     name: 'Inovação',
     href: '/inovacao',
     icon: Lightbulb,
+  },
+  {
+    name: 'Reconhecimentos',
+    href: '/reconhecimentos',
+    icon: Trophy,
     exMemberCanAccess: false,
   }
 ];

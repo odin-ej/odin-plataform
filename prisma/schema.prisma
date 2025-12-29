@@ -163,6 +163,59 @@ enum ChannelMemberRole {
   MEMBER
 }
 
+enum AreaInovationInitiative {
+  Geral
+  Mercado
+  Projetos
+  Presidência
+  Pessoas
+  Operações
+}
+
+enum InovationInitiativeType {
+  Iniciativa
+  Evento
+  Nucleo
+  Pilula
+}
+
+enum SubAreaInovationInitiative {
+  Eventos
+  Performance
+  Marketing
+  Comercial
+  Inovação
+}
+
+enum InovationInitiativeStatus {
+  PENDING
+  APPROVED
+  RUNNING
+  REJECTED
+}
+
+enum InovationHorizonTypes {
+  Incremental
+  Arquitetural
+  Disruptiva
+  Modular
+}
+
+enum RecognitionType {
+  CULTURAL
+  PERFORMANCE
+  RESULTADO
+}
+
+enum RecognitionAreas {
+  GERAL
+  MERCADO
+  PRESIDÊNCIA
+  PROJETOS
+  PESSOAS
+  OPERACOES
+}
+
 // --- MODELS ---
 
 model RegistrationRequest {
@@ -209,34 +262,33 @@ model ProfessionalInterest {
 }
 
 model User {
-id                String    @id
-  name              String
-  email             String    @unique
-  emailEJ           String    @unique
-  imageUrl          String
-  password          String
-  birthDate         DateTime  @map("birth_date")
-  phone             String    @unique
-  semesterEntryEj   String    @map("semester_entry_ej")
-  semesterLeaveEj   String?   @map("semester_leave_ej")
-  linkedin          String?
-  instagram         String?
-  course            String?
-  about             String?   @db.Text
-  aboutEj           String?   @map("about_ej") @db.Text
-  isExMember        Boolean   @default(false) @map("ex_member")
-  alumniDreamer     Boolean   @default(false) @map("alumni_dreamer")
-  otherRole         String?
-  currentRoleId     String?
-  currentRole       Role?     @relation("UserCurrentRole", fields: [currentRoleId], references: [id])
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  dailyMessageCount Int       @default(0)
-  lastMessageDate   DateTime?
-  isWorking         Boolean?
-  workplace         String?
-  phraseStatus      String?
-
+  id                            String                       @id
+  name                          String
+  email                         String                       @unique
+  emailEJ                       String                       @unique
+  imageUrl                      String
+  password                      String
+  birthDate                     DateTime                     @map("birth_date")
+  phone                         String                       @unique
+  semesterEntryEj               String                       @map("semester_entry_ej")
+  semesterLeaveEj               String?                      @map("semester_leave_ej")
+  linkedin                      String?
+  instagram                     String?
+  course                        String?
+  about                         String?                      @db.Text
+  aboutEj                       String?                      @map("about_ej") @db.Text
+  isExMember                    Boolean                      @default(false) @map("ex_member")
+  alumniDreamer                 Boolean                      @default(false) @map("alumni_dreamer")
+  otherRole                     String?
+  currentRoleId                 String?
+  currentRole                   Role?                        @relation("UserCurrentRole", fields: [currentRoleId], references: [id])
+  createdAt                     DateTime                     @default(now())
+  updatedAt                     DateTime                     @updatedAt
+  dailyMessageCount             Int                          @default(0)
+  lastMessageDate               DateTime?
+  isWorking                     Boolean?
+  workplace                     String?
+  phraseStatus                  String?
   conversations                 Conversation[]
   roles                         Role[]                       @relation("UserRoles")
   points                        UserPoints?
@@ -270,34 +322,33 @@ id                String    @id
   oraculoFolders                OraculoFolder[]
   favoritedPosts                Post[]                       @relation("PostFavorites")
   reposts                       Post[]                       @relation("PostReposts")
-  inovationInitiatives           InovationInitiative[]       @relation("InovationAuthor")
-  reviewedInovationInitiatives   InovationInitiative[]       @relation("InovationReviewer")
-  initiativesAssociated          InovationInitiative[]       @relation("InitiativesMembers")
-  // Relações com Canais
-  channelMemberships ChannelMember[] // Em quais canais o usuário está
-  
-  // Relações com Mensagens Diretas
-  directConversations    DirectConversation[] @relation("DirectConversationParticipants")
-  sentDirectMessages     DirectMessage[]
-  channelMessages        ChannelMessage[]
-  messageReactions       MessageReaction[]
-  ownCustomEmojis        CustomEmoji[]
-  ownDirectConversations DirectConversation[]
-  Channel                Channel[]
+  inovationInitiatives          InovationInitiative[]        @relation("InovationAuthor")
+  reviewedInovationInitiatives  InovationInitiative[]        @relation("InovationReviewer")
+  initiativesAssociated         InovationInitiative[]        @relation("InitiativesMembers")
+  channelMemberships            ChannelMember[]
+  directConversations           DirectConversation[]         @relation("DirectConversationParticipants")
+  sentDirectMessages            DirectMessage[]
+  channelMessages               ChannelMessage[]
+  messageReactions              MessageReaction[]
+  ownCustomEmojis               CustomEmoji[]
+  ownDirectConversations        DirectConversation[]
+  Channel                       Channel[]
+  recognitionsReceived          Recognition[]                @relation("UserRecognitions")
+  recognitionsGiven             Recognition[]                @relation("RecognitionGiver")
 }
 
 model UserRoleHistory {
-  id                 String          @id @default(uuid())
-  semester           String
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  userId             String
-  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roleId             String
-  role               Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  managementReport   FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
+  id                   String          @id @default(uuid())
+  semester             String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  userId               String
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId               String
+  role                 Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  managementReport     FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
   managementReportLink String?
-  managementReportId String?         @unique
+  managementReportId   String?         @unique
 
   @@index([userId])
   @@index([roleId])
@@ -349,10 +400,10 @@ model Semester {
   createdAt DateTime  @default(now())
 
   //Iniciativas inovadores do semestre
-  inovationInitiatives  InovationInitiative[]
+  inovationInitiatives InovationInitiative[]
   // Relações com os placares daquele semestre
-  userScores       UserSemesterScore[]
-  enterpriseScores EnterpriseSemesterScore[]
+  userScores           UserSemesterScore[]
+  enterpriseScores     EnterpriseSemesterScore[]
 }
 
 // NOVO MODELO: Guarda o histórico de pontos da empresa
@@ -464,13 +515,13 @@ model TagTemplate {
   actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
 
   // Relação com a versão a que pertence
-  jrPointsVersionId String?
-  jrPointsVersion   JRPointsVersion?       @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
-  solicitations     JRPointsSolicitation[] @relation("SolicitationTagTemplates")
+  jrPointsVersionId  String?
+  jrPointsVersion    JRPointsVersion?       @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  solicitations      JRPointsSolicitation[] @relation("SolicitationTagTemplates")
   solicitationsLinks SolicitationTag[]
   // Relação com todas as instâncias de tags criadas a partir deste molde
-  tagInstances      Tag[]
-  areas             TagAreas[]             @default([GERAL])
+  tagInstances       Tag[]
+  areas              TagAreas[]             @default([GERAL])
 }
 
 model Tag {
@@ -532,6 +583,8 @@ model FileAttachment {
   directMessage          DirectMessage?        @relation(fields: [directMessageId], references: [id])
   directMessageId        String?
   userRoleHistory        UserRoleHistory?
+  recognitionId          String?
+  recognition            Recognition?           @relation(fields: [recognitionId], references: [id], onDelete: Cascade)
 
   channelMessages ChannelMessage[]
 }
@@ -551,7 +604,7 @@ model JRPointsSolicitation {
   user                      User                       @relation("SolicitationUser", fields: [userId], references: [id], onDelete: Cascade)
   membersSelected           User[]                     @relation("SolicitationMembers")
   tags                      TagTemplate[]              @relation("SolicitationTagTemplates")
-  solicitationTags SolicitationTag[]
+  solicitationTags          SolicitationTag[]
   attachments               FileAttachment[]
   userSemesterScore         UserSemesterScore?         @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
   userSemesterScoreId       String?
@@ -690,6 +743,9 @@ model Value {
   updatedAt       DateTime       @updatedAt
   estrategyPlanId Int?
   estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
+
+  monthlyValueSchedules MonthlyValueSchedule[]
+  recognitions          Recognition[]
 }
 
 model Squad {
@@ -1068,42 +1124,44 @@ model DirectMessage {
 }
 
 model InovationInitiative {
-  id       String @id @default(uuid())
-  type     InovationInitiativeType 
-  imageUrl  String?
-  status     InovationInitiativeStatus @default(PENDING)
-  title      String //Plataforma Interna de Inovação
-  description String @db.Text // Plataforma com varias abas uteis
-  isFixed     Boolean  @default(false)
-  shortDescription String @db.Text
-  inovationHorizon  InovationHorizonTypes?
-  semesterId String
-  semester   Semester @relation(fields: [semesterId], references:[id], onDelete: Cascade)
-  tags       String[] //Tecnologia, Inovação
-  links      Link[] 
-  dateImplemented String?
-  dateColected String? 
-  dateChecked  String?
-  isRunning   Boolean  @default(false)
-  reviewNotes String? @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String                    @id @default(uuid())
+  type             InovationInitiativeType
+  imageUrl         String?
+  status           InovationInitiativeStatus @default(PENDING)
+  title            String //Plataforma Interna de Inovação
+  description      String                    @db.Text // Plataforma com varias abas uteis
+  isFixed          Boolean                   @default(false)
+  shortDescription String                    @db.Text
+  inovationHorizon InovationHorizonTypes?
+  semesterId       String
+  semester         Semester                  @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  tags             String[] //Tecnologia, Inovação
+  links            Link[]
+  dateImplemented  String?
+  dateColected     String?
+  dateChecked      String?
+  isRunning        Boolean                   @default(false)
+  reviewNotes      String?                   @db.Text
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
 
-  /*Relations*/
-  authorId   String
-  author     User   @relation("InovationAuthor",fields: [authorId], references: [id], onDelete: Cascade)
-  reviewerId String?
-  reviewer   User?   @relation("InovationReviewer",fields: [reviewerId], references: [id], onDelete: Cascade)
-  relatedFrom InitiativeRelation[] @relation("InitiativeFrom")
-  relatedTo   InitiativeRelation[] @relation("InitiativeTo")
+  /**
+   * Relations
+   */
+  authorId    String
+  author      User                         @relation("InovationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  reviewerId  String?
+  reviewer    User?                        @relation("InovationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  relatedFrom InitiativeRelation[]         @relation("InitiativeFrom")
+  relatedTo   InitiativeRelation[]         @relation("InitiativeTo")
   areas       AreaInovationInitiative[]
   subAreas    SubAreaInovationInitiative[]
-  members     User[] @relation("InitiativesMembers")
-  sentido     String?  @db.Text
-  organizacao String?  @db.Text
-  cultura     String?  @db.Text
-  influencia  String?  @db.Text
-  operacao    String?  @db.Text
+  members     User[]                       @relation("InitiativesMembers")
+  sentido     String?                      @db.Text
+  organizacao String?                      @db.Text
+  cultura     String?                      @db.Text
+  influencia  String?                      @db.Text
+  operacao    String?                      @db.Text
 }
 
 model Link {
@@ -1118,52 +1176,62 @@ model Link {
 }
 
 model InitiativeRelation {
-  id          String @id @default(uuid())
+  id String @id @default(uuid())
 
-  fromId      String
-  from        InovationInitiative @relation("InitiativeFrom", fields: [fromId], references: [id], onDelete: Cascade) 
+  fromId String
+  from   InovationInitiative @relation("InitiativeFrom", fields: [fromId], references: [id], onDelete: Cascade)
 
-  toId        String
-  to          InovationInitiative @relation("InitiativeTo", fields: [toId], references: [id], onDelete: Cascade) 
+  toId String
+  to   InovationInitiative @relation("InitiativeTo", fields: [toId], references: [id], onDelete: Cascade)
 
   @@unique([fromId, toId])
 }
 
+model MonthlyValueSchedule {
+  id           String        @id @default(uuid())
+  month        Int // 1 a 12
+  year         Int // 2024, 2025...
+  // Relação com o seu model Value existente
+  valueId      String
+  value        Value         @relation(fields: [valueId], references: [id])
+  // Reconhecimentos vinculados a este mês (foco no Casinha)
+  recognitions Recognition[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-enum AreaInovationInitiative {
-  Geral
-  Mercado
-  Projetos
-  Presidência
-  Pessoas
-  Operações
+  @@unique([month, year]) // Garante apenas um valor por mês/ano
 }
 
-enum InovationInitiativeType {
-  Iniciativa
-  Evento
-  Nucleo
-  Pilula
+model RecognitionModel {
+  id           String             @id @default(uuid())
+  title        String // Ex: "Semana 1", "Casinha Especial"
+  description  String?            @db.Text
+  isActive    Boolean  @default(true)
+  type         RecognitionType
+  areas        RecognitionAreas[] @default([GERAL])
+  recognitions Recognition[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
-enum SubAreaInovationInitiative {
-  Eventos
-  Performance
-  Marketing
-  Comercial
-  Inovação
-}
-
-enum InovationInitiativeStatus {
-  PENDING
-  APPROVED
-  RUNNING
-  REJECTED
-}
-
-enum InovationHorizonTypes {
-  Incremental 
-  Arquitetural
-  Disruptiva
-  Modular
+model Recognition {
+  id                 String                @id @default(uuid())
+  date               String
+  description        String?               @db.Text
+  modelTitleSnapshot String   
+  recognitionModelId String
+  recognitionModel   RecognitionModel @relation(fields: [recognitionModelId], references: [id], onDelete: Restrict)
+  // Vincula ao valor do mês (opcional, pois AGO/Guinness podem não ter um "valor do mês")
+  scheduleId         String?
+  schedule           MonthlyValueSchedule? @relation(fields: [scheduleId], references: [id])
+  // Membros reconhecidos (N:N - Pode ser um ou vários membros)
+  winners            User[]                @relation("UserRecognitions")
+  authorId           String
+  author             User                  @relation("RecognitionGiver", fields: [authorId], references: [id], onDelete: Cascade)
+  // Fotos do momento
+  media              FileAttachment[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  value              Value?                @relation(fields: [valueId], references: [id])
+  valueId            String?
 }
