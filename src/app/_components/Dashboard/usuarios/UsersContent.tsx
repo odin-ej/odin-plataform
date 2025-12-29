@@ -15,12 +15,11 @@ import CustomTable, { ColumnDef } from "../../Global/Custom/CustomTable";
 import CustomModal, { FieldConfig } from "../../Global/Custom/CustomModal";
 import {
   MemberWithFullRoles,
-  RegistrationRequestWithRoles,
   UniversalMember,
   userProfileSchema,
   UserProfileValues,
 } from "@/lib/schemas/memberFormSchema";
-import { formatDateForInput, getModalFields } from "@/lib/utils";
+import { formatDateForInput, getModalFields, getUserStatus } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ModalConfirm from "../../Global/ModalConfirm";
 
@@ -232,59 +231,89 @@ const UsersContent = ({
         }))
         .filter((role) => role.label !== "Outro");
 
-  const memberColumns: ColumnDef<UniversalMember>[] = [
-    {
-      accessorKey: "name",
-      header: "Nome",
-      cell: (row) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage
-              src={row.imageUrl}
-              alt={row.name}
-              className="object-cover"
-            />
-            <AvatarFallback className="bg-[#0126fb] text-xs">
-              {row.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium">{row.name}</span>
-        </div>
-      ),
+const memberColumns: ColumnDef<UniversalMember>[] = [
+  {
+    accessorKey: "name",
+    header: "Nome",
+    cell: (row) => (
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8">
+          <AvatarImage
+            src={row.imageUrl}
+            alt={row.name}
+            className="object-cover"
+          />
+          <AvatarFallback className="bg-[#0126fb] text-xs">
+            {row.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
+          </AvatarFallback>
+        </Avatar>
+        <span className="font-medium">{row.name}</span>
+      </div>
+    ),
+  },
+  { accessorKey: "email", header: "E-mail" },
+  { accessorKey: "emailEJ", header: "E-mail EJ" },
+  { accessorKey: "phone", header: "Telefone" },
+  {
+    accessorKey: "roles",
+    header: "Cargo",
+    cell: (row) => {
+      if ("currentRole" in row && row.currentRole) {
+        return row.currentRole.name;
+      }
+      if (row.roles && row.roles.length > 0) {
+        return row.roles[row.roles.length - 1].name;
+      }
+      if ((row as any).roleId) {
+        return (
+          availableRoles.find(
+            (role) => role.id === (row as any).roleId
+          )?.name || "Outro"
+        );
+      }
+      return "Sem cargo";
     },
-    { accessorKey: "email", header: "E-mail" },
-    { accessorKey: "emailEJ", header: "E-mail EJ" },
-    { accessorKey: "phone", header: "Telefone" },
-    {
-      accessorKey: "roles",
-      header: "Cargo",
-      cell: (row) => {
-        if ("currentRole" in row && row.currentRole) {
-          // Se existir, exibe o nome do cargo principal
-          return row.currentRole.name;
-        }
+  },
+  // --- COLUNA CONDICIONAL CORRIGIDA ---
+  ...(type === "users"
+    ? [
+        {
+          // Forçamos o tipo do accessorKey para que o TS não reclame da união
+          accessorKey: "lastActiveAt" as keyof UniversalMember,
+          header: "Status / Último Acesso",
+          cell: (row: UniversalMember) => {
+            // Verificação de segurança: RegistrationRequests não possuem lastActiveAt
+            const lastActive = (row as any).lastActiveAt;
+            
+            if (!lastActive) return <span className="text-gray-600 italic text-xs">Nunca acessou</span>;
 
-        // 2. Se não existir (caso de um RegistrationRequest), usa a lógica antiga como fallback
-        if (row.roles.length > 0) {
-          return row.roles[row.roles.length - 1].name;
-        }
+            const { isOnline, label } = getUserStatus(lastActive);
 
-        if ((row as RegistrationRequestWithRoles).roleId) {
-          return (
-            availableRoles.find(
-              (role) => role.id === (row as RegistrationRequestWithRoles).roleId
-            )?.name || "Outro"
-          );
-        }
-
-        // 3. Fallback final se não houver nenhum cargo
-        return "Sem cargo";
-      },
-    },
-  ];
+            return (
+              <div className="flex items-center gap-2">
+                {isOnline ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="text-green-500 font-bold text-xs uppercase tracking-wider">Online</span>
+                  </div>
+                ) : (
+                  <span className="text-gray-500 text-xs font-medium">
+                    {label}
+                  </span>
+                )}
+              </div>
+            );
+          },
+        },
+      ]
+    : []),
+];
 
   const exMemberColumns: ColumnDef<UniversalMember>[] = [
     {
@@ -313,6 +342,41 @@ const UsersContent = ({
     { accessorKey: "emailEJ", header: "E-mail EJ" },
     { accessorKey: "phone", header: "Telefone" },
     { accessorKey: "semesterLeaveEj", header: "Semestre de saída" },
+      ...(type === "users"
+    ? [
+        {
+          // Forçamos o tipo do accessorKey para que o TS não reclame da união
+          accessorKey: "lastActiveAt" as keyof UniversalMember,
+          header: "Status / Último Acesso",
+          cell: (row: UniversalMember) => {
+            // Verificação de segurança: RegistrationRequests não possuem lastActiveAt
+            const lastActive = (row as any).lastActiveAt;
+            
+            if (!lastActive) return <span className="text-gray-600 italic text-xs">Nunca acessou</span>;
+
+            const { isOnline, label } = getUserStatus(lastActive);
+
+            return (
+              <div className="flex items-center gap-2">
+                {isOnline ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="text-green-500 font-bold text-xs uppercase tracking-wider">Online</span>
+                  </div>
+                ) : (
+                  <span className="text-gray-500 text-xs font-medium">
+                    {label}
+                  </span>
+                )}
+              </div>
+            );
+          },
+        },
+      ]
+    : []),
   ];
 
   const selectedRoles = form.watch("roles") || [];

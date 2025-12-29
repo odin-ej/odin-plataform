@@ -335,6 +335,7 @@ model User {
   Channel                       Channel[]
   recognitionsReceived          Recognition[]                @relation("UserRecognitions")
   recognitionsGiven             Recognition[]                @relation("RecognitionGiver")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
 }
 
 model UserRoleHistory {

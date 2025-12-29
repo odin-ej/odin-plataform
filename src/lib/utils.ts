@@ -8,6 +8,8 @@ import { Path } from "react-hook-form";
 import { ROUTE_PERMISSIONS } from "./permissions";
 import * as XLSX from "xlsx";
 import { FullUser } from "./server-utils";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -547,3 +549,21 @@ export function getLabelForRoleArea(area: AreaRoles): string {
   return labels[area] || area;
 }
 
+export function getUserStatus(lastActiveAt: Date | null) {
+  if (!lastActiveAt) return { isOnline: false, label: "Nunca acessou" };
+
+  const activeThresholdInMinutes = 5;
+  const now = new Date();
+  const diffInMinutes = (now.getTime() - new Date(lastActiveAt).getTime()) / (1000 * 60);
+
+  if (diffInMinutes <= activeThresholdInMinutes) {
+    return { isOnline: true, label: "Online" };
+  }
+
+  // Se passou de 5 minutos, formatamos o "Visto por último"
+  // Você pode usar a lib 'date-fns' para formatar (ex: "há 2 horas")
+  return { 
+    isOnline: false, 
+    label: `${formatDistanceToNow(new Date(lastActiveAt), { addSuffix: true, locale: ptBR })}` 
+  };
+}

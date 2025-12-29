@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CulturePageProps } from "@/app/(dashboard)/cultural/page";
+import { getUserStatus } from "../../../../lib/utils";
 
 interface CulturalContentProps {
   initialData: CulturePageProps;
@@ -251,10 +252,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
         </div>
       ),
     },
-    {
-      accessorKey: "email",
-      header: "Email",
-    },
+
     {
       accessorKey: "currentRole",
       header: "Cargo Atual",
@@ -269,6 +267,15 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       accessorKey: "semesterEntryEj",
       header: "Semestre de Entrada",
       cell: (row) => <span className="font-medium">{row.semesterEntryEj}</span>,
+    },
+    {
+      accessorKey: "lastActiveAt",
+      header: "Último Acesso",
+      cell: (row) => <span className="font-medium">{getUserStatus(row.lastActiveAt).label === 'Online' ? (
+        <span className="text-green-500 flex items-center gap-1"><span className='w-2 h-2 bg-green-500 rounded-full'></span> Online</span>
+      ) : (
+        <span className='text-gray-500'>{getUserStatus(row.lastActiveAt).label[0].toUpperCase() + getUserStatus(row.lastActiveAt).label.slice(1)}</span>
+      )}</span>,
     },
   ];
 

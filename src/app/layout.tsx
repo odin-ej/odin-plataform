@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Providers from "./_components/Global/Providers";
 import "./globals.css";
+import { UserHeartbeat } from "./_components/Global/UserHeartbeat";
+import { getAuthenticatedUser } from "@/lib/server-utils";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -71,15 +73,19 @@ export const metadata: Metadata = {
     email: "plataforma@empresajr.org",
   },
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const authUser = await getAuthenticatedUser()
+
   return (
     <html lang="pt-BR">
       <body suppressHydrationWarning className={poppins.className}>
         <Providers>{children}</Providers>
+        {authUser && <UserHeartbeat userId={authUser.id} />}
       </body>
     </html>
   );
