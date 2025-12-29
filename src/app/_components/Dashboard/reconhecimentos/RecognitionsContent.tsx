@@ -27,7 +27,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import CreateScheduleModal from "./CreateScheduleModal";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import AssignRecognitionModal from "./AssignRecognitionModal";
 import CreateModelModal from "./CreateModelModal";
