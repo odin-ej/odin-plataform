@@ -17,6 +17,7 @@ export async function getYearlyValueSchedule(year: number) {
           winners: true,
           media: true,
           recognitionModel: true,
+          author: true,
         },
       },
     },
@@ -216,7 +217,6 @@ export async function assignRecognitionToUser(formData: FormData) {
   const date = formData.get("date") as string;
   const description = formData.get("description") as string;
   const scheduleId = formData.get("scheduleId") as string;
-  const authorId = formData.get("authorId") as string;
   const mediaUrl = formData.get("mediaUrl") as string;
 
   try {
@@ -244,7 +244,7 @@ export async function assignRecognitionToUser(formData: FormData) {
           modelTitleSnapshot: model.title, // Snapshot de segurança
           recognitionModelId: model.id,
           scheduleId: scheduleId,
-          authorId: authorId,
+          authorId: authUser.id,
           winners: {
             connect: { id: userId },
           },

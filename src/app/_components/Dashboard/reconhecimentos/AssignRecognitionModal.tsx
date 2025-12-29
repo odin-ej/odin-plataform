@@ -115,6 +115,8 @@ const AssignRecognitionModal = ({
       await assignRecognitionToUser(formData);
       queryClient.invalidateQueries({ queryKey: ["yearlySchedule", new Date().getFullYear()] });
       toast.success("Casinha atribuída!");
+      form.reset();
+      setUploadProgress(0);
       setIsOpen(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
