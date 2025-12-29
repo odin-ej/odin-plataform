@@ -550,7 +550,7 @@ export function getLabelForRoleArea(area: AreaRoles): string {
 }
 
 export function getUserStatus(lastActiveAt: Date | null) {
-  if (!lastActiveAt) return { isOnline: false, label: "Nunca acessou" };
+  if (!lastActiveAt) return { isOnline: false, label: "Não acessou recententemente" };
 
   const activeThresholdInMinutes = 5;
   const now = new Date();
