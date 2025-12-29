@@ -52,6 +52,7 @@ const ManageModelsList = ({ models }: { models: RecognitionModel[] }) => {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["allRecognitionModels"] });
         toast.success("Modelo deletado com sucesso!");
+        setItemToDelete(null);
       },
       onError: () => {
         toast.error("Erro ao deletar modelo");
