@@ -19,7 +19,7 @@ import { FullUser } from "@/lib/server-utils"; // Use seu tipo FullUser
 import { Badge } from "@/components/ui/badge";
 import { getInitials } from "@/lib/utils";
 import UserPhraseStatus from "./UserPhraseStatus";
-import { LinkIcon } from "lucide-react";
+import { FileDown, LinkIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
@@ -130,9 +130,13 @@ const UserSettingsModal = ({
     .filter((roleH) => roleH.role)
     .map((roleH) => ({
       name: roleH.role.name,
+      managementReportLink: roleH.managementReportLink || null,
+      managementReportUrl: roleH.managementReport
+        ? roleH.managementReport.url
+        : null,
       semester: roleH.semester,
-      link: roleH.managementReport?.url,
     }));
+
 
   // 2. Cria um conjunto (Set) com os nomes dos cargos que já estão no histórico.
   //    Isso serve para uma verificação rápida e eficiente.
@@ -147,7 +151,8 @@ const UserSettingsModal = ({
     .map((role) => ({
       name: role.name,
       semester: "N/A",
-      link: null,
+      managementReportLink: null,
+      managementReportUrl: null,
     }));
 
   // 4. Combina as duas listas: o histórico completo + os cargos atuais sem histórico.
@@ -362,21 +367,31 @@ const UserSettingsModal = ({
             </h4>
             <div className="flex flex-wrap gap-2">
               {rolesArray.map((role) => (
-                <Badge
-                  className="bg-[#0126fb]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full"
-                  key={role.name}
-                >
-                  {role.link ? (
-                    <Link
-                      href={role.link}
-                      target="_blank"
-                      className="flex items-center gap-1 hover:underline"
-                    >
-                      {`${role.name} - ${role.semester}`} <LinkIcon className="w-3 h-3" />
-                    </Link>
-                  ) : (<span>{`${role.name} - ${role.semester}`}</span>)}
-                </Badge>
-              ))}
+                  <Badge
+                    className="bg-[#0126fb]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1"
+                    key={role.name}
+                  >
+                    {role.name} {" "} ({role.semester}){" "}
+                    {role.managementReportLink && (
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href={role.managementReportLink}
+                      >
+                        <LinkIcon className="w-4 h-4 text-[#f5b719]" />
+                      </a>
+                    )}{" "}
+                    {role.managementReportUrl && (
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href={role.managementReportUrl}
+                      >
+                        <FileDown className="w-4 h-4 text-[#f5b719]" />
+                      </a>
+                    )}
+                  </Badge>
+                ))}
               {user.otherRole && (
                 <span className="bg-[#f5b719]/30 text-white text-xs font-medium px-2.5 py-1 rounded-full">
                   {formatOtherRole(user.otherRole)}

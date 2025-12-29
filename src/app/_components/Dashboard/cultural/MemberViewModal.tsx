@@ -95,7 +95,6 @@ const MemberViewModal = ({
       semester: roleH.semester,
     }));
 
-    console.log(user.roleHistory)
 
   // 2. Cria um conjunto (Set) com os nomes dos cargos que já estão no histórico.
   //    Isso serve para uma verificação rápida e eficiente.
