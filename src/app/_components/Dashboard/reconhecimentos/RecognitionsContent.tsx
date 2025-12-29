@@ -34,6 +34,7 @@ import CreateModelModal from "./CreateModelModal";
 import ManageModelsList from "./ManageModelsList";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { toast } from "sonner";
+import { AreaRoles } from "@prisma/client";
 
 interface RecognitionsContentProps {
   initialData: any;
@@ -50,7 +51,10 @@ const RecognitionsContent = ({ initialData }: RecognitionsContentProps) => {
 
   const { user } = useAuth();
 
-  const isDirector = checkUserPermission(user!, DIRECTORS_ONLY);
+  const isDirector = checkUserPermission(user!, {
+    allowedRoles: ["Gerente de Conexões", 'Assessor(a) de Conexões'],
+    allowedAreas: [AreaRoles.DIRETORIA]
+  });
 
   const { data: schedule } = useQuery({
     queryKey: ["yearlySchedule", currentYear],
