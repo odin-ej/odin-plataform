@@ -25,12 +25,17 @@ const baseMemberSchema = z.object({
     ),
   confPassword: z.string().min(8, "Confirmação obrigatória"),
   phone: z.string().min(10, "Telefone inválido"),
-  semesterEntryEj: z.string().regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)").min(1, "Campo obrigatório"),
+  semesterEntryEj: z
+    .string()
+    .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)")
+    .min(1, "Campo obrigatório"),
   instagram: z.string().optional(),
   linkedin: z.string().optional(),
   about: z.string().min(3, "Conte algo sobre você").optional(),
   course: z.string().min(3, "Conte algo sobre você"),
-  roleId: z.string({ required_error: "Por favor, selecione um cargo." }).min(1, "Por favor, selecione um cargo."),
+  roleId: z
+    .string({ required_error: "Por favor, selecione um cargo." })
+    .min(1, "Por favor, selecione um cargo."),
   roles: z.array(z.string()).optional(),
   image: z
     .custom<File>((file) => file instanceof File && file.size > 0, {
@@ -67,11 +72,7 @@ export const userProfileSchema = baseMemberSchema
     password: z.string().optional(),
     confPassword: z.string().optional(),
     instagram: z.string().optional(),
-    linkedin: z
-      .string()
-      .url({ message: "Por favor, insira uma URL válida." })
-      .optional()
-      .or(z.literal("")),
+    linkedin: z.string().optional().or(z.literal("")),
     image: z
       .any()
       .optional()
@@ -96,9 +97,14 @@ export const userProfileSchema = baseMemberSchema
       .array(z.string())
       .nonempty("Selecione pelo menos um cargo")
       .optional(),
-    roleId: z.string().optional(),
+    currentRoleId: z.string().optional(),
     otherRole: z.string().optional(),
-    semesterLeaveEj: z.string().regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)").optional(),
+    semesterLeaveEj: z
+      .string()
+      .optional()
+      .refine((val) => !val || /^\d{4}\.[12]$/.test(val), {
+        message: "Use o formato AAAA.S (ex: 2025.1)",
+      }),
     isExMember: z.enum(["Sim", "Não"]).optional(),
     alumniDreamer: z.enum(["Sim", "Não"]).optional(),
     isWorking: z.enum(["Sim", "Não"]).optional(),

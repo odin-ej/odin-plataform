@@ -18,7 +18,6 @@ const baseProfileSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal("")),
   linkedin: z
     .string()
-    .url({ message: "Por favor, insira uma URL válida." })
     .optional()
     .or(z.literal("")),
   instagram: z.string().optional(),
@@ -47,6 +46,7 @@ const baseProfileSchema = z.object({
 // Schema para Membros Ativos
 export const memberUpdateSchema = baseProfileSchema.extend({
   currentRoleId: z.string().min(1, "O cargo atual é obrigatório"),
+  roles: z.array(z.string()).min(1, "Selecione pelo menos um cargo ocupado."),
 });
 
 // Schema para Ex-Membros

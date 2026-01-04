@@ -136,7 +136,7 @@ const UsersContent = ({
     onSuccess: (_, variables) => {
       toast.success(`Usuário ${variables.name} atualizado!`);
       setIsModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["pendingRegistrations"] });
+      queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) =>
       toast.error("Erro ao atualizar", {
@@ -231,89 +231,95 @@ const UsersContent = ({
         }))
         .filter((role) => role.label !== "Outro");
 
-const memberColumns: ColumnDef<UniversalMember>[] = [
-  {
-    accessorKey: "name",
-    header: "Nome",
-    cell: (row) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="h-8 w-8">
-          <AvatarImage
-            src={row.imageUrl}
-            alt={row.name}
-            className="object-cover"
-          />
-          <AvatarFallback className="bg-[#0126fb] text-xs">
-            {row.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-          </AvatarFallback>
-        </Avatar>
-        <span className="font-medium">{row.name}</span>
-      </div>
-    ),
-  },
-  { accessorKey: "email", header: "E-mail" },
-  { accessorKey: "emailEJ", header: "E-mail EJ" },
-  { accessorKey: "phone", header: "Telefone" },
-  {
-    accessorKey: "roles",
-    header: "Cargo",
-    cell: (row) => {
-      if ("currentRole" in row && row.currentRole) {
-        return row.currentRole.name;
-      }
-      if (row.roles && row.roles.length > 0) {
-        return row.roles[row.roles.length - 1].name;
-      }
-      if ((row as any).roleId) {
-        return (
-          availableRoles.find(
-            (role) => role.id === (row as any).roleId
-          )?.name || "Outro"
-        );
-      }
-      return "Sem cargo";
+  const memberColumns: ColumnDef<UniversalMember>[] = [
+    {
+      accessorKey: "name",
+      header: "Nome",
+      cell: (row) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage
+              src={row.imageUrl}
+              alt={row.name}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-[#0126fb] text-xs">
+              {row.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium">{row.name}</span>
+        </div>
+      ),
     },
-  },
-  // --- COLUNA CONDICIONAL CORRIGIDA ---
-  ...(type === "users"
-    ? [
-        {
-          // Forçamos o tipo do accessorKey para que o TS não reclame da união
-          accessorKey: "lastActiveAt" as keyof UniversalMember,
-          header: "Status / Último Acesso",
-          cell: (row: UniversalMember) => {
-            // Verificação de segurança: RegistrationRequests não possuem lastActiveAt
-            const lastActive = (row as any).lastActiveAt;
-            
-            if (!lastActive) return <span className="text-gray-600 italic text-xs">Nunca acessou</span>;
+    { accessorKey: "email", header: "E-mail" },
+    { accessorKey: "emailEJ", header: "E-mail EJ" },
+    { accessorKey: "phone", header: "Telefone" },
+    {
+      accessorKey: "roles",
+      header: "Cargo",
+      cell: (row) => {
+        if ("currentRole" in row && row.currentRole) {
+          return row.currentRole.name;
+        }
+        if (row.roles && row.roles.length > 0) {
+          return row.roles[row.roles.length - 1].name;
+        }
+        if ((row as any).roleId) {
+          return (
+            availableRoles.find((role) => role.id === (row as any).roleId)
+              ?.name || "Outro"
+          );
+        }
+        return "Sem cargo";
+      },
+    },
+    // --- COLUNA CONDICIONAL CORRIGIDA ---
+    ...(type === "users"
+      ? [
+          {
+            // Forçamos o tipo do accessorKey para que o TS não reclame da união
+            accessorKey: "lastActiveAt" as keyof UniversalMember,
+            header: "Status / Último Acesso",
+            cell: (row: UniversalMember) => {
+              // Verificação de segurança: RegistrationRequests não possuem lastActiveAt
+              const lastActive = (row as any).lastActiveAt;
 
-            const { isOnline, label } = getUserStatus(lastActive);
-
-            return (
-              <div className="flex items-center gap-2">
-                {isOnline ? (
-                  <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    <span className="text-green-500 font-bold text-xs uppercase tracking-wider">Online</span>
-                  </div>
-                ) : (
-                  <span className="text-gray-500 text-xs font-medium">
-                    {label}
+              if (!lastActive)
+                return (
+                  <span className="text-gray-600 italic text-xs">
+                    Nunca acessou
                   </span>
-                )}
-              </div>
-            );
+                );
+
+              const { isOnline, label } = getUserStatus(lastActive);
+
+              return (
+                <div className="flex items-center gap-2">
+                  {isOnline ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      <span className="text-green-500 font-bold text-xs uppercase tracking-wider">
+                        Online
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-xs font-medium">
+                      {label}
+                    </span>
+                  )}
+                </div>
+              );
+            },
           },
-        },
-      ]
-    : []),
-];
+        ]
+      : []),
+  ];
 
   const exMemberColumns: ColumnDef<UniversalMember>[] = [
     {
@@ -342,41 +348,48 @@ const memberColumns: ColumnDef<UniversalMember>[] = [
     { accessorKey: "emailEJ", header: "E-mail EJ" },
     { accessorKey: "phone", header: "Telefone" },
     { accessorKey: "semesterLeaveEj", header: "Semestre de saída" },
-      ...(type === "users"
-    ? [
-        {
-          // Forçamos o tipo do accessorKey para que o TS não reclame da união
-          accessorKey: "lastActiveAt" as keyof UniversalMember,
-          header: "Status / Último Acesso",
-          cell: (row: UniversalMember) => {
-            // Verificação de segurança: RegistrationRequests não possuem lastActiveAt
-            const lastActive = (row as any).lastActiveAt;
-            
-            if (!lastActive) return <span className="text-gray-600 italic text-xs">Nunca acessou</span>;
+    ...(type === "users"
+      ? [
+          {
+            // Forçamos o tipo do accessorKey para que o TS não reclame da união
+            accessorKey: "lastActiveAt" as keyof UniversalMember,
+            header: "Status / Último Acesso",
+            cell: (row: UniversalMember) => {
+              // Verificação de segurança: RegistrationRequests não possuem lastActiveAt
+              const lastActive = (row as any).lastActiveAt;
 
-            const { isOnline, label } = getUserStatus(lastActive);
-
-            return (
-              <div className="flex items-center gap-2">
-                {isOnline ? (
-                  <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    <span className="text-green-500 font-bold text-xs uppercase tracking-wider">Online</span>
-                  </div>
-                ) : (
-                  <span className="text-gray-500 text-xs font-medium">
-                    {label}
+              if (!lastActive)
+                return (
+                  <span className="text-gray-600 italic text-xs">
+                    Nunca acessou
                   </span>
-                )}
-              </div>
-            );
+                );
+
+              const { isOnline, label } = getUserStatus(lastActive);
+
+              return (
+                <div className="flex items-center gap-2">
+                  {isOnline ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      <span className="text-green-500 font-bold text-xs uppercase tracking-wider">
+                        Online
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-xs font-medium">
+                      {label}
+                    </span>
+                  )}
+                </div>
+              );
+            },
           },
-        },
-      ]
-    : []),
+        ]
+      : []),
   ];
 
   const selectedRoles = form.watch("roles") || [];
@@ -387,14 +400,20 @@ const memberColumns: ColumnDef<UniversalMember>[] = [
   );
 
   const currentRoleField: FieldConfig<UserProfileValues> = {
-    accessorKey: "roleId",
+    accessorKey: (type === "users"
+      ? "currentRoleId"
+      : "roleId") as keyof UserProfileValues,
     header: "Cargo Atual",
     type: "select",
     options: formatedRoles,
     renderView(data) {
       if (isExMemberBoolean) return "Ex-membro";
       const role = formatedRoles.find(
-        (role) => role.value === (data as UserProfileValues).roleId
+        (role) =>
+          role.value ===
+          (type === "users"
+            ? (data as UserProfileValues).currentRoleId
+            : (data as any).roleId)
       )?.label;
       if (!role) return "Nenhum cargo selecionionado";
       return (
@@ -501,12 +520,18 @@ const memberColumns: ColumnDef<UniversalMember>[] = [
       isWorking: user.isWorking ? "Sim" : "Não",
       workplace: user.workplace || "",
       isExMember: user.isExMember ? "Sim" : "Não",
-      alumniDreamer: (user.alumniDreamer ?? false) ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
+      alumniDreamer: user.alumniDreamer ?? false ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
       roles: user.roles.map((role) => role.id), // O schema da API espera um array de IDs
-      roleId:
-        "currentRole" in user
-          ? user.currentRole?.id
-          : (user.roleId ?? user.roles[user.roles.length - 1]?.id),
+      ...(type === "users"
+        ? {
+            currentRoleId:
+              "currentRole" in user && user.currentRole
+                ? user.currentRole.id
+                : (user as any).roleId || "",
+          }
+        : {
+            roleId: (user as any).roleId || "",
+          }),
     });
     setIsEditing(isButtonEdit);
     setIsModalOpen(true);

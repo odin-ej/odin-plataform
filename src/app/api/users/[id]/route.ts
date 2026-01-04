@@ -97,11 +97,11 @@ export async function PATCH(
       );
     }
 
-    const { currentRoleId, isExMember, ...rest } = body;
+    const { currentRoleId, roleId, isExMember, ...rest } = body;
+    const bodyToValidate = currentRoleId ? { ...rest, currentRoleId: currentRoleId } : roleId ? { ...rest, currentRoleId: roleId } : { ...rest };
+    const idOfCurrentRole = currentRoleId ?? roleId;
 
-    const bodyToValidate = currentRoleId ? { ...rest, currentRoleId: currentRoleId } : rest;
-
-    if(!userToUpdate.isExMember && !currentRoleId) {
+    if(!userToUpdate.isExMember && !idOfCurrentRole) {
       return NextResponse.json(
         { message: "Selecione um cargo atual." },
         { status: 400 }
@@ -267,8 +267,12 @@ export async function PATCH(
             const actualSemester = await prisma.semester.findFirst({
               where: { isActive: true },
             });
+            
             updateData.semesterLeaveEj = actualSemester?.name;
           }
+          updateData.roles = {
+            set: memberData?.roles?.map((id) => ({ id })),
+          };
         }
 
         // Atualiza o usuário no Prisma
