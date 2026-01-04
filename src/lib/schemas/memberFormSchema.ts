@@ -98,6 +98,7 @@ export const userProfileSchema = baseMemberSchema
       .nonempty("Selecione pelo menos um cargo")
       .optional(),
     currentRoleId: z.string().optional(),
+    roleId: z.string().optional(),
     otherRole: z.string().optional(),
     semesterLeaveEj: z
       .string()

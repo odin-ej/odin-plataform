@@ -71,6 +71,7 @@ export async function PATCH(request: Request) {
     if (!body.image || typeof body.image !== "object" || "path" in body.image) {
       delete body.image;
     }
+    console.log(body)
 
     const validation = userProfileSchema.safeParse(body);
     if (!validation.success) {
@@ -97,6 +98,8 @@ export async function PATCH(request: Request) {
       isWorking,
       ...dataToUpdate
     } = validation.data;
+
+
 
     const parsedBirthDate = parseBrazilianDate(birthDate);
     if (!parsedBirthDate) {
@@ -131,6 +134,7 @@ export async function PATCH(request: Request) {
         ...(singleRoleArray && {
           roles: { set: singleRoleArray },
         }),
+        roleId: roleId ?? null,
         ...(multipleRolesArray && {
           roles: { set: multipleRolesArray },
         }),

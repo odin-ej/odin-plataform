@@ -113,6 +113,7 @@ const UsersContent = ({
   const { mutate: updateUser, isPending: isUpdatingUser } = useMutation({
     mutationFn: async (formData: UserProfileValues) => {
       let imageUrl = formData.imageUrl;
+      console.log(formData);
       // Lógica de Upload S3 agora vive aqui dentro
       if (formData.image instanceof File) {
         const file = formData.image;
@@ -136,6 +137,7 @@ const UsersContent = ({
     onSuccess: (_, variables) => {
       toast.success(`Usuário ${variables.name} atualizado!`);
       setIsModalOpen(false);
+      setIsEditing(false);
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: any) =>
@@ -264,15 +266,18 @@ const UsersContent = ({
         if ("currentRole" in row && row.currentRole) {
           return row.currentRole.name;
         }
-        if (row.roles && row.roles.length > 0) {
-          return row.roles[row.roles.length - 1].name;
-        }
+
         if ((row as any).roleId) {
           return (
             availableRoles.find((role) => role.id === (row as any).roleId)
               ?.name || "Outro"
           );
         }
+        
+        if (row.roles && row.roles.length > 0) {
+          return row.roles[row.roles.length - 1].name;
+        }
+        
         return "Sem cargo";
       },
     },
@@ -530,7 +535,10 @@ const UsersContent = ({
                 : (user as any).roleId || "",
           }
         : {
-            roleId: (user as any).roleId || "",
+            roleId:
+              "currentRole" in user && user.currentRole
+                ? user.currentRole.id
+                : (user as any).roleId || "",
           }),
     });
     setIsEditing(isButtonEdit);
