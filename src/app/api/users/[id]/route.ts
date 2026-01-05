@@ -154,62 +154,6 @@ export async function PATCH(
           imageUrl: body.imageUrl,
         };
 
-        //Atualizar Atributo do Cognito
-        const cognitoAttributesToUpdate: any[] = [];
-        if (
-          isExMember !== undefined &&
-          isExMember !== userToUpdate.isExMember
-        ) {
-          cognitoAttributesToUpdate.push({
-            Name: "custom:isExMember",
-            Value: isExMember,
-          });
-        }
-
-        if (
-          currentRoleId !== undefined &&
-          !userToUpdate.isExMember &&
-          currentRoleId !== userToUpdate.currentRole?.id
-        ) {
-          cognitoAttributesToUpdate.push({
-            Name: "custom:role",
-            Value: currentRoleId,
-          });
-        }
-
-        if (validatedData.name !== userToUpdate.name) {
-          cognitoAttributesToUpdate.push({
-            Name: "name",
-            Value: validatedData.name,
-          });
-        }
-
-        if (validatedData.email !== userToUpdate.email) {
-          cognitoAttributesToUpdate.push({
-            Name: "email",
-            Value: validatedData.email,
-          });
-          cognitoAttributesToUpdate.push({
-            Name: "email_verified",
-            Value: "true",
-          });
-        }
-
-        if (validatedData.phone !== userToUpdate.phone) {
-          cognitoAttributesToUpdate.push({
-            Name: "phone_number",
-            Value: `+55${validatedData.phone.replace(/\D/g, "")}`,
-          });
-        }
-
-        const parsedBirthDate = parseBrazilianDate(validatedData.birthDate)!;
-        if (parsedBirthDate !== userToUpdate.birthDate) {
-          cognitoAttributesToUpdate.push({
-            Name: "birthdate",
-            Value: parsedBirthDate.toISOString().split("T")[0],
-          });
-        }
-
         if (validatedData.password) {
           updateData.password = await bcrypt.hash(validatedData.password, 10);
         }
@@ -338,16 +282,6 @@ export async function PATCH(
           };
         }
 
-        if (cognitoAttributesToUpdate.length > 0) {
-          await cognitoClient.send(
-            new AdminUpdateUserAttributesCommand({
-              UserPoolId: process.env.COGNITO_USER_POOL_ID,
-              Username: userToUpdate.email,
-              UserAttributes: cognitoAttributesToUpdate,
-            })
-          );
-        }
-
         // Atualiza o usuário no Prisma
         return await tx.user.update({ where: { id }, data: updateData });
       },
@@ -369,20 +303,66 @@ export async function PATCH(
       );
     }
 
-    // Prepara e atualiza atributos no Cognito
-    const attributesToUpdate: any[] = [];
-    if (validatedData.name !== userToUpdate.name)
-      attributesToUpdate.push({ Name: "name", Value: validatedData.name });
-    if (validatedData.email !== userToUpdate.email) {
-      attributesToUpdate.push({ Name: "email", Value: validatedData.email });
-      attributesToUpdate.push({ Name: "email_verified", Value: "true" });
+    //Atualizar Atributos do Cognito
+    const cognitoAttributesToUpdate: any[] = [];
+    if (isExMember !== undefined && isExMember !== userToUpdate.isExMember) {
+      cognitoAttributesToUpdate.push({
+        Name: "custom:isExMember",
+        Value: isExMember,
+      });
     }
-    if (attributesToUpdate.length > 0) {
+
+    if (
+      currentRoleId !== undefined &&
+      !userToUpdate.isExMember &&
+      currentRoleId !== userToUpdate.currentRole?.id
+    ) {
+      cognitoAttributesToUpdate.push({
+        Name: "custom:role",
+        Value: currentRoleId,
+      });
+    }
+
+    if (validatedData.name !== userToUpdate.name) {
+      cognitoAttributesToUpdate.push({
+        Name: "name",
+        Value: validatedData.name,
+      });
+    }
+
+    if (validatedData.email !== userToUpdate.email) {
+      cognitoAttributesToUpdate.push({
+        Name: "email",
+        Value: validatedData.email,
+      });
+      cognitoAttributesToUpdate.push({
+        Name: "email_verified",
+        Value: "true",
+      });
+    }
+
+    if (validatedData.phone !== userToUpdate.phone) {
+      cognitoAttributesToUpdate.push({
+        Name: "phone_number",
+        Value: `+55${validatedData.phone.replace(/\D/g, "")}`,
+      });
+    }
+
+    const parsedBirthDate = parseBrazilianDate(validatedData.birthDate)!;
+    if (parsedBirthDate !== userToUpdate.birthDate) {
+      cognitoAttributesToUpdate.push({
+        Name: "birthdate",
+        Value: parsedBirthDate.toISOString().split("T")[0],
+      });
+    }
+
+    // Prepara e atualiza atributos no Cognito
+    if (cognitoAttributesToUpdate.length > 0) {
       await cognitoClient.send(
         new AdminUpdateUserAttributesCommand({
           UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
           Username: userToUpdate.email,
-          UserAttributes: attributesToUpdate,
+          UserAttributes: cognitoAttributesToUpdate,
         })
       );
     }
