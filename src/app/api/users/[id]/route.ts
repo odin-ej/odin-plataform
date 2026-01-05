@@ -317,9 +317,12 @@ export async function PATCH(
       !userToUpdate.isExMember &&
       currentRoleId !== userToUpdate.currentRole?.id
     ) {
+      const role = await prisma.role.findUnique({ where: { id: currentRoleId } });
+      const roleName = role ? role.name : "Outro";
+
       cognitoAttributesToUpdate.push({
         Name: "custom:role",
-        Value: currentRoleId,
+        Value: roleName,
       });
     }
 
