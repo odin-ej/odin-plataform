@@ -76,7 +76,7 @@ export const InnovationModal = ({
                       Auditado em:
                     </span>
                     <span className="font-mono text-white">
-                      {data.dateChecked}
+                      {format(data.dateChecked, "dd/MM/yyyy")}
                     </span>
                   </div>
                 )}
@@ -87,7 +87,7 @@ export const InnovationModal = ({
                       Implementado em:
                     </span>
                     <span className="font-mono text-white">
-                      {data.dateImplemented}
+                      {format(data.dateImplemented, "dd/MM/yyyy")}
                     </span>
                   </div>
                 )}
@@ -98,7 +98,7 @@ export const InnovationModal = ({
                       Coletado em:
                     </span>
                     <span className="font-mono text-white">
-                      {data.dateColected}
+                      {format(data.dateColected, "dd/MM/yyyy")}
                     </span>
                   </div>
                 )}
