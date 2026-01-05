@@ -49,9 +49,10 @@ export async function GET(
       include: {
         roles: true,
         currentRole: true,
-        roleHistory: { include: { role: { select: { name: true } }, managementReport: true } },
+        roleHistory: {
+          include: { role: { select: { name: true } }, managementReport: true },
+        },
         professionalInterests: { include: { category: true } },
-
       },
     });
 
@@ -88,7 +89,10 @@ export async function PATCH(
 
     const userToUpdate = await prisma.user.findUnique({
       where: { id },
-      include: { roleHistory: { include: { managementReport: true } } },
+      include: {
+        roleHistory: { include: { managementReport: true } },
+        currentRole: true,
+      },
     });
     if (!userToUpdate) {
       return NextResponse.json(
@@ -98,15 +102,18 @@ export async function PATCH(
     }
 
     const { currentRoleId, roleId, isExMember, ...rest } = body;
-    const bodyToValidate = currentRoleId ? { ...rest, currentRoleId: currentRoleId } : roleId ? { ...rest, currentRoleId: roleId } : { ...rest };
+    const bodyToValidate = currentRoleId
+      ? { ...rest, currentRoleId: currentRoleId }
+      : roleId
+      ? { ...rest, currentRoleId: roleId }
+      : { ...rest };
     const idOfCurrentRole = currentRoleId ?? roleId;
 
-    if(!userToUpdate.isExMember && !idOfCurrentRole) {
+    if (!userToUpdate.isExMember && !idOfCurrentRole) {
       return NextResponse.json(
         { message: "Selecione um cargo atual." },
         { status: 400 }
       );
-
     }
 
     // A validação Zod usa o schema correto com base no status do usuário no banco
@@ -146,6 +153,62 @@ export async function PATCH(
           linkedin: validatedData.linkedin,
           imageUrl: body.imageUrl,
         };
+
+        //Atualizar Atributo do Cognito
+        const cognitoAttributesToUpdate: any[] = [];
+        if (
+          isExMember !== undefined &&
+          isExMember !== userToUpdate.isExMember
+        ) {
+          cognitoAttributesToUpdate.push({
+            Name: "custom:isExMember",
+            Value: isExMember,
+          });
+        }
+
+        if (
+          currentRoleId !== undefined &&
+          !userToUpdate.isExMember &&
+          currentRoleId !== userToUpdate.currentRole?.id
+        ) {
+          cognitoAttributesToUpdate.push({
+            Name: "custom:role",
+            Value: currentRoleId,
+          });
+        }
+
+        if (validatedData.name !== userToUpdate.name) {
+          cognitoAttributesToUpdate.push({
+            Name: "name",
+            Value: validatedData.name,
+          });
+        }
+
+        if (validatedData.email !== userToUpdate.email) {
+          cognitoAttributesToUpdate.push({
+            Name: "email",
+            Value: validatedData.email,
+          });
+          cognitoAttributesToUpdate.push({
+            Name: "email_verified",
+            Value: "true",
+          });
+        }
+
+        if (validatedData.phone !== userToUpdate.phone) {
+          cognitoAttributesToUpdate.push({
+            Name: "phone_number",
+            Value: `+55${validatedData.phone.replace(/\D/g, "")}`,
+          });
+        }
+
+        const parsedBirthDate = parseBrazilianDate(validatedData.birthDate)!;
+        if (parsedBirthDate !== userToUpdate.birthDate) {
+          cognitoAttributesToUpdate.push({
+            Name: "birthdate",
+            Value: parsedBirthDate.toISOString().split("T")[0],
+          });
+        }
 
         if (validatedData.password) {
           updateData.password = await bcrypt.hash(validatedData.password, 10);
@@ -267,7 +330,7 @@ export async function PATCH(
             const actualSemester = await prisma.semester.findFirst({
               where: { isActive: true },
             });
-            
+
             updateData.semesterLeaveEj = actualSemester?.name;
           }
           updateData.roles = {
@@ -275,9 +338,20 @@ export async function PATCH(
           };
         }
 
+        if (cognitoAttributesToUpdate.length > 0) {
+          await cognitoClient.send(
+            new AdminUpdateUserAttributesCommand({
+              UserPoolId: process.env.COGNITO_USER_POOL_ID,
+              Username: userToUpdate.email,
+              UserAttributes: cognitoAttributesToUpdate,
+            })
+          );
+        }
+
         // Atualiza o usuário no Prisma
         return await tx.user.update({ where: { id }, data: updateData });
       },
+
       { timeout: 20000 }
     );
 
