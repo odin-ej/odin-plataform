@@ -288,6 +288,7 @@ const onFormSubmit = (values: CreateInovationValues) => {
       auditMutation.mutate({
         id: dataToEdit.id,
         status: dataToEdit.isRunning ? "RUNNING" : "APPROVED",
+        inovationHorizon: dataToEdit.inovationHorizon,
         reviewNotes: values.reviewNotes || "",
       });
     } else if (dataToEdit) {
@@ -319,6 +320,7 @@ const onFormSubmit = (values: CreateInovationValues) => {
     auditMutation.mutate({
       id: dataToEdit.id,
       status: "REJECTED",
+      inovationHorizon: dataToEdit.inovationHorizon,
       reviewNotes: notes,
     });
   };

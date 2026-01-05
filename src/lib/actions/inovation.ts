@@ -2,7 +2,7 @@
 import { prisma } from "@/db";
 import { checkUserPermission } from "../utils";
 import { INOVATION_LEADERS } from "../permissions";
-import { InovationInitiativeStatus } from "@prisma/client";
+import { InovationHorizonTypes, InovationInitiativeStatus } from "@prisma/client";
 import { getAuthenticatedUser } from "../server-utils";
 import { CreateInovationValues } from "../schemas/inovation";
 import { revalidatePath } from "next/cache";
@@ -10,6 +10,7 @@ import { s3Client } from "../aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 } from "uuid";
 import { createNotification } from "./notifications";
+import { format } from "date-fns";
 
 async function uploadFileToS3(
   file: File | string | null | undefined
@@ -313,10 +314,12 @@ export async function updateInovationInitiative({
 export async function auditInovationInitiative({
   id,
   status,
+  inovationHorizon,
   reviewNotes,
 }: {
   id: string;
   status: InovationInitiativeStatus;
+  inovationHorizon: InovationHorizonTypes | null;
   reviewNotes: string;
 }) {
   const authUser = await getAuthenticatedUser();
@@ -330,8 +333,10 @@ export async function auditInovationInitiative({
       data: {
         status,
         reviewNotes,
+        inovationHorizon,
         reviewerId: authUser.id,
-        dateChecked: new Date().toISOString(), // Data da auditoria
+        //Preciso que isso seja aprova de erros de fuso-horário
+        dateChecked: format(new Date(), "dd/MM/yyyy"), // Data da auditoria
       },
     });
 
