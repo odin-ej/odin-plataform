@@ -320,7 +320,7 @@ const onFormSubmit = (values: CreateInovationValues) => {
     auditMutation.mutate({
       id: dataToEdit.id,
       status: "REJECTED",
-      inovationHorizon: values.inovationHorizon ?? dataToEdit.inovationHorizon,
+      inovationHorizon: dataToEdit.inovationHorizon,
       reviewNotes: notes,
     });
   };
