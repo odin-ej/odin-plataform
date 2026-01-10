@@ -177,8 +177,6 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     setIsItemModalOpen(true);
   };
 
-
-
   // --- HANDLERS (RESERVAS) ---
   // Criação de reserva deve ser feita pelo componente pai via CreateReserveModal.
   // Aqui apenas edição/remoção de reservas:
@@ -215,8 +213,8 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
         isItemAvailableForReservation(row, initialData.reservations)
           ? "Disponível"
           : row.status === "MAINTENANCE"
-            ? "Em manutenção"
-            : "Em uso",
+          ? "Em manutenção"
+          : "Em uso",
     },
     {
       accessorKey: "description",
@@ -225,19 +223,36 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
         const reservationsForItem = initialData.reservations.filter(
           (res) => res.itemId === row.id
         );
-        if (reservationsForItem.length === 0) {
-          return "Agora";
-        }
+
         const now = new Date();
+
+        // 1. Verifica se existe reserva ATIVA
+        const activeReservation = reservationsForItem.find((res) => {
+          const start = new Date(res.startDate);
+          const end = new Date(res.endDate);
+          return start <= now && now < end;
+        });
+
+        if (activeReservation) {
+          return "Reservado agora";
+        }
+
+        // 2. Próxima reserva futura
         const nextReservation = reservationsForItem
-          .map((res) => new Date(res.startDate))
-          .filter((date) => date > now)
-          .sort((a, b) => a.getTime() - b.getTime())[0];
-        return nextReservation
-          ? format(nextReservation, "dd/MM/yyyy 'às' HH:mm")
-          : "Agora";
-    }
-  },
+          .map((res) => ({
+            start: new Date(res.startDate),
+          }))
+          .filter(({ start }) => start > now)
+          .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+
+        if (nextReservation) {
+          return format(nextReservation.start, "dd/MM/yyyy 'às' HH:mm");
+        }
+
+        // 3. Totalmente livre
+        return "Agora";
+      },
+    },
     {
       accessorKey: "areas",
       header: "Áreas Permitidas",
@@ -247,24 +262,28 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
             area === "CONSULTORIA"
               ? "Consultoria"
               : area === "DIRETORIA"
-                ? "Diretoria"
-                : area === "GERAL"
-                  ? "Geral"
-                  : area === "TATICO"
-                    ? "Tático"
-                    : "Sem área"
+              ? "Diretoria"
+              : area === "GERAL"
+              ? "Geral"
+              : area === "TATICO"
+              ? "Tático"
+              : "Sem área"
           )
           .join(", "),
     },
   ];
 
   const reservationColumns: ColumnDef<ItemWithRelations>[] = [
-    { accessorKey: "item", header: "Item", cell: (row) => (
+    {
+      accessorKey: "item",
+      header: "Item",
+      cell: (row) => (
         <div className="flex">
           <Box className="mr-2 h-4 w-4" />
           <span>{row.item.name}</span>
         </div>
-      ),},
+      ),
+    },
     {
       accessorKey: "user",
       header: "Reservado por",
@@ -306,12 +325,12 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
           a === "CONSULTORIA"
             ? "Consultoria"
             : a === "TATICO"
-              ? "Tático"
-              : a === "DIRETORIA"
-                ? "Diretoria"
-                : a === "GERAL"
-                  ? "Geral"
-                  : "",
+            ? "Tático"
+            : a === "DIRETORIA"
+            ? "Diretoria"
+            : a === "GERAL"
+            ? "Geral"
+            : "",
       })),
     },
     {
@@ -324,8 +343,8 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
           s === "AVAILABLE"
             ? "Disponível"
             : s === "IN_USE"
-              ? "Em uso"
-              : "Em manutenção",
+            ? "Em uso"
+            : "Em manutenção",
       })),
     },
   ];
@@ -344,7 +363,7 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
   ];
 
   const myReservations = useMemo(() => {
-    return initialData.reservations.filter(res => res.userId === user?.id);
+    return initialData.reservations.filter((res) => res.userId === user?.id);
   }, [initialData.reservations, user]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -382,7 +401,7 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
 
       <div className="mt-6" />
 
-        <CustomTable
+      <CustomTable
         title="Minhas Reservas"
         data={myReservations}
         columns={reservationColumns}
@@ -402,24 +421,24 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
       <div className="mt-6" />
 
       {/* Tabela de Reservas (somente editar/excluir aqui) */}
-     {isDirector && (
-       <CustomTable
-        title="Próximas Reservas de Itens"
-        data={initialData.reservations}
-        columns={reservationColumns}
-        filterColumns={["item.name", "user.name"]}
-        type="noSelection"
-        onEdit={handleOpenEditReservationModal}
-        onDelete={(item) =>
-          setItemToDelete({
-            id: item.id,
-            name: item.item.name,
-            type: "reservation",
-          })
-        }
-        itemsPerPage={10}
-      />
-     )}
+      {isDirector && (
+        <CustomTable
+          title="Próximas Reservas de Itens"
+          data={initialData.reservations}
+          columns={reservationColumns}
+          filterColumns={["item.name", "user.name"]}
+          type="noSelection"
+          onEdit={handleOpenEditReservationModal}
+          onDelete={(item) =>
+            setItemToDelete({
+              id: item.id,
+              name: item.item.name,
+              type: "reservation",
+            })
+          }
+          itemsPerPage={10}
+        />
+      )}
 
       {/* Modal CRIAR/EDITAR ITEM */}
       {isItemModalOpen && (
