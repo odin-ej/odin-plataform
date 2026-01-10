@@ -226,31 +226,23 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
 
         const now = new Date();
 
-        // 1. Verifica se existe reserva ATIVA
+        // Reserva ativa agora
         const activeReservation = reservationsForItem.find((res) => {
           const start = new Date(res.startDate);
           const end = new Date(res.endDate);
           return start <= now && now < end;
         });
 
-        if (activeReservation) {
-          return "Reservado agora";
+        // Se não houver reserva ativa → disponível agora
+        if (!activeReservation) {
+          return "Agora";
         }
 
-        // 2. Próxima reserva futura
-        const nextReservation = reservationsForItem
-          .map((res) => ({
-            start: new Date(res.startDate),
-          }))
-          .filter(({ start }) => start > now)
-          .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
-
-        if (nextReservation) {
-          return format(nextReservation.start, "dd/MM/yyyy 'às' HH:mm");
-        }
-
-        // 3. Totalmente livre
-        return "Agora";
+        // Se houver → disponível quando ela terminar
+        return format(
+          new Date(activeReservation.endDate),
+          "dd/MM/yyyy 'às' HH:mm"
+        );
       },
     },
     {
