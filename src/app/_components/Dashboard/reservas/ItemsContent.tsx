@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
@@ -27,6 +27,7 @@ import {
 import { fromZonedTime } from "date-fns-tz";
 import { Box } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { isItemAvailableForReservation } from "@/lib/utils";
 
 // --- TIPOS ---
 export type ItemWithRelations = ItemReservation & {
@@ -176,6 +177,8 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     setIsItemModalOpen(true);
   };
 
+
+
   // --- HANDLERS (RESERVAS) ---
   // Criação de reserva deve ser feita pelo componente pai via CreateReserveModal.
   // Aqui apenas edição/remoção de reservas:
@@ -206,15 +209,35 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
       ),
     },
     {
-      accessorKey: "description",
-      header: "Descrição",
+      accessorKey: "status",
+      header: "Status",
       cell: (row) =>
-        row.status === "AVAILABLE"
+        isItemAvailableForReservation(row, initialData.reservations)
           ? "Disponível"
-          : row.status === "IN_USE"
-            ? "Em uso"
-            : "Em manutenção",
+          : row.status === "MAINTENANCE"
+            ? "Em manutenção"
+            : "Em uso",
     },
+    {
+      accessorKey: "description",
+      header: "Disponível em",
+      cell: (row) => {
+        const reservationsForItem = initialData.reservations.filter(
+          (res) => res.itemId === row.id
+        );
+        if (reservationsForItem.length === 0) {
+          return "Agora";
+        }
+        const now = new Date();
+        const nextReservation = reservationsForItem
+          .map((res) => new Date(res.startDate))
+          .filter((date) => date > now)
+          .sort((a, b) => a.getTime() - b.getTime())[0];
+        return nextReservation
+          ? format(nextReservation, "dd/MM/yyyy 'às' HH:mm")
+          : "Agora";
+    }
+  },
     {
       accessorKey: "areas",
       header: "Áreas Permitidas",
@@ -320,6 +343,10 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     { accessorKey: "endTime", header: "Hora de Devolução", type: "time" },
   ];
 
+  const myReservations = useMemo(() => {
+    return initialData.reservations.filter(res => res.userId === user?.id);
+  }, [initialData.reservations, user]);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleInvalidSubmit = (errors: any) => {
     console.error("Erros de validação do formulário:", errors);
@@ -355,8 +382,28 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
 
       <div className="mt-6" />
 
+        <CustomTable
+        title="Minhas Reservas"
+        data={myReservations}
+        columns={reservationColumns}
+        filterColumns={["item.name", "user.name"]}
+        type={"noSelection"}
+        onEdit={handleOpenEditReservationModal}
+        onDelete={(item) =>
+          setItemToDelete({
+            id: item.id,
+            name: item.item.name,
+            type: "reservation",
+          })
+        }
+        itemsPerPage={5}
+      />
+
+      <div className="mt-6" />
+
       {/* Tabela de Reservas (somente editar/excluir aqui) */}
-      <CustomTable
+     {isDirector && (
+       <CustomTable
         title="Próximas Reservas de Itens"
         data={initialData.reservations}
         columns={reservationColumns}
@@ -372,6 +419,7 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
         }
         itemsPerPage={10}
       />
+     )}
 
       {/* Modal CRIAR/EDITAR ITEM */}
       {isItemModalOpen && (

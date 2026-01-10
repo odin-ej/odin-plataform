@@ -39,6 +39,7 @@ interface UnifiedCalendarProps {
   events: CalendarEvent[];
   onDateClick: (date: Date) => void; // Função para abrir o modal de criação
   onEventClick: (event: CalendarEvent) => void; // Função para abrir o modal de edição
+  isDirector: boolean;
 }
 
 enum CalendarView {
@@ -49,6 +50,7 @@ enum CalendarView {
 const UnifiedCalendar = ({
   events,
   onDateClick,
+  isDirector,
   onEventClick,
 }: UnifiedCalendarProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -197,23 +199,57 @@ const UnifiedCalendar = ({
               </span>
               <div className="mt-1 space-y-1 text-[10px] sm:text-xs scrollbar-thin scrollbar-thumb-gray-700">
                 {dayEvents.slice(0, 3).map((event) => (
-                  <div
-                    key={event.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEventClick(event);
-                    }}
-                    className="p-1 rounded truncate flex items-center"
-                    style={{ backgroundColor: `${event.color}` }}
-                    title={`${format(event.start, "HH:mm")} - ${format(event.end, "HH:mm")}  | ${event.title}`}
-                  >
-                    {getEventIcon(event.type)}
-                    <span className="truncate">
-                      {event.type !== "eaufba" &&
-                        `${format(event.start, "HH:mm")} - ${format(event.end, "HH:mm")}`}{" "}
-                      | {event.title}
-                    </span>
-                  </div>
+                  <>
+                    {event.type === "item" && isDirector && (
+                      <div
+                        key={`${event.id}-item`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick(event);
+                        }}
+                        className="p-1 rounded truncate flex items-center"
+                        style={{ backgroundColor: `${event.color}` }}
+                        title={`${format(event.start, "HH:mm")} - ${format(
+                          event.end,
+                          "HH:mm"
+                        )}  | ${event.title}`}
+                      >
+                        {getEventIcon(event.type)}
+                        <span className="truncate">
+                          {`${format(event.start, "HH:mm")} - ${format(
+                              event.end,
+                              "HH:mm"
+                            )}`}{" "}
+                          | {event.title}
+                        </span>
+                      </div>
+                    )}
+                    {event.type !== "item" && (
+                      <div
+                        key={event.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick(event);
+                        }}
+                        className="p-1 rounded truncate flex items-center"
+                        style={{ backgroundColor: `${event.color}` }}
+                        title={`${format(event.start, "HH:mm")} - ${format(
+                          event.end,
+                          "HH:mm"
+                        )}  | ${event.title}`}
+                      >
+                        {getEventIcon(event.type)}
+                        <span className="truncate">
+                          {event.type !== "eaufba" &&
+                            `${format(event.start, "HH:mm")} - ${format(
+                              event.end,
+                              "HH:mm"
+                            )}`}{" "}
+                          | {event.title}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 ))}
                 {dayEvents.length > 3 && (
                   <div className="text-center text-gray-400 font-bold pt-1 overflow-hidden">

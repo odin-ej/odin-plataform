@@ -49,6 +49,7 @@ const ReservationsContent = ({
 
   const queryClient = useQueryClient();
   const canMutate = checkUserPermission(user, DIRECTORS_ONLY) || checkUserPermission(user, {allowedRoles: ['Assessor(a) de Conexões']});
+  const isDirector = checkUserPermission(user, DIRECTORS_ONLY)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -206,7 +207,7 @@ const ReservationsContent = ({
         items: reservableItems,
         reservations: itemReservations,
       }}
-      isDirector={canMutate}
+      isDirector={isDirector}
     />
   );
 
@@ -230,6 +231,7 @@ const ReservationsContent = ({
           events={allEvents}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}
+          isDirector={isDirector}
         />
       </div>
 
