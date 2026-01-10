@@ -119,7 +119,7 @@ const RoleHistoryManager = ({ roles }: RoleHistoryManagerProps) => {
 
   const roleOptions = roles.map((r) => ({ value: r.id, label: r.name }));
   return (
-    <div className="space-y-4 p-4 border border-dashed border-gray-600 rounded-lg">
+    <div className="space-y-4 p-4 border border-dashed border-gray-600">
       <h3 className="font-semibold text-lg text-[#f5b719]">
         Histórico de Cargos na Empresa
       </h3>
@@ -128,7 +128,7 @@ const RoleHistoryManager = ({ roles }: RoleHistoryManagerProps) => {
         informação é valiosa para o nosso histórico.
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-3 max-w-full rounded-lg overflow-x-auto scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-[#010d26]">
         {fields.map((field, index) => {
           return (
             <div

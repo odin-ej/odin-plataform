@@ -42,7 +42,7 @@ const ProfessionalInterestsManager = ({
             <AccordionTrigger className="font-semibold hover:no-underline text-white">
               {category.name}
             </AccordionTrigger>
-            <AccordionContent className="pt-2">
+            <AccordionContent className="pt-2 overflow-x-auto max-w-full scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-[#010d26]">
               <CustomCheckboxGroup
                 label=""
                 control={control}
