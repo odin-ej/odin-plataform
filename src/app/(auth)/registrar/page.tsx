@@ -2,6 +2,7 @@ import { DARKBLUE } from "@/lib/colors";
 import RegisterArea from "./_components/RegisterArea";
 import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
+import { getInterestCategoriesForRegistration } from "./actions/actions";
 
 interface RegisterPageProps {
   roles: Role[];
@@ -32,6 +33,7 @@ async function getRolesData(): Promise<RegisterPageProps> {
 
 const Page = async () => {
   const { roles } = await getRolesData();
+  const interestCategories = await getInterestCategoriesForRegistration();
   return (
     <div
       style={{ backgroundColor: DARKBLUE }}
@@ -46,7 +48,7 @@ const Page = async () => {
         </h1>
 
         <div className="my-8">
-          <RegisterArea roles={roles} />
+          <RegisterArea roles={roles} interestCategories={interestCategories} />
         </div>
       </div>
     </div>

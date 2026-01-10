@@ -37,6 +37,23 @@ const baseMemberSchema = z.object({
     .string({ required_error: "Por favor, selecione um cargo." })
     .min(1, "Por favor, selecione um cargo."),
   roles: z.array(z.string()).optional(),
+  professionalInterests: z.array(z.string()).optional(),
+  roleHistory: z
+    .array(
+      z.object({
+        roleId: z.string().min(1, "Selecione um cargo."),
+          semester: z
+            .string()
+            .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+          managementReport: z.any().optional().nullable(),
+          managementReportLink: z
+            .string()
+            .url({ message: "Por favor, insira uma URL válida." })
+            .optional()
+            .or(z.literal("")),
+      })
+    )
+    .optional(),
   image: z
     .custom<File>((file) => file instanceof File && file.size > 0, {
       message: "Imagem obrigatória",
@@ -110,17 +127,6 @@ export const userProfileSchema = baseMemberSchema
     alumniDreamer: z.enum(["Sim", "Não"]).optional(),
     isWorking: z.enum(["Sim", "Não"]).optional(),
     workplace: z.string().optional(),
-    professionalInterests: z.array(z.string()).optional(),
-    roleHistory: z
-      .array(
-        z.object({
-          roleId: z.string().min(1, "Selecione um cargo."),
-          semester: z
-            .string()
-            .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
-        })
-      )
-      .optional(),
   });
 
 export type memberType = z.infer<typeof memberSchema>;
@@ -144,6 +150,15 @@ export type MemberWithFullRoles = User & {
 };
 export type RegistrationRequestWithRoles = RegistrationRequest & {
   roles: Role[];
+   roleHistory: Prisma.UserRoleHistoryGetPayload<{
+    include: {
+      role: {
+        select: { name: true };
+      };
+      managementReport: true;
+    };
+  }>[];
+  professionalInterests: InterestWithCategory[];
 };
 export type UniversalMember =
   | MemberWithFullRoles

@@ -17,20 +17,20 @@ export const exMemberSchema = z
         "A senha deve conter pelo menos um caractere especial (ex: !@#$%)."
       ),
     confPassword: z.string(),
-    semesterEntryEj: z.string().min(1, "Semestre de entrada é obrigatório").regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
-    semesterLeaveEj: z.string().min(1, "Semestre de saída é obrigatório").regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+    semesterEntryEj: z
+      .string()
+      .min(1, "Semestre de entrada é obrigatório")
+      .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+    semesterLeaveEj: z
+      .string()
+      .min(1, "Semestre de saída é obrigatório")
+      .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
     course: z.string().min(1, "Curso é obrigatório"),
     phone: z
       .string()
       .regex(/^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/, "Telefone inválido"),
-    instagram: z
-      .string()
-      .optional()
-      .or(z.literal("")),
-    linkedin: z
-      .string()
-      .optional()
-      .or(z.literal("")),
+    instagram: z.string().optional().or(z.literal("")),
+    linkedin: z.string().optional().or(z.literal("")),
     about: z.string().min(10, "Descreva um pouco sobre você"),
     aboutEj: z.string().min(10, "Descreva um pouco da sua experiência na EJ"),
     roles: z.array(z.string()).nonempty("Selecione pelo menos um cargo"),
@@ -44,6 +44,22 @@ export const exMemberSchema = z
     }),
     workplace: z.string().optional(),
     image: z.instanceof(File, { message: "É necessário enviar uma imagem" }),
+    professionalInterests: z.array(z.string()).optional(),
+    roleHistory: z
+      .array(
+        z.object({
+        roleId: z.string().min(1, "Selecione um cargo."),
+        semester: z
+          .string()
+          .regex(/^\d{4}\.[12]$/, "Use o formato AAAA.S (ex: 2025.1)"),
+        managementReport: z.any().optional().nullable(),
+        managementReportLink: z
+          .string()
+          .url({ message: "Por favor, insira uma URL válida." })
+          .optional()
+          .or(z.literal("")),
+      })
+      ).optional(),
   })
   .refine((data) => data.password === data.confPassword, {
     path: ["confPassword"],

@@ -1,15 +1,27 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Role, AreaRoles, LinkAreas, User } from "@prisma/client";
-import { MemberWithFullRoles, UserProfileValues } from "./schemas/memberFormSchema";
+import {
+  Role,
+  AreaRoles,
+  LinkAreas,
+  User,
+  ItemStatus,
+  ReservableItem,
+} from "@prisma/client";
+import {
+  MemberWithFullRoles,
+  UserProfileValues,
+} from "./schemas/memberFormSchema";
 import { ExMemberType } from "./schemas/exMemberFormSchema";
 import { FieldConfig } from "@/app/_components/Global/Custom/CustomModal";
 import { Path } from "react-hook-form";
 import { ROUTE_PERMISSIONS } from "./permissions";
 import * as XLSX from "xlsx";
 import { FullUser } from "./server-utils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ItemWithRelations } from "@/app/_components/Dashboard/reservas/ItemsContent";
+import axios from "axios";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -412,14 +424,46 @@ export function exportToExcel<T>(data: T[], fileName: string) {
  */
 export function getSimilarWords(text: string, count: number): string[] {
   // Lista de 'stop words' em português (palavras comuns a serem ignoradas)
-  const stopWords = new Set(['de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'com', 'não', 'uma', 'os', 'no', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu', 'sua']);
-  
+  const stopWords = new Set([
+    "de",
+    "a",
+    "o",
+    "que",
+    "e",
+    "do",
+    "da",
+    "em",
+    "um",
+    "para",
+    "com",
+    "não",
+    "uma",
+    "os",
+    "no",
+    "na",
+    "por",
+    "mais",
+    "as",
+    "dos",
+    "como",
+    "mas",
+    "foi",
+    "ao",
+    "ele",
+    "das",
+    "tem",
+    "à",
+    "seu",
+    "sua",
+  ]);
+
   return text
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove acentos
-    .replace(/[^\w\s]/g, '') // Remove pontuação
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^\w\s]/g, "") // Remove pontuação
     .split(/\s+/) // Divide em palavras
-    .filter(word => word.length > 3 && !stopWords.has(word)) // Filtra palavras curtas e stop words
+    .filter((word) => word.length > 3 && !stopWords.has(word)) // Filtra palavras curtas e stop words
     .slice(0, count); // Pega as primeiras 'count' palavras
 }
 
@@ -527,7 +571,7 @@ export const defaultEmojis: { emoji: string; name: string }[] = [
   { emoji: "🏎️", name: "carro de corrida" },
   { emoji: "🚓", name: "carro de polícia" },
   { emoji: "🚑", name: "ambulância" },
-  { emoji: "🚒", name: "caminhão de bombeiros" }
+  { emoji: "🚒", name: "caminhão de bombeiros" },
 ];
 
 export function getLabelForRoleArea(area: AreaRoles): string {
@@ -550,11 +594,13 @@ export function getLabelForRoleArea(area: AreaRoles): string {
 }
 
 export function getUserStatus(lastActiveAt: Date | null) {
-  if (!lastActiveAt) return { isOnline: false, label: "Não acessou recententemente" };
+  if (!lastActiveAt)
+    return { isOnline: false, label: "Não acessou recententemente" };
 
   const activeThresholdInMinutes = 5;
   const now = new Date();
-  const diffInMinutes = (now.getTime() - new Date(lastActiveAt).getTime()) / (1000 * 60);
+  const diffInMinutes =
+    (now.getTime() - new Date(lastActiveAt).getTime()) / (1000 * 60);
 
   if (diffInMinutes <= activeThresholdInMinutes) {
     return { isOnline: true, label: "Online" };
@@ -562,8 +608,55 @@ export function getUserStatus(lastActiveAt: Date | null) {
 
   // Se passou de 5 minutos, formatamos o "Visto por último"
   // Você pode usar a lib 'date-fns' para formatar (ex: "há 2 horas")
-  return { 
-    isOnline: false, 
-    label: `${formatDistanceToNow(new Date(lastActiveAt), { addSuffix: true, locale: ptBR })}` 
+  return {
+    isOnline: false,
+    label: `${formatDistanceToNow(new Date(lastActiveAt), {
+      addSuffix: true,
+      locale: ptBR,
+    })}`,
   };
 }
+export function isItemAvailableForReservation(
+  item: ReservableItem,
+  reservations: ItemWithRelations[]
+) {
+  if (item.status !== ItemStatus.AVAILABLE) return false;
+  
+  const now = new Date();
+
+  const hasActiveReservation = reservations.some((reservation) => {
+    if (reservation.itemId !== item.id) return false;
+    const start = new Date(reservation.startDate);
+    const end = new Date(reservation.endDate);
+
+    return start <= now && now < end;
+  })
+
+
+  return !hasActiveReservation ;
+}
+
+export async function uploadFile ({
+    file,
+    subfolder,
+    olderFileKey,
+  }: {
+    file: File;
+    subfolder?: string;
+    olderFileKey?: string | null;
+  }) {
+    const presignedUrlRes = await axios.post("/api/s3-upload", {
+      fileType: file.type,
+      fileSize: file.size,
+      subfolder,
+      olderFile: olderFileKey,
+    });
+    const { url, key } = presignedUrlRes.data;
+    await axios.put(url, file, { headers: { "Content-Type": file.type } });
+
+    // Retorna o objeto completo para relatórios, ou apenas a URL completa para avatares
+    const fullS3Url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+    return subfolder
+      ? { fileName: file.name, fileType: file.type, url: fullS3Url }
+      : fullS3Url;
+  };

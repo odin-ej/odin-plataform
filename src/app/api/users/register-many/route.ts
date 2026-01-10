@@ -98,7 +98,13 @@ export async function POST(request: Request) {
         id: { in: ids },
         status: "PENDING",
       },
-      include: { roles: true },
+      include: {
+        roles: true,
+        professionalInterests: true,
+        roleHistory: {
+          include: { role: true, managementReport: true },
+        },
+      },
     });
 
     const results = {
@@ -132,8 +138,8 @@ export async function POST(request: Request) {
               {
                 Name: "custom:role",
                 Value: req.roleId
-                  ? (req.roles.find((role) => role.id === req.roleId)?.name ??
-                    req.roles[req.roles.length - 1]?.name)
+                  ? req.roles.find((role) => role.id === req.roleId)?.name ??
+                    req.roles[req.roles.length - 1]?.name
                   : req.roles[req.roles.length - 1]?.name || "Outro",
               },
               {
@@ -177,6 +183,12 @@ export async function POST(request: Request) {
           instagram: req.instagram,
           linkedin: req.linkedin,
           about: req.about,
+          professionalInterests: {
+            connect:
+              req.professionalInterests.map((interest) => ({
+                id: interest.id,
+              })) || [],
+          },
           roles: { connect: rolesToConnect },
           ...(req.roleId && { currentRoleId: req.roleId }),
           ...(req.semesterLeaveEj && { semesterLeaveEj: req.semesterLeaveEj }),
@@ -187,6 +199,33 @@ export async function POST(request: Request) {
         };
 
         const newUser = await prisma.user.create({ data: userData });
+
+        if (req.roleHistory && req.roleHistory.length > 0) {
+          for (const historyItem of req.roleHistory) {
+            const createdRoleHistory = await prisma.userRoleHistory.create({
+              data: {
+                userId: newUser.id,
+                roleId: historyItem.roleId,
+                semester: historyItem.semester,
+                managementReportLink: historyItem.managementReportLink || null,
+              },
+            });
+
+            if (historyItem.managementReport) {
+              const newReport = await prisma.fileAttachment.create({
+                data: {
+                  url: historyItem.managementReport.url,
+                  fileName: historyItem.managementReport.fileName,
+                  fileType: historyItem.managementReport.fileType,
+                },
+              });
+              await prisma.userRoleHistory.update({
+                where: { id: createdRoleHistory.id },
+                data: { managementReportId: newReport.id },
+              });
+            }
+          }
+        }
 
         if (newUser.isExMember) {
           await sesClient.send(
@@ -208,16 +247,20 @@ export async function POST(request: Request) {
           data: {
             link: `/cultural`,
             type: "NEW_MENTION",
-            notification: `Um novo ${newUser.isExMember ? "ex-membro" : "membro"} está na Plataforma da Casinha dos Sonhos: ${newUser.name}.`,
+            notification: `Um novo ${
+              newUser.isExMember ? "ex-membro" : "membro"
+            } está na Plataforma da Casinha dos Sonhos: ${newUser.name}.`,
           },
         });
 
         await prisma.notificationUser.createMany({
-          data: allMembersId.filter(member => member.id !== newUser.id).map((user) => ({
-            notificationId: notification.id,
-            userId: user.id,
-          })),
-        })
+          data: allMembersId
+            .filter((member) => member.id !== newUser.id)
+            .map((user) => ({
+              notificationId: notification.id,
+              userId: user.id,
+            })),
+        });
 
         await prisma.registrationRequest.delete({ where: { id: req.id } });
 

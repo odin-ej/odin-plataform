@@ -92,15 +92,17 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
     });
+    
   };
 
-  const watchedRoles = form.watch("roles" as Path<z.infer<T>>);
-  const userRoles = roles.filter((role) => {
-    return watchedRoles.includes(role.id);
-  });
   const roleFieldName = (
     view === "profile" ? "currentRoleId" : "roleId"
   ) as Path<z.infer<T>>;
+
+  const watchedRoles = form.watch("roles" as Path<z.infer<T>>);
+  const userRoles = roles.filter((role) => {
+    return new Set([...watchedRoles, form.watch(roleFieldName)]).has(role.id);
+  });
   return (
     <Form {...form}>
       <form
@@ -248,12 +250,12 @@ const MemberForm = <T extends z.ZodType<any, any, any>>({
           defaultImageUrl={values?.image}
         />
 
-        {view === "profile" && interestCategories && (
+        {interestCategories && (
           <div className="space-y-8 pt-6">
             <ProfessionalInterestsManager
               interestCategories={interestCategories}
             />
-            <RoleHistoryManager roles={userRoles} />
+            {<RoleHistoryManager roles={userRoles} />}
           </div>
         )}
 

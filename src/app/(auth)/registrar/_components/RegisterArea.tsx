@@ -9,20 +9,23 @@ import { exMemberSchema, ExMemberType } from "@/lib/schemas/exMemberFormSchema";
 import { toast } from "sonner";
 import Link from "next/link";
 import RegistrationSentStep from "@/app/_components/Global/Form/RegistrationSentStep";
-import { Role } from "@prisma/client";
-import { orderRolesByHiearchy } from "@/lib/utils";
+import { Role, InterestCategory, ProfessionalInterest } from "@prisma/client";
+import { orderRolesByHiearchy, uploadFile } from "@/lib/utils";
 import ImageCropModal from "@/app/_components/Global/ImageCropModal";
 import { useSearchParams } from "next/navigation";
 
 interface RegisterAreaProps {
   roles: Role[];
+  interestCategories: (InterestCategory & {
+    interests: ProfessionalInterest[];
+  })[];
 }
 
-const RegisterArea = ({ roles }: RegisterAreaProps) => {
+const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [tabSelected, setTabSelected] = useState<string >("novo");
+  const [tabSelected, setTabSelected] = useState<string>("novo");
   // Estado para armazenar a referência do formulário para poder usar o setValue
   const [formRef, setFormRef] = useState<any>(null);
   const query = useSearchParams();
@@ -34,49 +37,79 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
     } else {
       setTabSelected("novo");
     }
-  }, [query])
+  }, [query]);
   // Função genérica para submeter o pedido de registo para a nossa API
   const handleSubmitRegistration = async (
     data: memberType | (ExMemberType & { image?: File })
   ) => {
     setIsLoading(true);
-
     try {
-      let imageUrl: string | undefined = undefined;
 
-      // Passo 1: Se uma imagem foi selecionada, faz o upload para o S3
-      if (data.image) {
-        const file = data.image;
+      const roleHistoryForm = data.roleHistory || [];
+      const professionalInterests = data.professionalInterests || [];
+      if(roleHistoryForm.length === 0) {
+        toast.error("Preencha o histórico de cargos corretamente!");
+        return;
+      }
+      if(professionalInterests.length === 0) {
+        toast.error("Selecione ao menos um interesse profissional!");
+        return;
+      }
+   
+      const { image, roleHistory, ...restOfData } = data as any;
+      let finalImageUrl = '';
 
-        const presignedUrlResponse = await fetch("/api/s3-upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
-        });
+      const uploadPromises: Promise<any>[] = [];
 
-        if (!presignedUrlResponse.ok) {
-          throw new Error("Não foi possível preparar o upload da imagem.");
-        }
-
-        const { url, key } = await presignedUrlResponse.json();
-        // Usa a nova função de upload que atualiza o estado de progresso
-        const uploadResponse = await fetch(url, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("Falha ao enviar a imagem para o S3.");
-        }
-
-        imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
+      // 1. Prepara o upload da imagem de perfil
+      if (image && image instanceof File) {
+        uploadPromises.push(
+          uploadFile({ file: image, })
+        );
       }
 
-      // Passo 2: Prepara os dados finais para enviar para a nossa API de criação de pedido
-      const finalData = { ...data, imageUrl };
+      // 2. Prepara o upload dos relatórios de gestão
+      const finalRoleHistory = await Promise.all(
+        (roleHistory || []).map(async (historyItem: any) => {
+          let file: File | undefined;
 
-      // Passo 3: Envia os dados para a nossa API criar o pedido de registo
+          // 🔹 Se veio como FileList do input
+          if (
+            historyItem.managementReport instanceof FileList &&
+            historyItem.managementReport.length > 0
+          ) {
+            file = historyItem.managementReport[0];
+          }
+
+          // 🔹 Se já veio como File (caso o form tenha sido setado manualmente)
+          if (historyItem.managementReport instanceof File) {
+            file = historyItem.managementReport;
+          }
+
+          if (file) {
+            const newReportData = await uploadFile({
+              file,
+              subfolder: "relatorios",
+              olderFileKey: null,
+            });
+            return { ...historyItem, managementReport: newReportData };
+          }
+          return historyItem;
+        })
+      );
+
+      const uploadResults = await Promise.all(uploadPromises);
+      if (image && image instanceof File) {
+        finalImageUrl = uploadResults.shift();
+      }
+
+      const finalData = {
+        ...restOfData,
+        imageUrl: finalImageUrl,
+        roleHistory: finalRoleHistory,
+      };
+
+      // Passo 4: Envia os dados para a nossa API criar o pedido de registo
       const response = await fetch("/api/registration-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,7 +143,6 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
     }
   };
 
-  // ✅ PASSO 3: Função de callback para quando o corte for concluído
   const handleCropComplete = (croppedImageBlob: Blob) => {
     if (formRef) {
       const croppedFile = new File([croppedImageBlob], "profile_image.jpeg", {
@@ -178,6 +210,7 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           schema={memberSchema}
           canChangeRole={true}
           onFileSelect={handleFileSelect}
+          interestCategories={interestCategories}
         />
       </TabsContent>
 
@@ -204,6 +237,7 @@ const RegisterArea = ({ roles }: RegisterAreaProps) => {
           roles={orderedRoles}
           schema={exMemberSchema}
           onFileSelect={handleFileSelect}
+          interestCategories={interestCategories}
         />
       </TabsContent>
       {imageToCrop && (

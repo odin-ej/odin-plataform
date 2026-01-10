@@ -35,7 +35,7 @@ const ReportUploader = ({ index }: { index: number }) => {
 
       {/* Estado 1: Um relatório já existe no banco de dados */}
       {hasExistingReport && (
-        <div className="flex flex-row-reverse items-center gap-2">
+        <div className="flex flex-col-reverse items-center gap-2">
           <a
             href={currentReport.url}
             target="_blank"

@@ -25,6 +25,8 @@ export async function POST(request: Request) {
       isWorking,
       workplace,
       aboutEj,
+      professionalInterests,
+      roleHistory,
       alumniDreamer,
       roles,
       roleId,
@@ -32,6 +34,7 @@ export async function POST(request: Request) {
       otherRole,
     } = body;
 
+    console.log(body);
     // Validação básica
     if (!email || !password || !name) {
       return NextResponse.json(
@@ -148,35 +151,87 @@ export async function POST(request: Request) {
     // 3. Constrói o objeto de conexão para o Prisma.
     const rolesToConnect = finalRoleIds.map((id) => ({ id }));
 
-    // CORREÇÃO 3: Usar a data convertida (`parsedBirthDate`) ao criar o registro.
-    const newUser = await prisma.registrationRequest.create({
-      data: {
-        name,
-        email,
-        emailEJ: emailEJ.length === 0 ? email : emailEJ,
-        password, // Lembre-se de fazer o hash da senha em produção!
-        birthDate: parsedBirthDate, // << USANDO A DATA CORRETA
-        phone,
-        semesterEntryEj,
-        semesterLeaveEj,
-        course,
-        instagram,
-        imageUrl,
-        linkedin,
-        roleId,
-        about,
-        aboutEj,
-        workplace,
-        isWorking: isWorking === "Sim" ? true : false,
-        alumniDreamer: alumniDreamer === "Sim" ? true : false,
-        otherRole,
-        isExMember: "aboutEj" in body,
-        roles: {
-          connect: rolesToConnect,
-        }, // << USANDO A LÓGICA DE CONEXÃO CORRETA
-      },
-      include: {roles: true}
+    const newRegistration = await prisma.$transaction(async (tx) => {
+      const registration = await tx.registrationRequest.create({
+        data: {
+          name,
+          email,
+          emailEJ: emailEJ.length === 0 ? email : emailEJ,
+          password, // Lembre-se de fazer o hash da senha em produção!
+          birthDate: parsedBirthDate, // << USANDO A DATA CORRETA
+          phone,
+          semesterEntryEj,
+          semesterLeaveEj,
+          course,
+          instagram,
+          imageUrl,
+          linkedin,
+          roleId,
+          about,
+          aboutEj,
+          workplace,
+          isWorking: isWorking === "Sim" ? true : false,
+          alumniDreamer: alumniDreamer === "Sim" ? true : false,
+          otherRole,
+          isExMember: "aboutEj" in body,
+          professionalInterests: {
+            connect: professionalInterests.map((id: string) => ({ id })) || [],
+          },
+
+          roles: {
+            connect: rolesToConnect,
+          },
+        },
+        include: { roles: true },
+      });
+      if (roleHistory.length > 0) {
+        
+        
+        for (const historyItem of roleHistory) {
+          const { managementReport, ...historyData } = historyItem;
+
+          const createdHistory = await tx.userRoleHistory.create({
+            data: {
+              registrationId: registration.id,
+              roleId: historyData.roleId,
+              managementReportLink: historyData.managementReportLink,
+              semester: historyData.semester,
+            },
+          });
+
+          // Se houver um relatório (novo ou antigo mantido), conecta ou cria
+          if (managementReport) {
+            if (managementReport.id) {
+              // Conecta um relatório existente
+              await tx.userRoleHistory.update({
+                where: { id: createdHistory.id },
+                data: {
+                  managementReport: {
+                    connect: { id: managementReport.id },
+                  },
+                },
+              });
+            } else if (managementReport.url) {
+              // Cria um novo anexo para um relatório recém-enviado
+              const newReport = await tx.fileAttachment.create({
+                data: {
+                  url: managementReport.url,
+                  fileName: managementReport.fileName,
+                  fileType: managementReport.fileType,
+                },
+              });
+              await tx.userRoleHistory.update({
+                where: { id: createdHistory.id },
+                data: { managementReportId: newReport.id },
+              });
+            }
+          }
+        }
+      }
+
+      return registration
     });
+
     const allDirectorsID = await prisma.user.findMany({
       where: { currentRole: { area: { has: "DIRETORIA" } } },
       select: { id: true },
@@ -204,12 +259,12 @@ export async function POST(request: Request) {
       },
     });
 
-    if(president){
+    if (president) {
       await sesClient.send(
         newRegistrationRequestCommand({
           email: president.emailEJ,
           name: president.name,
-          newUser
+          newUser: newRegistration,
         })
       );
     }
@@ -235,6 +290,8 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
       include: {
         roles: true,
+        professionalInterests: { include: { category: true } },
+        roleHistory: { include: { role: { select: { name: true } }, managementReport: true } },
       },
     });
     return NextResponse.json({ requests });

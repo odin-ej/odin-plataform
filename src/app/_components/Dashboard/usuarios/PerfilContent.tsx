@@ -17,7 +17,7 @@ import {
   MemberUpdateType,
   ExMemberUpdateType,
 } from "@/lib/schemas/profileUpdateSchema";
-import { checkUserPermission, formatDateForInput } from "@/lib/utils";
+import { checkUserPermission, formatDateForInput, uploadFile } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -43,30 +43,6 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     enabled: !!userId,
   });
 
-  const uploadFile = async ({
-    file,
-    subfolder,
-    olderFileKey,
-  }: {
-    file: File;
-    subfolder?: string;
-    olderFileKey?: string | null;
-  }) => {
-    const presignedUrlRes = await axios.post("/api/s3-upload", {
-      fileType: file.type,
-      fileSize: file.size,
-      subfolder,
-      olderFile: olderFileKey,
-    });
-    const { url, key } = presignedUrlRes.data;
-    await axios.put(url, file, { headers: { "Content-Type": file.type } });
-
-    // Retorna o objeto completo para relatórios, ou apenas a URL completa para avatares
-    const fullS3Url = `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${key}`;
-    return subfolder
-      ? { fileName: file.name, fileType: file.type, url: fullS3Url }
-      : fullS3Url;
-  };
 
   const { mutate: updateProfile, isPending: isUpdating } = useMutation({
     mutationFn: async (formData: MemberUpdateType | ExMemberUpdateType) => {

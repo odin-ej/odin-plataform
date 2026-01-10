@@ -237,6 +237,8 @@ model RegistrationRequest {
   aboutEj         String?       @db.Text
   roleId          String?
   roles           Role[]        @relation("RegistrationRequestRoles")
+  roleHistory                   UserRoleHistory[]
+  professionalInterests         ProfessionalInterest[]
   otherRole       String?
   isExMember      Boolean       @default(false) @map("ex_member")
   alumniDreamer   Boolean       @default(false) @map("alumni_dreamer")
@@ -259,6 +261,7 @@ model ProfessionalInterest {
   categoryId String
   category   InterestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   users      User[]
+  registrationRequests RegistrationRequest[]
 }
 
 model User {
@@ -335,7 +338,7 @@ model User {
   Channel                       Channel[]
   recognitionsReceived          Recognition[]                @relation("UserRecognitions")
   recognitionsGiven             Recognition[]                @relation("RecognitionGiver")
-  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  lastActiveAt DateTime? @map("last_active_at")
 }
 
 model UserRoleHistory {
@@ -343,8 +346,10 @@ model UserRoleHistory {
   semester             String
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
-  userId               String
-  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String?
+  user                 User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registrationId     String?
+  registration       RegistrationRequest? @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   roleId               String
   role                 Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
   managementReport     FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)

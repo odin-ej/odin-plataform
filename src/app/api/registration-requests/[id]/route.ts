@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { checkUserPermission, parseBrazilianDate } from "@/lib/utils";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/aws";
 
 // --- FUNÇÃO GET: Obter um pedido de registo específico ---
@@ -96,6 +96,8 @@ export async function PATCH(request: Request) {
       alumniDreamer,
       confPassword,
       isWorking,
+      professionalInterests,
+      roleHistory,
       ...dataToUpdate
     } = validation.data;
 
@@ -120,10 +122,104 @@ export async function PATCH(request: Request) {
       ? null
       : otherRole;
 
+    const registrationRequest = await prisma.registrationRequest.findUnique({
+      where: { id },
+      include: { roleHistory: { include: { managementReport: true } }, roles: true },
+    });
+
+    if (!registrationRequest) {
+      return NextResponse.json(
+        { message: "Pedido de registo nao encontrado." },
+        { status: 404 }
+      );
+    }
+
+            if (roleHistory) {
+              // 1. Identifica os relatórios que foram REMOVIDOS no frontend
+              const incomingReportIds = new Set(
+                roleHistory.map((h) => h.managementReport?.id).filter(Boolean)
+              );
+    
+              const reportsToDelete = registrationRequest.roleHistory
+                .map((h) => h.managementReport)
+                .filter((report) => report && !incomingReportIds.has(report.id));
+    
+              // 2. Se houver relatórios para deletar, remove-os do S3
+              if (reportsToDelete.length > 0) {
+                console.log(
+                  `Deletando ${reportsToDelete.length} relatório(s) do S3...`
+                );
+    
+                await s3Client.send(
+                  new DeleteObjectsCommand({
+                    Bucket: process.env.AWS_S3_BUCKET_NAME!,
+                    Delete: {
+                      Objects: reportsToDelete.map((r) => {
+                        const url = new URL(r!.url);
+                        const key = decodeURIComponent(url.pathname.slice(1));
+                        return { Key: key };
+                      }), // Use a 'key' do seu schema
+                    },
+                  })
+                );
+              }
+    
+              // 3. Apaga todo o histórico de cargos antigo do banco de dados.
+              // A cascata cuidará de apagar os FileAttachments associados.
+              await prisma.userRoleHistory.deleteMany({ where: { registrationId: id } });
+    
+              // 4. Cria os novos registros de histórico
+              if (roleHistory.length > 0) {
+                for (const historyItem of roleHistory) {
+                  const { managementReport, ...historyData } = historyItem;
+    
+                  const createdHistory = await prisma.userRoleHistory.create({
+                    data: {
+                      registration: { connect: { id } },
+                      role: { connect: { id: historyData.roleId } },
+                      managementReportLink: historyData.managementReportLink,
+                      semester: historyData.semester,
+                    },
+                  });
+    
+                  // Se houver um relatório (novo ou antigo mantido), conecta ou cria
+                  if (managementReport) {
+                    if (managementReport.id) {
+                      // Conecta um relatório existente
+                      await prisma.userRoleHistory.update({
+                        where: { id: createdHistory.id },
+                        data: {
+                          managementReport: {
+                            connect: { id: managementReport.id },
+                          },
+                        },
+                      });
+                    } else if (managementReport.url) {
+                      // Cria um novo anexo para um relatório recém-enviado
+                      const newReport = await prisma.fileAttachment.create({
+                        data: {
+                          url: managementReport.url,
+                          fileName: managementReport.fileName,
+                          fileType: managementReport.fileType,
+                        },
+                      });
+                      await prisma.userRoleHistory.update({
+                        where: { id: createdHistory.id },
+                        data: { managementReportId: newReport.id },
+                      });
+                    }
+                  }
+                }
+              }
+            }
+
     const updatedRequest = await prisma.registrationRequest.update({
       where: { id },
       data: {
         ...dataToUpdate,
+        professionalInterests: {
+          set: professionalInterests?.map((id: string) => ({ id })) || [],
+        },
         ...(isExMember && { isExMember: isExMember === "Sim" ? true : false }),
         ...(alumniDreamer && {
           alumniDreamer: alumniDreamer === "Sim" ? true : false,

@@ -11,4 +11,13 @@ export async function updateHeartbeat(userId: string) {
   });
 }
 
+export async function getInterestCategories() {
+  const interestCategories = await prisma.interestCategory.findMany({
+    include: {
+      interests: true,
+    },
+  });
+  return interestCategories;
+}
+
 // lib/utils.ts

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { toast } from "sonner";
-import { Role } from "@prisma/client";
+import { Role, InterestCategory, ProfessionalInterest } from "@prisma/client";
 
 // Seus imports de componentes e schemas
 import CustomCard from "@/app/_components/Global/Custom/CustomCard";
@@ -22,13 +22,16 @@ import {
 import { formatDateForInput, getModalFields, getUserStatus } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ModalConfirm from "../../Global/ModalConfirm";
+import { getInterestCategories } from "@/lib/actions/user";
 
 // --- PROPS CORRIGIDAS ---
-// Voltamos ao formato original, que é mais claro para os componentes pais
 interface UsersContentProps {
   members: UniversalMember[];
   exMembers: UniversalMember[];
   availableRoles: Role[];
+  interestCategories: (InterestCategory & {
+    interests: ProfessionalInterest[];
+  })[];
   type?: "approve" | "users";
 }
 
@@ -41,12 +44,16 @@ const ROLE_ID_OUTRO = process.env.OTHER_ROLE_ID as string;
 interface QueryData {
   list: UniversalMember[];
   roles: Role[];
+  interests: (InterestCategory & {
+    interests: ProfessionalInterest[];
+  })[];
 }
 
 const UsersContent = ({
   members: initialMembers,
   exMembers: initialExMembers,
   availableRoles: initialRoles,
+  interestCategories: initialInterestCategories,
   type = "users",
 }: UsersContentProps) => {
   // --- ESTADO DA UI (Permanece) ---
@@ -89,20 +96,23 @@ const UsersContent = ({
     queryFn: async () => {
       const listEndpoint =
         type === "approve" ? "/registration-requests" : "/users";
-      const [listRes, rolesRes] = await Promise.all([
+      const [listRes, rolesRes, interestRes] = await Promise.all([
         axios.get(`${API_URL}/api${listEndpoint}`),
         axios.get(`${API_URL}/api/roles`),
+        getInterestCategories(),
       ]);
       // Normalizamos a resposta para sempre ter uma propriedade 'list' e 'roles'
       return {
         list: listRes.data.requests || listRes.data.users,
         roles: rolesRes.data,
+        interests: interestRes,
       };
     },
     // O estado inicial é construído a partir das props recebidas do Server Component
     initialData: {
       list: [...initialMembers, ...initialExMembers],
       roles: initialRoles,
+      interests: initialInterestCategories,
     },
   });
 
@@ -113,7 +123,7 @@ const UsersContent = ({
   const { mutate: updateUser, isPending: isUpdatingUser } = useMutation({
     mutationFn: async (formData: UserProfileValues) => {
       let imageUrl = formData.imageUrl;
-      console.log(formData);
+    
       // Lógica de Upload S3 agora vive aqui dentro
       if (formData.image instanceof File) {
         const file = formData.image;
@@ -273,11 +283,11 @@ const UsersContent = ({
               ?.name || "Outro"
           );
         }
-        
+
         if (row.roles && row.roles.length > 0) {
           return row.roles[row.roles.length - 1].name;
         }
-        
+
         return "Sem cargo";
       },
     },
@@ -489,6 +499,73 @@ const UsersContent = ({
       header: "Imagem de Perfil",
       type: "dropzone",
     },
+    {
+      accessorKey: "professionalInterests",
+      header: "Interesses Profissionais",
+      type: "interests",
+      interests: data.interests,
+      renderView(dataRow) {
+        const interests = dataRow?.professionalInterests || [];
+        const labelInterests = data.interests
+          .flatMap((category) => category.interests)
+          .filter((interest) => interests.includes(interest.id))
+          .map((interest) => interest.name);
+        if (interests.length === 0)
+          return (
+            <span className="text-sm text-gray-400">
+              Nenhum interesse selecionado
+            </span>
+          );
+        return (
+          <div className="flex flex-wrap gap-2">
+            {labelInterests.map((interest) => (
+              <span
+                key={interest}
+                className="bg-[#00205e] text-sm px-3 py-1 rounded-full"
+              >
+                {interest}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "roleHistory",
+      header: "Histórico de Cargos",
+      type: "roleHistory",
+      roles: availableRoles,
+      renderView(dataRow) {
+        const roleHistory = dataRow?.roleHistory || [];
+      
+        if (roleHistory.length === 0)
+          return (
+            <span className="text-sm text-gray-400">
+              Nenhum histórico de cargos
+            </span>
+          );
+        return (
+          <div className="flex flex-col gap-3">
+            {roleHistory.map((roleEntry, index) => {
+              const roleName =
+                availableRoles.find((role) => role.id === roleEntry!.roleId)
+                  ?.name || "Cargo removido";
+              return (
+                <div
+                  key={index}
+                  className="bg-[#00205e] p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between gap-2"
+                >
+                  <span className="text-sm">{roleName}</span>
+                  <span className="text-sm">
+                    Semestre: {roleEntry!.semester}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      },
+    },
   ];
 
   modalFields.push(...lastFields);
@@ -525,6 +602,18 @@ const UsersContent = ({
       isWorking: user.isWorking ? "Sim" : "Não",
       workplace: user.workplace || "",
       isExMember: user.isExMember ? "Sim" : "Não",
+      professionalInterests: user.professionalInterests.map(
+        (interest) => interest.id
+      ),
+      roleHistory:
+        user.roleHistory.map((history) => ({
+          id: history.id,
+          roleId: history.roleId,
+          semester: history.semester,
+          // PASSE O OBJETO DO RELATÓRIO PARA O FORMULÁRIO
+          managementReport: history.managementReport,
+          managementReportLink: history.managementReportLink ?? "",
+        })) ?? [],
       alumniDreamer: user.alumniDreamer ?? false ? "Sim" : "Não", // O schema da API espera "Sim" ou "Não"
       roles: user.roles.map((role) => role.id), // O schema da API espera um array de IDs
       ...(type === "users"

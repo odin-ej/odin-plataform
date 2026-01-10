@@ -121,6 +121,16 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     toast.error("Formulário Inválido", {
       description: "Por favor, corrija os campos destacados e tente novamente.",
     });
+    if(!isPerfilPage) {
+      const roleHistory = form.getValues("roleHistory" as Path<z.infer<T>>);
+      const professionalInterests = form.getValues("professionalInterests" as Path<z.infer<T>>);
+      if(roleHistory.length === 0) {
+        toast.error("Preencha o histórico de cargos corretamente!");
+      }
+      if(professionalInterests.length === 0) {
+        toast.error("Selecione ao menos um interesse profissional!");
+      }
+    }
   };
 
   const handleFormSubmission = (data: z.infer<T>) => {
@@ -134,10 +144,9 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
     onSubmit(finalData);
   };
 
-
-    const userRoles = roles.filter(role => {
-      return watchedRoles.includes(role.id)
-    }) 
+  const userRoles = roles.filter((role) => {
+    return watchedRoles.includes(role.id);
+  });
 
   return (
     <FormProvider {...form}>
@@ -312,12 +321,12 @@ const ExMemberForm = <T extends z.ZodType<any, any, any>>({
           label="Imagem de Perfil"
         />
 
-        {isPerfilPage && interestCategories && (
+        {interestCategories && (
           <div className="space-y-8 pt-6">
             <ProfessionalInterestsManager
               interestCategories={interestCategories}
             />
-            <RoleHistoryManager roles={userRoles} />
+            {<RoleHistoryManager roles={userRoles} />}
           </div>
         )}
 

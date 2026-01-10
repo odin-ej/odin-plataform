@@ -1,5 +1,6 @@
 import UsersContent from "@/app/_components/Dashboard/usuarios/UsersContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
+import { getInterestCategories } from "@/lib/actions/user";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
@@ -77,12 +78,15 @@ const Page = async () => {
   const hasPermission = verifyAccess({ pathname: "/usuarios", user: authUser });
   if (!hasPermission) return <DeniedAccess />;
 
+  const interestCategories = await getInterestCategories()
+
   return (
     <div className="md:p-8 p-4">
       <UsersContent
         exMembers={members}
         members={exMembers}
         availableRoles={roles!}
+        interestCategories={interestCategories}
       />
     </div>
   );

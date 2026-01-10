@@ -6,6 +6,7 @@ import { RegistrationRequestWithRoles } from "@/lib/schemas/memberFormSchema";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
+import { getInterestCategories } from "@/lib/actions/user";
 
 export const metadata = constructMetadata({ title: "Aprovação de Cadastro" });
 
@@ -63,6 +64,8 @@ const Page = async () => {
     (request) => request.isExMember === true
   );
 
+  const interestCategories = await getInterestCategories()
+
   return (
     <div className="md:p-8 p-4 w-full">
       <UsersContent
@@ -70,6 +73,7 @@ const Page = async () => {
         availableRoles={initialData.roles}
         members={members}
         exMembers={exMembers}
+        interestCategories={interestCategories}
       />
     </div>
   );

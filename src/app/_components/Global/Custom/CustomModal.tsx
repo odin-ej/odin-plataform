@@ -31,6 +31,9 @@ import ImageCropModal from "../ImageCropModal";
 import CustomTextArea from "./CustomTextArea";
 import CommandMultiSelect from "./CommandMultiSelect";
 import FileUploadZone, { UploadableFile } from "../FileUploadZone";
+import ProfessionalInterestsManager from "../../Dashboard/usuarios/ProfessionalInterestsManager";
+import RoleHistoryManager from "../../Dashboard/usuarios/RoleHistoryManager";
+import { Role, InterestCategory, ProfessionalInterest } from "@prisma/client";
 
 export interface FieldConfig<T> {
   type?:
@@ -44,12 +47,18 @@ export interface FieldConfig<T> {
     | "password"
     | "command"
     | "textarea"
-    | "attachments";
+    | "attachments"
+    | "interests"
+    | "roleHistory";
   mask?: "phone" | "date" | null;
   header: string;
   accessorKey: Path<T>;
   allowSameItems?: boolean;
   options?: { value: string; label: string }[];
+  roles?: Role[];
+  interests?: (InterestCategory & {
+      interests: ProfessionalInterest[];
+    })[];
   disabled?: boolean;
   isMulti?: boolean;
   renderView?: (data: T) => React.ReactNode;
@@ -152,7 +161,7 @@ const CustomModal = <T extends FieldValues>({
             }
           }}
           className={cn(
-            "w-full max-w-sm sm:max-w-md md:max-w-3xl bg-[#010d26] text-white border-2 border-[#0126fb]/80 p-6 rounded-md",
+            "w-full max-w-sm sm:max-w-md md:max-w-3xl lg:max-w-5xl bg-[#010d26] text-white border-2 border-[#0126fb]/80 p-6 rounded-md",
             "max-h-[70vh] overflow-y-auto",
             "sm:rounded-lg sm:p-6",
             "scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
@@ -252,7 +261,11 @@ const CustomModal = <T extends FieldValues>({
                                     key={accessorKey as string}
                                     form={form}
                                     name={accessorKey as string}
-                                    page={fieldInfo.allowSameItems ? page as string : undefined}
+                                    page={
+                                      fieldInfo.allowSameItems
+                                        ? (page as string)
+                                        : undefined
+                                    }
                                     label={fieldInfo.header}
                                     options={fieldInfo.options || []}
                                   />
@@ -340,6 +353,16 @@ const CustomModal = <T extends FieldValues>({
                                   type={fieldInfo.type}
                                 />
                               );
+                            case "interests":
+                              return (
+                                <ProfessionalInterestsManager
+                                  interestCategories={fieldInfo.interests!}
+                                />
+                              );
+                            case "roleHistory":
+                              return (
+                                <RoleHistoryManager roles={fieldInfo.roles!} />
+                              )
                             default:
                               return (
                                 <CustomInput
