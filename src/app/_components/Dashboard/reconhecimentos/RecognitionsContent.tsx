@@ -51,7 +51,7 @@ const RecognitionsContent = ({ initialData }: RecognitionsContentProps) => {
   const { user } = useAuth();
 
   const isDirector = checkUserPermission(user!, {
-    allowedRoles: ["Gerente de Conexões", 'Assessor(a) de Conexões'],
+    allowedRoles: ["Gerente de Conexões", 'Gerente de Captação'],
     allowedAreas: [AreaRoles.DIRETORIA]
   });
 
