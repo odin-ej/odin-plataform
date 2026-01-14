@@ -13,7 +13,7 @@ interface CasinhaWinnerCardProps {
   title: string;
   date: string;
   imageUrl?: string;
-  authorName?: string;
+  recognizerName?: string;
   isDirector?: boolean;
   onDelete?: () => void;
   className?: string;
@@ -24,7 +24,7 @@ const CasinhaWinnerCard = ({
   title,
   date,
   imageUrl,
-  authorName,
+  recognizerName,
   isDirector,
   onDelete,
   className,
@@ -113,7 +113,7 @@ const CasinhaWinnerCard = ({
           <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
              <span className="flex items-center gap-1">
                <UserPen size={10} className="text-[#0126fb]" />
-               Atribuído por: <span className="text-blue-200">{authorName || "Diretoria"}</span>
+               Reconhecido por: <span className="text-blue-200">{recognizerName || "Diretoria"}</span>
              </span>
           </div>
           <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">

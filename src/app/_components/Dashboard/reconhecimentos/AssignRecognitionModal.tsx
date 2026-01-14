@@ -11,9 +11,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Form,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Plus, Award, Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,28 +36,27 @@ interface AssignRecognitionModalProps {
 
 const AssignRecognitionSchema = z.object({
   userId: z.string().min(1, "Selecione um membro"),
+  receivedFromId: z.string().min(1, "Selecione um membro"),
   date: z.string().min(1, "Selecione a data do reconhecimento"),
   description: z.string().optional(),
   media: z.any().optional(),
   scheduleId: z.string(),
 });
 
-const AssignRecognitionModal = ({
-  authorId,
-}: AssignRecognitionModalProps) => {
-   const queryClient = useQueryClient()
+const AssignRecognitionModal = ({ authorId }: AssignRecognitionModalProps) => {
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   // Inicialização do Formulário
   const form = useForm({
-   resolver: zodResolver(AssignRecognitionSchema),
+    resolver: zodResolver(AssignRecognitionSchema),
     defaultValues: {
       userId: "",
       date: new Date().toISOString().split("T")[0], // Data de hoje como default
       description: "",
-      scheduleId: '',
+      scheduleId: "",
       media: null,
     },
   });
@@ -70,18 +67,19 @@ const AssignRecognitionModal = ({
     queryFn: () => getAllUsers(),
   });
 
-  const {data: schedules} = useQuery({
-    queryKey: ['yearlyValueSchedule'],
+  const { data: schedules } = useQuery({
+    queryKey: ["yearlyValueSchedule"],
     queryFn: () => getYearlyValueSchedule(new Date().getFullYear()),
   });
 
   const scheduleOptions = useMemo(() => {
-      return schedules?.map((schedule) => ({
-         label: `${schedule.month} - ${schedule.value.name}`,
-         value: schedule.id,
-      })) || [];
-  }, [schedules])
-
+    return (
+      schedules?.map((schedule) => ({
+        label: `${schedule.month} - ${schedule.value.name}`,
+        value: schedule.id,
+      })) || []
+    );
+  }, [schedules]);
 
   const onSubmit = async (values: any) => {
     const formData = new FormData();
@@ -90,35 +88,38 @@ const AssignRecognitionModal = ({
     formData.append("description", values.description);
     formData.append("scheduleId", values.scheduleId);
     formData.append("authorId", authorId);
- // O arquivo binário
+    formData.append("receivedFromId", values.receivedFromId);
+    // O arquivo binário
 
     setLoading(true);
     try {
       let mediaUrl = "";
-          if (values.media) {
-      setUploadProgress(30);
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", values.media);
+      if (values.media) {
+        setUploadProgress(30);
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", values.media);
 
-      const uploadRes = await fetch("/api/recognitions/upload", {
-        method: "POST",
-        body: uploadFormData,
-      });
+        const uploadRes = await fetch("/api/recognitions/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
 
-      if (!uploadRes.ok) throw new Error("Falha no upload da imagem");
-      
-      const uploadData = await uploadRes.json();
-      mediaUrl = uploadData.url;
-      formData.append("mediaUrl", mediaUrl);
-      setUploadProgress(70);
-    };
+        if (!uploadRes.ok) throw new Error("Falha no upload da imagem");
+
+        const uploadData = await uploadRes.json();
+        mediaUrl = uploadData.url;
+        formData.append("mediaUrl", mediaUrl);
+        setUploadProgress(70);
+      }
       await assignRecognitionToUser(formData);
-      queryClient.invalidateQueries({ queryKey: ["yearlySchedule", new Date().getFullYear()] });
+      queryClient.invalidateQueries({
+        queryKey: ["yearlySchedule", new Date().getFullYear()],
+      });
       toast.success("Casinha atribuída!");
       form.reset();
       setUploadProgress(0);
       setIsOpen(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Erro no servidor.");
     } finally {
@@ -135,7 +136,7 @@ const AssignRecognitionModal = ({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="bg-[#010d26] border-[#0126fb]/30 text-white sm:max-w-[450px] overflow-y-auto max-h-[90vh]">
+      <DialogContent className="bg-[#010d26] border-[#0126fb]/30 text-white sm:max-w-[450px] lg:max-w-[600px] overflow-y-auto max-h-[90vh] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl font-black italic uppercase tracking-tighter">
             <Award className="text-[#f5b719]" />
@@ -153,14 +154,29 @@ const AssignRecognitionModal = ({
           >
             {/* Seleção de Membro */}
             <CustomSelect
-               control={form.control}
-               name="userId"
-               label="Membro"
-               placeholder="Selecione o membro que receberá a casinha"
-               options={users?.map((user) => ({
-                 label: user.name,
-                   value: user.id,
-               })) || []}
+              control={form.control}
+              name="userId"
+              label="Membro reconhecido:"
+              placeholder="Selecione o membro que receberá a casinha"
+              options={
+                users?.map((user) => ({
+                  label: user.name,
+                  value: user.id,
+                })) || []
+              }
+            />
+
+            <CustomSelect
+              control={form.control}
+              name="receivedFromId"
+              label="Recebido de:"
+              placeholder="Selecione o membro"
+              options={
+                users?.map((user) => ({
+                  label: user.name,
+                  value: user.id,
+                })) || []
+              }
             />
 
             <div className="grid grid-cols-1 gap-4">
@@ -168,28 +184,27 @@ const AssignRecognitionModal = ({
               <CustomInput
                 control={form.control}
                 field="date"
-                mask='date'
+                mask="date"
                 label="Data do Momento"
                 type="text"
                 className="bg-black/40 border-white/10 h-11"
               />
             </div>
             <CustomSelect
-               control={form.control}
-               name='scheduleId'
-               label='Valor do Mês'
-               placeholder='Selecione o valor do mês'
-               options={scheduleOptions}
+              control={form.control}
+              name="scheduleId"
+              label="Valor do Mês"
+              placeholder="Selecione o valor do mês"
+              options={scheduleOptions}
             />
 
             {/* Descrição */}
             <CustomTextArea
-               control={form.control}
-               field="description"
-               label="Descrição / Motivo (Opcional)"
-               placeholder="Por que este membro está recebendo a casinha?"
-               className="bg-black/40 border-white/10 text-white min-h-[80px] focus:border-[#0126fb]/50"
-
+              control={form.control}
+              field="description"
+              label="Descrição / Motivo (Opcional)"
+              placeholder="Por que este membro está recebendo a casinha?"
+              className="bg-black/40 border-white/10 text-white min-h-[80px] focus:border-[#0126fb]/50"
             />
 
             {/* Foto do Momento (DynamicDropzone) */}
@@ -206,7 +221,7 @@ const AssignRecognitionModal = ({
             <DialogFooter className="pt-4">
               <Button
                 type="submit"
-                className="w-full bg-[#0126fb] hover:bg-[#0126fb]/80 text-white font-black uppercase italic h-12 gap-2"
+                className="bg-[#0126fb] hover:bg-[#0126fb]/80 text-white font-black uppercase italic h-12 gap-2"
                 disabled={loading}
               >
                 {loading ? (

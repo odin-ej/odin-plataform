@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 import { prisma } from "@/db";
-import { RecognitionType } from "@prisma/client";
+import { NotificationType, RecognitionType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { s3Client } from "../aws";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getAuthenticatedUser } from "../server-utils";
+import { createNotification } from "./notifications";
 
 export async function getYearlyValueSchedule(year: number) {
   return await prisma.monthlyValueSchedule.findMany({
@@ -16,6 +17,7 @@ export async function getYearlyValueSchedule(year: number) {
         include: {
           winners: true,
           media: true,
+          receivedFrom: true,
           recognitionModel: true,
           author: true,
         },
@@ -217,6 +219,7 @@ export async function assignRecognitionToUser(formData: FormData) {
   const date = formData.get("date") as string;
   const description = formData.get("description") as string;
   const scheduleId = formData.get("scheduleId") as string;
+  const receivedFromId = formData.get('receivedFromId') as string;
   const mediaUrl = formData.get("mediaUrl") as string;
 
   try {
@@ -245,6 +248,7 @@ export async function assignRecognitionToUser(formData: FormData) {
           recognitionModelId: model.id,
           scheduleId: scheduleId,
           authorId: authUser.id,
+          receivedFromId: receivedFromId,
           winners: {
             connect: { id: userId },
           },
@@ -261,6 +265,23 @@ export async function assignRecognitionToUser(formData: FormData) {
         },
       });
     });
+
+    const usersToNotificate = await prisma.user.findMany({
+      where: {
+        id: { not: authUser.id },
+        isExMember: false,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    await createNotification({
+      description: '',
+      link: '/reconhecimentos',
+      type: NotificationType.NEW_MENTION,
+      targetUsersIds: usersToNotificate.map(user => user.id)
+    })
 
     revalidatePath("/reconhecimentos");
     return { success: true, data: result };

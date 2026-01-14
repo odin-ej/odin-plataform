@@ -232,7 +232,7 @@ const RecognitionsContent = ({ initialData }: RecognitionsContentProps) => {
                   <CasinhaWinnerCard
                     key={winner.id}
                     winner={winner}
-                    authorName={rec.author.name}
+                    recognizerName={rec.receivedFrom.name}
                     isDirector={isDirector}
                     onDelete={() => setItemToDelete(rec.id)}
                     title={rec.recognitionModel.title}

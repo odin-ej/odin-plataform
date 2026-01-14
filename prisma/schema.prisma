@@ -338,6 +338,7 @@ model User {
   Channel                       Channel[]
   recognitionsReceived          Recognition[]                @relation("UserRecognitions")
   recognitionsGiven             Recognition[]                @relation("RecognitionGiver")
+  recognitionsSent              Recognition[]                 @relation("UserRecognitionsSent")
   lastActiveAt DateTime? @map("last_active_at")
 }
 
@@ -1234,6 +1235,9 @@ model Recognition {
   winners            User[]                @relation("UserRecognitions")
   authorId           String
   author             User                  @relation("RecognitionGiver", fields: [authorId], references: [id], onDelete: Cascade)
+  receivedFrom      User?                @relation("UserRecognitionsSent", fields:[receivedFromId], references: [id], onDelete: Cascade)
+  receivedFromId    String?
+
   // Fotos do momento
   media              FileAttachment[]
   createdAt          DateTime              @default(now())
