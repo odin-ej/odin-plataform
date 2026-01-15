@@ -127,7 +127,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       {
         name: "ALFA",
         description:
-          "Energia, garra e excelência definem quem somos. A Alfa ruge mais alto. Alfa!",
+          "Energia, garra e excelência definem quem somos. Força, foco e atitude fazem parte do nosso DNA. A Alfa ruge mais alto. Alfa!",
         imageUrl: "/alfa-3.png",
         totalProjects: alfaTotalProjects!,
         color: "text-orange-500",
