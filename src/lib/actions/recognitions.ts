@@ -219,7 +219,7 @@ export async function assignRecognitionToUser(formData: FormData) {
   const date = formData.get("date") as string;
   const description = formData.get("description") as string;
   const scheduleId = formData.get("scheduleId") as string;
-  const receivedFromId = formData.get('receivedFromId') as string;
+  const receivedFromId = formData.get("receivedFromId") as string;
   const mediaUrl = formData.get("mediaUrl") as string;
 
   try {
@@ -240,6 +240,43 @@ export async function assignRecognitionToUser(formData: FormData) {
 
     // 4. Transação no Banco de Dados
     const result = await prisma.$transaction(async (tx) => {
+      const winner = await tx.user.find({
+        where: {
+          id: userId,
+        },
+      });
+
+      const giver = await tx.user.find({
+        where: {
+          id: receivedFromId,
+        },
+      });
+
+      const schedule = await tx.monthlyValueSchedule.find({
+        where: {
+          id: scheduleId,
+        },
+      });
+
+      const usersToNotificate = await tx.user.findMany({
+      where: {
+        id: { not: authUser.id },
+        isExMember: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await createNotification({
+      description: `${winner.name.slice(" ")[0]} recebeu a casinha de ${
+        giver.name.slice(" ")[0]
+      } no valor: ${schedule.monthlyValue}!`,
+      link: "/reconhecimentos",
+      type: NotificationType.NEW_MENTION,
+      targetUsersIds: usersToNotificate.map((user) => user.id),
+    });
+
       return await tx.recognition.create({
         data: {
           date: date,
@@ -266,22 +303,7 @@ export async function assignRecognitionToUser(formData: FormData) {
       });
     });
 
-    const usersToNotificate = await prisma.user.findMany({
-      where: {
-        id: { not: authUser.id },
-        isExMember: false,
-      },
-      select: {
-        id: true,
-      },
-    })
-
-    await createNotification({
-      description: '',
-      link: '/reconhecimentos',
-      type: NotificationType.NEW_MENTION,
-      targetUsersIds: usersToNotificate.map(user => user.id)
-    })
+    
 
     revalidatePath("/reconhecimentos");
     return { success: true, data: result };
