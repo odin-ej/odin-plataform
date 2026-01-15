@@ -101,7 +101,7 @@ const CasinhaWinnerCard = ({
         {/* Informações do Vencedor */}
         <div className="space-y-1 relative z-99">
           <h4 className="text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] uppercase italic tracking-tighter">
-            {winner.name.split(" ")[0]} {winner.name.split(" ")[1] || ""}
+            {winner.name.split(" ")[0]} {winner.name.split(" ")[winner.name.split(" ").length - 1] || ""}
           </h4>
           <p className="text-[#f5b719] text-xs font-black uppercase tracking-[0.2em] bg-[#f5b719]/10 py-1 px-3 rounded-lg border border-[#f5b719]/20">
             {title || "Casinha do Valor"}
