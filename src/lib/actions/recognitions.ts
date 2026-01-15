@@ -267,7 +267,7 @@ export async function assignRecognitionToUser(formData: FormData) {
         id: true,
       },
     });
-
+    if(!winner || !giver || !schedule) throw new Error("Usuário ou agente não encontrado.");
     await createNotification({
       description: `${winner.name.slice(" ")[0]} recebeu a casinha de ${
         giver.name.slice(" ")[0]
