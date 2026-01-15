@@ -240,19 +240,19 @@ export async function assignRecognitionToUser(formData: FormData) {
 
     // 4. Transação no Banco de Dados
     const result = await prisma.$transaction(async (tx) => {
-      const winner = await tx.user.find({
+      const winner = await tx.user.findUnique({
         where: {
           id: userId,
         },
       });
 
-      const giver = await tx.user.find({
+      const giver = await tx.user.findUnique({
         where: {
           id: receivedFromId,
         },
       });
 
-      const schedule = await tx.monthlyValueSchedule.find({
+      const schedule = await tx.monthlyValueSchedule.findUnique({
         where: {
           id: scheduleId,
         },
