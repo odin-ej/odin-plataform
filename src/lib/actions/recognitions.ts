@@ -256,7 +256,10 @@ export async function assignRecognitionToUser(formData: FormData) {
         where: {
           id: scheduleId,
         },
-      });
+        include: {
+          value: true
+        }
+      })
 
       const usersToNotificate = await tx.user.findMany({
       where: {
@@ -270,8 +273,8 @@ export async function assignRecognitionToUser(formData: FormData) {
     if(!winner || !giver || !schedule) throw new Error("Usuário ou agente não encontrado.");
     await createNotification({
       description: `${winner.name} recebeu a casinha de ${
-        giver.name.slice(" ")[0]
-      } no valor: ${schedule.monthlyValue}!`,
+        giver.name
+      } no valor: ${schedule.value.name}!`,
       link: "/reconhecimentos",
       type: NotificationType.NEW_MENTION,
       targetUsersIds: usersToNotificate.map((user) => user.id),
