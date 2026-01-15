@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Link2, User, Tag, Lightbulb, ImageIcon, Eye } from "lucide-react";
+import { Link2, User, Tag, Lightbulb, ImageIcon, Eye, Users } from "lucide-react";
 import Image from "next/image";
 import { FullInovationInitiative } from "./InovationCard";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface InnovationModalProps {
   data: FullInovationInitiative | null;
@@ -18,10 +21,20 @@ export const InnovationModal = ({
 }: InnovationModalProps) => {
   if (!data) return null;
 
+  const getMemberRoleBySemester = (member: any) => {
+    if (!member.roleHistory || member.roleHistory.length === 0) return null;
+    
+    const roleAtTime = member.roleHistory.find(
+      (rh: any) => rh.semester === data.semester.name
+    );
+
+    return roleAtTime?.role?.name || null;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogTitle className="sr-only">{data.title}</DialogTitle>
-      <DialogContent className="max-w-4xl h-[90vh] overflow-y-auto bg-[#010d26] border-[#f5b719]/40 text-slate-200 p-0 gap-0 scrollbar-thin  scrollbar-track-transparent">
+      <DialogContent className="w-[80vw] max-w-4xl sm:max-w-4xl h-[90vh] overflow-y-auto bg-[#010d26] border-[#f5b719]/40 text-slate-200 p-0 gap-0 scrollbar-thin scrollbar-track-transparent">
         {/* Header Colorido */}
         <div className="bg-gradient-to-r from-blue-900 to-[#010d26] p-6 border-b border-white/10 sticky top-0 z-50">
           <div className="flex justify-between items-center">
@@ -87,7 +100,7 @@ export const InnovationModal = ({
                       Implementado em:
                     </span>
                     <span className="font-mono text-white">
-                      {format(data.dateImplemented, "dd/MM/yyyy")}
+                      {formatInTimeZone(data.dateImplemented, "America/Sao_Paulo", "dd/MM/yyyy")}
                     </span>
                   </div>
                 )}
@@ -98,7 +111,7 @@ export const InnovationModal = ({
                       Coletado em:
                     </span>
                     <span className="font-mono text-white">
-                      {format(data.dateColected, "dd/MM/yyyy")}
+                      {formatInTimeZone(data.dateColected, "America/Sao_Paulo", "dd/MM/yyyy")}
                     </span>
                   </div>
                 )}
@@ -227,6 +240,49 @@ export const InnovationModal = ({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Seção Membros Envolvidos */}
+         <div className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <Users className="text-[#0126fb]" size={24} />
+              <h3 className="text-xl font-bold text-white uppercase tracking-tighter italic">
+                Membros Envolvidos
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.members?.map((member: any) => {
+                const role = getMemberRoleBySemester(member);
+                return (
+                  <div 
+                    key={member.id} 
+                    className="group relative flex items-center gap-4 p-4 rounded-xl bg-slate-900/40 border border-white/5 hover:border-[#0126fb]/50 transition-all hover:bg-[#0126fb]/5"
+                  >
+                    <div className="relative">
+                      <Avatar className="h-14 w-14 border-2 border-[#0126fb]/30 group-hover:border-[#f5b719] transition-colors">
+                        <AvatarImage src={member.imageUrl} className="object-cover" />
+                        <AvatarFallback className="bg-[#010d26] text-[#f5b719]">
+                          {member.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#0126fb] rounded-full border-2 border-[#010d26]" />
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-white group-hover:text-[#f5b719] transition-colors line-clamp-1">
+                        {member.name}
+                      </span>
+                      {role && (
+                        <span className="text-[10px] uppercase font-black tracking-widest text-[#f5b719]/80">
+                          {role}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Seção S.O.C.I.O */}

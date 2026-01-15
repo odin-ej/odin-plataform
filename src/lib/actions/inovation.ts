@@ -2,7 +2,10 @@
 import { prisma } from "@/db";
 import { checkUserPermission } from "../utils";
 import { INOVATION_LEADERS } from "../permissions";
-import { InovationHorizonTypes, InovationInitiativeStatus } from "@prisma/client";
+import {
+  InovationHorizonTypes,
+  InovationInitiativeStatus,
+} from "@prisma/client";
 import { getAuthenticatedUser } from "../server-utils";
 import { CreateInovationValues } from "../schemas/inovation";
 import { revalidatePath } from "next/cache";
@@ -10,7 +13,7 @@ import { s3Client } from "../aws";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 } from "uuid";
 import { createNotification } from "./notifications";
-import { format } from "date-fns";
+import { formatISO } from "date-fns";
 
 async function uploadFileToS3(
   file: File | string | null | undefined
@@ -239,7 +242,7 @@ export async function updateInovationInitiative({
 }) {
   const authUser = await getAuthenticatedUser();
   if (!authUser) throw new Error("Unauthorized");
-
+  console.log(data);
   try {
     // 1. Upload de nova imagem se houver
     const imageUrl = await uploadFileToS3(data.imageUrl as unknown as File);
@@ -257,48 +260,79 @@ export async function updateInovationInitiative({
     await prisma.inovationInitiative.update({
       where: { id },
       data: {
-        title: data.title,
-        type: data.type,
-        shortDescription: data.shortDescription,
-        description: data.description,
-        isRunning: Boolean(data.isRunning),
-        semesterId: data.semesterId,
-        status: data.status, // Permite mudar status (ex: voltar para PENDING ao reenviar)
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.type !== undefined && { type: data.type }),
+        ...(data.shortDescription !== undefined && {
+          shortDescription: data.shortDescription,
+        }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
 
-        // Atualiza imagem apenas se uma nova foi gerada, senão mantém a anterior
-        ...(imageUrl ? { imageUrl } : {}),
+        ...(data.isRunning !== undefined && {
+          isRunning: Boolean(data.isRunning),
+        }),
 
-        inovationHorizon: data.inovationHorizon || null,
+        ...(data.semesterId !== undefined && {
+          semester: {
+            connect: { id: data.semesterId },
+          },
+        }),
 
-        // Datas
-        dateImplemented: data.dateImplemented || null,
-        dateColected: data.dateColected || null,
-        dateChecked: data.dateChecked || null,
+        ...(data.status !== undefined && {
+          status: data.status,
+        }),
 
-        areas: data.areas,
-        subAreas: data.subAreas,
-        tags: tagsArray,
+        // Imagem: só atualiza se existir
+        ...(imageUrl && { imageUrl }),
 
-        // Atualizar Membros (Set substitui a lista antiga pela nova)
-        members: {
-          set: data.members?.map((mid) => ({ id: mid })) || [],
-        },
+        ...(data.inovationHorizon !== undefined && {
+          inovationHorizon: data.inovationHorizon,
+        }),
 
-        // Atualizar Links (Estratégia: Deletar todos antigos e criar novos)
-        links: {
-          deleteMany: {},
-          create:
-            data.links
-              ?.filter((l) => l.url)
-              .map((l) => ({ label: l.label, url: l.url })) || [],
-        },
+        // Datas — só atualiza se vierem
+        ...(data.dateImplemented !== undefined && {
+          dateImplemented: data.dateImplemented,
+        }),
+        ...(data.dateColected !== undefined && {
+          dateColected: data.dateColected,
+        }),
+        ...(data.dateChecked !== undefined && {
+          dateChecked: data.dateChecked,
+        }),
 
-        // S.O.C.I.O
-        sentido: data.sentido,
-        organizacao: data.organizacao,
-        cultura: data.cultura,
-        influencia: data.influencia,
-        operacao: data.operacao,
+        ...(data.areas !== undefined && { areas: data.areas }),
+        ...(data.subAreas !== undefined && { subAreas: data.subAreas }),
+        ...(tagsArray !== undefined && { tags: tagsArray }),
+
+        // Members — só atualiza se vier
+        ...(data.members !== undefined && {
+          members: {
+            set: data.members.map((mid) => ({ id: mid })),
+          },
+        }),
+
+        // Links — só atualiza se vier
+        ...(data.links !== undefined && {
+          links: {
+            deleteMany: {},
+            create: data.links
+              .filter((l) => l.url)
+              .map((l) => ({
+                label: l.label,
+                url: l.url,
+              })),
+          },
+        }),
+
+        // S.O.C.I.O — padrão correto
+        ...(data.sentido !== undefined && { sentido: data.sentido }),
+        ...(data.organizacao !== undefined && {
+          organizacao: data.organizacao,
+        }),
+        ...(data.cultura !== undefined && { cultura: data.cultura }),
+        ...(data.influencia !== undefined && { influencia: data.influencia }),
+        ...(data.operacao !== undefined && { operacao: data.operacao }),
       },
     });
 
@@ -336,7 +370,7 @@ export async function auditInovationInitiative({
         inovationHorizon,
         reviewerId: authUser.id,
         //Preciso que isso seja aprova de erros de fuso-horário
-        dateChecked: format(new Date(), "dd/MM/yyyy"), // Data da auditoria
+        dateChecked: formatISO(new Date()), // Data da auditoria
       },
     });
 
