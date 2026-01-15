@@ -127,7 +127,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
       {
         name: "ALFA",
         description:
-          "A Alfa conjura a perfeição. Somos a essência do poder bruxo, e nossa grandeza é inquestionável! Alfa!",
+          "Energia, garra e excelência definem quem somos. A Alfa ruge mais alto. Alfa!",
         imageUrl: "/alfa-3.png",
         totalProjects: alfaTotalProjects!,
         color: "text-orange-500",
