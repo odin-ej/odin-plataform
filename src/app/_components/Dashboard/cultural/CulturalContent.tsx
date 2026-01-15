@@ -128,7 +128,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
         name: "ALFA",
         description:
           "A Alfa conjura a perfeição. Somos a essência do poder bruxo, e nossa grandeza é inquestionável! Alfa!",
-        imageUrl: "/alfa-2.png",
+        imageUrl: "/alfa-3.png",
         totalProjects: alfaTotalProjects!,
         color: "text-orange-500",
       },
@@ -144,7 +144,7 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
         name: "DELTA",
         description:
           "O palco é nosso, e a Delta é a estrela. Ninguém nos iguala. Somos a própria obra-prima. Open the Delta!",
-        imageUrl: "/delta-2.png",
+        imageUrl: "/delta-3.png",
         totalProjects: deltaTotalProjects!,
         color: "text-rose-500",
       },
