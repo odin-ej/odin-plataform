@@ -187,7 +187,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/gerenciar-link-posters",
     icon: Link,
     roles: [
-
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -201,7 +201,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/gerenciar-cargos",
     icon: BookUser,
     roles: [
-      
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
