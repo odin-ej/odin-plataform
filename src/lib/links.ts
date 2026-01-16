@@ -131,6 +131,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/usuarios",
     icon: Users,
     roles: [
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -144,6 +145,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/aprovacao-cadastro",
     icon: TicketCheck,
     roles: [
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -157,6 +159,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/atualizar-estrategia",
     icon: Goal,
     roles: [
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -170,6 +173,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/conhecimento-ia",
     icon: BrainCog,
     roles: [
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -183,6 +187,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/gerenciar-link-posters",
     icon: Link,
     roles: [
+
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -196,6 +201,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/gerenciar-cargos",
     icon: BookUser,
     roles: [
+      
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
@@ -209,6 +215,7 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/gerenciar-jr-points",
     icon: JrPointIconWhite,
     roles: [
+      { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },
       { name: "Diretor(a) de Mercado" },
