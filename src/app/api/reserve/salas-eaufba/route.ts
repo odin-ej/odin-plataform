@@ -82,11 +82,11 @@ export async function POST(req: Request) {
     const { title, description, date } = validatedBody;
 
     const conectionsRole = await prisma.role.findUnique({
-      where: { name: "Assessor(a) de Conexões" },
+      where: { name: "Gerente de Conexões" },
     });
 
     const actualConectionsMember = await prisma.user.findFirst({
-      where: { currentRole: { name: "Assessor(a) de Conexões" } },
+      where: { currentRole: { name: "Gerente de Conexões" } },
       select: { id: true }
     });
 

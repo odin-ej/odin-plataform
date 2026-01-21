@@ -62,7 +62,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const userIsAssessor = checkUserPermission(authUser, {
       ...DIRECTORS_ONLY,
-      allowedRoles: ["Assessor(a) de Conexões"],
+      allowedRoles: ["Gerente de Conexões"],
     });
 
     let updatedRequest;

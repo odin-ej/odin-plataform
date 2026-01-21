@@ -64,7 +64,7 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
 
   const userHasAllowedRole = checkUserPermission(user, {
     ...DIRECTORS_ONLY,
-    allowedRoles: ["Assessor(a) de Conexões"],
+    allowedRoles: ["Gerente de Conexões"],
   });
 
   const form = useForm<ReserveRequestFormValues>({
