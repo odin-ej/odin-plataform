@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/conversations/cleanup",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/tasks/update-overdue",
+      "schedule": "5 3 * * *"
+    },
+    {
+      "path": "/api/users/notify-incomplete-profiles",
+      "schedule": "0 14 1,16 * *"
+    },
+    {
+      "path": "/api/notifications/send-scheduled",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

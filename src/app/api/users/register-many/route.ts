@@ -1,0 +1,313 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/db";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
+import {
+  CognitoIdentityProviderClient,
+  AdminCreateUserCommand,
+  AdminSetUserPasswordCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
+import { SESClient } from "@aws-sdk/client-ses";
+import bcrypt from "bcrypt";
+import { exMemberWelcomeEmailCommand, welcomeEmailCommand } from "@/lib/email";
+import { revalidatePath } from "next/cache";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { checkUserPermission } from "@/lib/utils";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
+
+// Configuração dos clientes da AWS
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.REGION,
+});
+const sesClient = new SESClient({ region: process.env.REGION });
+
+// Schema de validação para o corpo do pedido
+const registerManySchema = z.object({
+  ids: z
+    .array(z.string().uuid("ID inválido."))
+    .min(1, "Pelo menos um ID de pedido é necessário."),
+});
+
+// --- FUNÇÃO POST: Aprovar múltiplos pedidos de registo ---
+function getFriendlyErrorMessage(error: unknown): string {
+  // Erros do AWS Cognito
+  if (error instanceof Error && "name" in error) {
+    if (error.name === "UsernameExistsException") {
+      return "Este e-mail já está a ser utilizado por outro membro no Cognito.";
+    }
+    if (error.name === "InvalidPasswordException") {
+      return "A senha não cumpre os requisitos de segurança (mín. 8 caracteres, com maiúsculas, minúsculas, números e símbolos).";
+    }
+  }
+
+  // Erros do Prisma (violação de restrição única)
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      const target = error.meta?.target as string[] | undefined;
+      if (target?.includes("email")) {
+        return "O e-mail pessoal fornecido já está em uso por outro membro.";
+      }
+      if (target?.includes("emailEJ")) {
+        return "O e-mail EJ fornecido já está em uso por outro membro.";
+      }
+      if (target?.includes("phone")) {
+        return "O número de telefone fornecido já está em uso por outro membro.";
+      }
+      // Mensagem genérica para outras violações de @unique
+      return `O campo '${target?.join(", ")}' já está em uso.`;
+    }
+
+    // Erros de relação do Prisma
+    if (error.code === "P2025") {
+      return "Erro de relação: Um ou mais cargos a serem conectados não foram encontrados na base de dados.";
+    }
+  }
+
+  // Mensagem padrão para outros erros
+  if (error instanceof Error) {
+    return error.message || "Ocorreu um erro desconhecido durante o processamento.";
+  }
+  return "Ocorreu um erro desconhecido durante o processamento.";
+}
+
+// --- FUNÇÃO POST: Aprovar múltiplos pedidos de registo ---
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const validation = registerManySchema.safeParse(body);
+
+    const authUser = await getAuthenticatedUser();
+    if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado." }, { status: 401 });
+    }
+
+    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          message: "Dados inválidos: " + validation.error.message,
+          errors: validation.error.formErrors.fieldErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { ids } = validation.data;
+
+    const requestsToProcess = await prisma.registrationRequest.findMany({
+      where: {
+        id: { in: ids },
+        status: "PENDING",
+      },
+      include: {
+        roles: true,
+        professionalInterests: true,
+        roleHistory: {
+          include: { role: true, managementReport: true },
+        },
+      },
+    });
+
+    const results = {
+      successful: [] as Array<{ id: string; email: string }>,
+      failed: [] as Array<{ id: string; email: string | null; reason: string }>,
+    };
+
+    for (const req of requestsToProcess) {
+      try {
+        if (!req.email || !req.email.includes("@")) {
+          throw new Error("Endereço de e-mail inválido ou ausente.");
+        }
+
+        const userBirthDate = req.birthDate;
+
+        const cognitoUser = await cognitoClient.send(
+          new AdminCreateUserCommand({
+            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            Username: req.email,
+            UserAttributes: [
+              { Name: "email", Value: req.email },
+              { Name: "name", Value: req.name },
+              {
+                Name: "birthdate",
+                Value: userBirthDate.toISOString().split("T")[0],
+              },
+              {
+                Name: "phone_number",
+                Value: `+55${req.phone.replace(/\D/g, "")}`,
+              },
+              {
+                Name: "custom:role",
+                Value: req.roleId
+                  ? req.roles.find((role) => role.id === req.roleId)?.name ??
+                    req.roles[req.roles.length - 1]?.name
+                  : req.roles[req.roles.length - 1]?.name || "Outro",
+              },
+              {
+                Name: "custom:isExMember",
+                Value: String(req.isExMember ?? false),
+              },
+              { Name: "email_verified", Value: "true" },
+            ],
+            MessageAction: "SUPPRESS",
+          })
+        );
+
+        await cognitoClient.send(
+          new AdminSetUserPasswordCommand({
+            UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID!,
+            Username: req.email,
+            Password: req.password,
+            Permanent: true,
+          })
+        );
+
+        const hashedPassword = await bcrypt.hash(req.password, 10);
+
+        const rolesToConnect =
+          req.roles
+            ?.filter((role) => role.name !== "Outro")
+            .map((role) => ({ id: role.id })) || [];
+
+        const userData = {
+          id: cognitoUser.User?.Attributes?.find((attr) => attr.Name === "sub")
+            ?.Value as string,
+          name: req.name,
+          email: req.email,
+          emailEJ: req.emailEJ,
+          password: hashedPassword,
+          birthDate: userBirthDate,
+          phone: req.phone,
+          imageUrl: req.imageUrl,
+          semesterEntryEj: req.semesterEntryEj,
+          course: req.course,
+          instagram: req.instagram,
+          linkedin: req.linkedin,
+          about: req.about,
+          professionalInterests: {
+            connect:
+              req.professionalInterests.map((interest) => ({
+                id: interest.id,
+              })) || [],
+          },
+          roles: { connect: rolesToConnect },
+          ...(req.roleId && { currentRoleId: req.roleId }),
+          ...(req.semesterLeaveEj && { semesterLeaveEj: req.semesterLeaveEj }),
+          ...(req.aboutEj && { aboutEj: req.aboutEj }),
+          ...(req.isExMember && { isExMember: req.isExMember }),
+          ...(req.alumniDreamer && { alumniDreamer: req.alumniDreamer }),
+          ...(req.otherRole && { otherRole: req.otherRole }),
+        };
+
+        const newUser = await prisma.user.create({ data: userData });
+
+        if (req.roleHistory && req.roleHistory.length > 0) {
+          for (const historyItem of req.roleHistory) {
+            const createdRoleHistory = await prisma.userRoleHistory.create({
+              data: {
+                userId: newUser.id,
+                roleId: historyItem.roleId,
+                semester: historyItem.semester,
+                managementReportLink: historyItem.managementReportLink || null,
+              },
+            });
+
+            if (historyItem.managementReport) {
+              const newReport = await prisma.fileAttachment.create({
+                data: {
+                  url: historyItem.managementReport.url,
+                  fileName: historyItem.managementReport.fileName,
+                  fileType: historyItem.managementReport.fileType,
+                },
+              });
+              await prisma.userRoleHistory.update({
+                where: { id: createdRoleHistory.id },
+                data: { managementReportId: newReport.id },
+              });
+            }
+          }
+        }
+
+        if (newUser.isExMember) {
+          await sesClient.send(
+            exMemberWelcomeEmailCommand({
+              email: newUser.email,
+              name: newUser.name,
+            })
+          );
+        } else {
+          await sesClient.send(
+            welcomeEmailCommand({ email: newUser.email, name: newUser.name })
+          );
+        }
+        const allMembersId = await prisma.user.findMany({
+          select: { id: true },
+        });
+
+        const notification = await prisma.notification.create({
+          data: {
+            link: `/cultural`,
+            type: "NEW_MENTION",
+            notification: `Um novo ${
+              newUser.isExMember ? "ex-membro" : "membro"
+            } está na Plataforma da Casinha dos Sonhos: ${newUser.name}.`,
+          },
+        });
+
+        await prisma.notificationUser.createMany({
+          data: allMembersId
+            .filter((member) => member.id !== newUser.id)
+            .map((user) => ({
+              notificationId: notification.id,
+              userId: user.id,
+            })),
+        });
+
+        await prisma.registrationRequest.delete({ where: { id: req.id } });
+
+        results.successful.push({ id: req.id, email: req.email });
+      } catch (error: unknown) {
+        // Usar a função auxiliar melhorada para obter uma mensagem de erro clara.
+        const friendlyMessage = getFriendlyErrorMessage(error);
+
+        console.error(
+          `Falha ao processar o pedido ${req.id} para ${req.email}:`,
+          error
+        );
+        results.failed.push({
+          id: req.id,
+          email: req.email,
+          reason: friendlyMessage, // Devolve a mensagem amigável para o front-end.
+        });
+
+        try {
+          await prisma.registrationRequest.update({
+            where: { id: req.id },
+            data: {
+              status: "REJECTED",
+              adminNotes: `Falha na aprovação automática: ${friendlyMessage}`, // Guarda a mensagem clara.
+            },
+          });
+        } catch (updateError) {
+          console.error(
+            `Falha ao atualizar o status do pedido ${req.id} para REJEITADO:`,
+            updateError
+          );
+        }
+      }
+    }
+    revalidatePath("/cultural");
+    revalidatePath("/aprovacao-cadastro");
+    return NextResponse.json(results, { status: 200 });
+  } catch (error) {
+    console.error("Erro no processo de aprovação em massa:", error);
+    return NextResponse.json(
+      { message: "Ocorreu um erro interno no servidor." },
+      { status: 500 }
+    );
+  }
+}

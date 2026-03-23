@@ -1,0 +1,1459 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// --- ENUMS ---
+
+enum AccountType {
+  ALFA
+  BETA
+  DELTA
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
+enum RoomStatus {
+  FREE
+  BUSY
+  RESTRICTED
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELED
+}
+
+enum ItemAreas {
+  CONSULTORIA
+  TATICO
+  DIRETORIA
+  GERAL
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  REJECTED
+  APPROVED
+}
+
+enum AreaRoles {
+  CONSULTORIA
+  TATICO
+  PRESIDENCIA
+  MARKETING
+  COMERCIAL
+  ADMINISTRATIVO_FINANCEIRO
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+  DIRETORIA
+  CONSELHO
+  OUTRO
+}
+
+enum TagAreas {
+  PRESIDENCIA
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+  GERAL
+}
+
+enum LinkAreas {
+  GERAL
+  CONSULTORIA
+  DIRETORIA
+  TATICO
+  PRESIDENCIA
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+}
+
+enum OraculoAreas {
+  GERAL
+  CONSULTORIA
+  DIRETORIA
+  TATICO
+  PRESIDENCIA
+  OPERACOES
+  PESSOAS
+  PROJETOS
+  MERCADO
+}
+
+enum RequestStatus {
+  PENDING
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum LinkPosterArea {
+  MEMBROS
+  EXMEMBROS
+  GERAL
+  HOME
+  YGGDRASIL
+  CONSULTORIA
+  DIRETORIA
+  TATICO
+}
+
+enum JRPointsSolicitationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum JRPointsReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  POINTS_AWARDED
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  NEW_MENTION
+  GENERAL_ALERT
+}
+
+enum NotificationScope {
+  USER
+  ROLE
+  AREA
+  ALL
+}
+
+enum NotificationPriority {
+  NORMAL
+  IMPORTANT
+  EVENT
+}
+
+enum ItemStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+}
+
+enum PostType {
+  ORIGINAL
+  REPOST
+  QUOTE // Repost com comentário
+}
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
+  DIRECT
+}
+
+enum ChannelMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum AreaInovationInitiative {
+  Geral
+  Mercado
+  Projetos
+  Presidência
+  Pessoas
+  Operações
+}
+
+enum InovationInitiativeType {
+  Iniciativa
+  Evento
+  Nucleo
+  Pilula
+}
+
+enum SubAreaInovationInitiative {
+  Eventos
+  Performance
+  Marketing
+  Comercial
+  Inovação
+}
+
+enum InovationInitiativeStatus {
+  PENDING
+  APPROVED
+  RUNNING
+  REJECTED
+}
+
+enum InovationHorizonTypes {
+  Incremental
+  Arquitetural
+  Disruptiva
+  Modular
+}
+
+enum RecognitionType {
+  CULTURAL
+  PERFORMANCE
+  RESULTADO
+}
+
+enum RecognitionAreas {
+  GERAL
+  MERCADO
+  PRESIDÊNCIA
+  PROJETOS
+  PESSOAS
+  OPERACOES
+}
+
+// --- MODELS ---
+
+model RegistrationRequest {
+  id              String        @id @default(uuid())
+  status          RequestStatus @default(PENDING)
+  name            String
+  email           String        @unique
+  emailEJ         String        @unique
+  password        String
+  imageUrl        String
+  birthDate       DateTime      @map("birth_date")
+  phone           String        @unique
+  semesterEntryEj String        @map("semester_entry_ej")
+  semesterLeaveEj String?       @map("semester_leave_ej")
+  course          String?
+  instagram       String?
+  linkedin        String?
+  about           String?       @db.Text
+  aboutEj         String?       @db.Text
+  roleId          String?
+  roles           Role[]        @relation("RegistrationRequestRoles")
+  roleHistory                   UserRoleHistory[]
+  professionalInterests         ProfessionalInterest[]
+  otherRole       String?
+  isExMember      Boolean       @default(false) @map("ex_member")
+  alumniDreamer   Boolean       @default(false) @map("alumni_dreamer")
+  isWorking       Boolean?
+  workplace       String?
+  adminNotes      String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model InterestCategory {
+  id        String                 @id @default(uuid())
+  name      String                 @unique // Ex: "Gestão & Estratégia", "Tecnologia & Dados"
+  interests ProfessionalInterest[] // Uma categoria tem muitos interesses
+}
+
+model ProfessionalInterest {
+  id         String           @id @default(uuid())
+  name       String           @unique
+  categoryId String
+  category   InterestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  users      User[]
+  registrationRequests RegistrationRequest[]
+}
+
+model User {
+  id                            String                       @id
+  name                          String
+  email                         String                       @unique
+  emailEJ                       String                       @unique
+  imageUrl                      String
+  password                      String
+  birthDate                     DateTime                     @map("birth_date")
+  phone                         String                       @unique
+  semesterEntryEj               String                       @map("semester_entry_ej")
+  semesterLeaveEj               String?                      @map("semester_leave_ej")
+  linkedin                      String?
+  instagram                     String?
+  course                        String?
+  about                         String?                      @db.Text
+  aboutEj                       String?                      @map("about_ej") @db.Text
+  isExMember                    Boolean                      @default(false) @map("ex_member")
+  alumniDreamer                 Boolean                      @default(false) @map("alumni_dreamer")
+  otherRole                     String?
+  currentRoleId                 String?
+  currentRole                   Role?                        @relation("UserCurrentRole", fields: [currentRoleId], references: [id])
+  createdAt                     DateTime                     @default(now())
+  updatedAt                     DateTime                     @updatedAt
+  dailyMessageCount             Int                          @default(0)
+  lastMessageDate               DateTime?
+  isWorking                     Boolean?
+  workplace                     String?
+  phraseStatus                  String?
+  conversations                 Conversation[]
+  roles                         Role[]                       @relation("UserRoles")
+  points                        UserPoints?
+  tasksResponsibleFor           Task[]                       @relation("TaskResponsibles")
+  projectsResponsibleFor        Project[]                    @relation("ProjectResponsibles")
+  reportsSent                   Report[]                     @relation("ReportReferent")
+  reportsReceived               Report[]                     @relation("ReportRecipientUser")
+  squadsLed                     Squad[]                      @relation("SquadLeader")
+  squadsAsMember                Squad[]                      @relation("SquadMembers")
+  roomReservation               RoomReservation[]
+  tasksAuthor                   Task[]
+  usefulLinks                   UsefulLink[]
+  assignedTags                  Tag[]                        @relation("AssignedTags")
+  madeConnectionRequests        ReserveRequestToConections[] @relation("ConnectionRequestApplicant")
+  roleHistory                   UserRoleHistory[]
+  semesterScores                UserSemesterScore[]
+  jrPointsSolicitations         JRPointsSolicitation[]       @relation("SolicitationUser")
+  jrPointsReports               JRPointsReport[]             @relation("SolicitationUser")
+  posts                         Post[]
+  comments                      Comment[]
+  likedPosts                    Post[]                       @relation("PostLikes")
+  likedComments                 Comment[]                    @relation("CommentLikes")
+  solicitationsAsMember         JRPointsSolicitation[]       @relation("SolicitationMembers")
+  notifications                 NotificationUser[]
+  professionalInterests         ProfessionalInterest[]
+  profileCompletionNotifiedAt   DateTime?
+  ItemReservation               ItemReservation[]
+  reviewedSolicitationsJRPoints JRPointsSolicitation[]       @relation("SolicitationReviewer")
+  reviewedReportsJRPoints       JRPointsReport[]             @relation("SolicitationReviewer")
+  oraculoFiles                  OraculoFile[]
+  oraculoFolders                OraculoFolder[]
+  favoritedPosts                Post[]                       @relation("PostFavorites")
+  reposts                       Post[]                       @relation("PostReposts")
+  inovationInitiatives          InovationInitiative[]        @relation("InovationAuthor")
+  reviewedInovationInitiatives  InovationInitiative[]        @relation("InovationReviewer")
+  initiativesAssociated         InovationInitiative[]        @relation("InitiativesMembers")
+  channelMemberships            ChannelMember[]
+  directConversations           DirectConversation[]         @relation("DirectConversationParticipants")
+  sentDirectMessages            DirectMessage[]
+  channelMessages               ChannelMessage[]
+  messageReactions              MessageReaction[]
+  ownCustomEmojis               CustomEmoji[]
+  ownDirectConversations        DirectConversation[]
+  Channel                       Channel[]
+  recognitionsReceived          Recognition[]                @relation("UserRecognitions")
+  recognitionsGiven             Recognition[]                @relation("RecognitionGiver")
+  recognitionsSent              Recognition[]                 @relation("UserRecognitionsSent")
+  lastActiveAt DateTime? @map("last_active_at")
+  createdNotifications          Notification[]               @relation("NotificationCreator")
+}
+
+model UserRoleHistory {
+  id                   String          @id @default(uuid())
+  semester             String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  userId               String?
+  user                 User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registrationId     String?
+  registration       RegistrationRequest? @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  roleId               String
+  role                 Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  managementReport     FileAttachment? @relation(fields: [managementReportId], references: [id], onDelete: SetNull)
+  managementReportLink String?
+  managementReportId   String?         @unique
+
+  @@index([userId])
+  @@index([roleId])
+}
+
+model UsefulLink {
+  id        String    @id @default(uuid())
+  title     String
+  url       String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isGlobal  Boolean   @default(false)
+  area      LinkAreas @default(GERAL)
+}
+
+model Role {
+  id                   String                       @id @default(uuid())
+  name                 String                       @unique
+  description          String
+  area                 AreaRoles[]
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  users                User[]                       @relation("UserRoles")
+  reportsReceived      Report[]                     @relation("ReportRecipientRole")
+  registrationRequests RegistrationRequest[]        @relation("RegistrationRequestRoles")
+  currentRoleUsers     User[]                       @relation("UserCurrentRole")
+  connectionRequests   ReserveRequestToConections[] @relation("ConnectionRequestRole")
+  userHistory          UserRoleHistory[]
+}
+
+model UserPoints {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  totalPoints Int      @default(0)
+  tags        Tag[]
+}
+
+model Semester {
+  id        String    @id @default(uuid())
+  name      String    @unique // Ex: "Semestre 2025.1", "Temporada de Férias 2026"
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean   @default(false) // Apenas um pode ser ativo por vez
+  createdAt DateTime  @default(now())
+
+  //Iniciativas inovadores do semestre
+  inovationInitiatives InovationInitiative[]
+  // Relações com os placares daquele semestre
+  userScores           UserSemesterScore[]
+  enterpriseScores     EnterpriseSemesterScore[]
+}
+
+// NOVO MODELO: Guarda o histórico de pontos da empresa
+model EnterpriseSemesterScore {
+  id        String   @id @default(uuid())
+  semester  String // Nome do semestre (ex: "Semestre 2025.1")
+  value     Int
+  createdAt DateTime @default(now())
+
+  semesterPeriodId String
+  semesterPeriod   Semester @relation(fields: [semesterPeriodId], references: [id])
+
+  tags          Tag[]
+  reports       JRPointsReport[]
+  solicitations JRPointsSolicitation[]
+
+  @@unique([semesterPeriodId])
+}
+
+model UserSemesterScore {
+  id          String   @id @default(uuid())
+  semester    String
+  totalPoints Int
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relação com o período
+  semesterPeriodId String?
+  semesterPeriod   Semester? @relation(fields: [semesterPeriodId], references: [id])
+
+  // Relações com as transações daquele semestre
+  tags          Tag[]
+  reports       JRPointsReport[]
+  solicitations JRPointsSolicitation[]
+
+  @@unique([userId, semesterPeriodId])
+}
+
+model JRPointsRanking {
+  id       Int     @id @default(1)
+  isHidden Boolean @default(false)
+}
+
+model EnterprisePoints {
+  id          Int      @id @default(1)
+  value       Int
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tags        Tag[]
+}
+
+// -----------------------------------------------------------------
+// --- ESTRUTURA JR POINTS - NÃO QUEBRÁVEL E CORRIGIDA ---
+// -----------------------------------------------------------------
+
+model JRPointsVersion {
+  id                 String    @id @default(uuid())
+  versionName        String    @unique
+  description        String?   @db.Text
+  implementationDate DateTime
+  endDate            DateTime?
+  isActive           Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Uma versão consiste em um conjunto de "moldes de tags" disponíveis
+  tagTemplates         TagTemplate[]
+  tags                 Tag[]
+  // Relação direta com ActionTypes para fins de organização, como solicitado
+  actionTypes          ActionType[]           @relation("VersionActionTypes")
+  jRPointsSolicitation JRPointsSolicitation[]
+  jRPointsReport       JRPointsReport[]
+}
+
+model ActionType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ActionType é uma categoria para vários "moldes de tags"
+  tagTemplates TagTemplate[]
+  tags         Tag[]
+
+  // ActionType pode pertencer a múltiplas versões
+  versions JRPointsVersion[] @relation("VersionActionTypes")
+}
+
+model TagTemplate {
+  id                   String   @id @default(uuid())
+  name                 String
+  description          String   @db.Text
+  baseValue            Int
+  // Regras de escalonamento são definidas aqui, no "molde"
+  isScalable           Boolean? @default(false)
+  escalationValue      Float? // Ex: 5, -5. O valor a ser SOMADO a cada streak.
+  escalationStreakDays Int? // Ex: 7. Nº máximo de dias entre atribuições para manter o streak.
+  escalationCondition  String?  @db.Text // Descrição da regra
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relação com sua categoria (ActionType)
+  actionTypeId String
+  actionType   ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+
+  // Relação com a versão a que pertence
+  jrPointsVersionId  String?
+  jrPointsVersion    JRPointsVersion?       @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  solicitations      JRPointsSolicitation[] @relation("SolicitationTagTemplates")
+  solicitationsLinks SolicitationTag[]
+  // Relação com todas as instâncias de tags criadas a partir deste molde
+  tagInstances       Tag[]
+  areas              TagAreas[]             @default([GERAL])
+}
+
+model Tag {
+  id            String     @id @default(uuid())
+  value         Int
+  description   String
+  datePerformed DateTime   @map("date_performed")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  areas         TagAreas[] @default([GERAL])
+  isFromAppeal  Boolean?   @default(false) // Adicionado para a lógica de "Recurso"
+  // --- CAMPO DE COMPATIBILIDADE ---
+  // Este campo é mantido para garantir que as tags existentes na sua base de dados continuem funcionando.
+  // Para novas tags, ele deve ser preenchido com a informação do TagTemplate no momento da criação.
+  actionTypeId  String
+  actionType    ActionType @relation(fields: [actionTypeId], references: [id], onDelete: Cascade)
+
+  // --- NOVO SISTEMA DE MOLDES (Templates) ---
+  // Esta relação é OPCIONAL (?) para não quebrar as tags existentes.
+  // Novas tags, criadas a partir de um molde, terão este campo preenchido.
+  templateId String?
+  template   TagTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull) // SetNull para não apagar a tag se o molde for removido
+
+  // --- RELAÇÕES EXISTENTES ---
+  userPointsId String?
+  userPoints   UserPoints? @relation(fields: [userPointsId], references: [id], onDelete: Cascade)
+
+  assignerId String?
+  assigner   User?   @relation("AssignedTags", fields: [assignerId], references: [id], onDelete: SetNull)
+
+  enterprisePointsId Int?
+  enterprisePoints   EnterprisePoints? @relation(fields: [enterprisePointsId], references: [id], onDelete: Cascade)
+
+  userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
+  userSemesterScoreId       String?
+  jRPointsReport            JRPointsReport[]
+  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
+  enterpriseSemesterScoreId String?
+
+  jrPointsVersionId String?
+  jrPointsVersion   JRPointsVersion? @relation(fields: [jrPointsVersionId], references: [id])
+
+  generatedBySolicitationId String?
+  generatedBySolicitation   JRPointsSolicitation? @relation("GeneratedTags", fields: [generatedBySolicitationId], references: [id])
+}
+
+model FileAttachment {
+  id                     String                @id @default(uuid())
+  url                    String
+  fileName               String
+  fileType               String
+  createdAt              DateTime              @default(now())
+  jrPointsSolicitationId String?
+  jrPointsSolicitation   JRPointsSolicitation? @relation(fields: [jrPointsSolicitationId], references: [id], onDelete: Cascade)
+  postId                 String?
+  post                   Post?                 @relation(fields: [postId], references: [id], onDelete: Cascade)
+  jRPointsReport         JRPointsReport?       @relation(fields: [jRPointsReportId], references: [id], onDelete: Cascade)
+  jRPointsReportId       String?
+  directMessage          DirectMessage?        @relation(fields: [directMessageId], references: [id])
+  directMessageId        String?
+  userRoleHistory        UserRoleHistory?
+  recognitionId          String?
+  recognition            Recognition?           @relation(fields: [recognitionId], references: [id], onDelete: Cascade)
+
+  channelMessages ChannelMessage[]
+}
+
+model JRPointsSolicitation {
+  id                        String                     @id @default(uuid())
+  description               String                     @db.Text
+  datePerformed             DateTime                   @map("date_performed")
+  directorsNotes            String?                    @db.Text
+  status                    JRPointsSolicitationStatus @default(PENDING)
+  jrPointsVersionId         String
+  jrPointsVersion           JRPointsVersion            @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  area                      AreaRoles
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  userId                    String
+  user                      User                       @relation("SolicitationUser", fields: [userId], references: [id], onDelete: Cascade)
+  membersSelected           User[]                     @relation("SolicitationMembers")
+  tags                      TagTemplate[]              @relation("SolicitationTagTemplates")
+  solicitationTags          SolicitationTag[]
+  attachments               FileAttachment[]
+  userSemesterScore         UserSemesterScore?         @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
+  userSemesterScoreId       String?
+  isForEnterprise           Boolean                    @default(false)
+  enterpriseSemesterScore   EnterpriseSemesterScore?   @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
+  enterpriseSemesterScoreId String?
+  reviewerId                String?
+  reviewer                  User?                      @relation("SolicitationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  generatedTags             Tag[]                      @relation("GeneratedTags")
+}
+
+model SolicitationTag {
+  id String @id @default(uuid())
+
+  solicitationId String
+  solicitation   JRPointsSolicitation @relation(fields: [solicitationId], references: [id], onDelete: Cascade)
+
+  tagTemplateId String
+  tagTemplate   TagTemplate @relation(fields: [tagTemplateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model JRPointsReport {
+  id                        String                   @id @default(uuid())
+  description               String                   @db.Text
+  attachments               FileAttachment[]
+  tag                       Tag                      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  status                    JRPointsReportStatus     @default(PENDING)
+  jrPointsVersionId         String
+  jrPointsVersion           JRPointsVersion          @relation(fields: [jrPointsVersionId], references: [id], onDelete: Cascade)
+  area                      AreaRoles
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  userId                    String
+  user                      User                     @relation("SolicitationUser", fields: [userId], references: [id], onDelete: Cascade)
+  tagId                     String
+  directorsNotes            String?                  @db.Text
+  userSemesterScore         UserSemesterScore?       @relation(fields: [userSemesterScoreId], references: [id], onDelete: Cascade)
+  userSemesterScoreId       String?
+  isForEnterprise           Boolean                  @default(false)
+  enterpriseSemesterScore   EnterpriseSemesterScore? @relation(fields: [enterpriseSemesterScoreId], references: [id], onDelete: Cascade)
+  enterpriseSemesterScoreId String?
+  reviewerId                String?
+  reviewer                  User?                    @relation("SolicitationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------
+// --- DEMAIS MODELOS ---
+// -----------------------------------------------------------------
+
+model Task {
+  id           String     @id @default(uuid())
+  title        String
+  status       TaskStatus
+  description  String     @db.Text
+  deadline     DateTime
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  authorId     String?
+  author       User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  responsibles User[]     @relation("TaskResponsibles")
+  projectId    String?
+  project      Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id           String        @id @default(uuid())
+  account      AccountType
+  status       ProjectStatus
+  description  String        @db.Text
+  deadline     DateTime
+  title        String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  responsibles User[]        @relation("ProjectResponsibles")
+  tasks        Task[]
+}
+
+model Report {
+  id              String       @id @default(uuid())
+  title           String
+  status          ReportStatus
+  content         String       @db.Text
+  recipientNotes  String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  referentId      String?
+  referent        User?        @relation("ReportReferent", fields: [referentId], references: [id], onDelete: SetNull)
+  recipientUserId String?
+  recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipientRoleId String?
+  recipientRole   Role?        @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id], onDelete: SetNull)
+}
+
+model EstrategyPlan {
+  id                  Int                  @id @default(1)
+  propose             String               @db.Text
+  mission             String               @db.Text
+  vision              String               @db.Text
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  values              Value[]
+  estrategyObjectives EstrategyObjective[]
+}
+
+model EstrategyObjective {
+  id              String         @id @default(uuid())
+  objective       String
+  description     String         @db.Text
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  estrategyPlanId Int?
+  estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
+  goals           Goal[]
+}
+
+model Goal {
+  id                   String              @id @default(uuid())
+  title                String
+  description          String              @db.Text
+  goal                 Decimal
+  value                Decimal
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  estrategyObjectiveId String?
+  estrategyObjective   EstrategyObjective? @relation(fields: [estrategyObjectiveId], references: [id])
+}
+
+model Value {
+  id              String         @id @default(uuid())
+  name            String
+  description     String
+  isMotherValue   Boolean        @default(false) @map("is_mother_value")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  estrategyPlanId Int?
+  estrategyPlan   EstrategyPlan? @relation(fields: [estrategyPlanId], references: [id])
+
+  monthlyValueSchedules MonthlyValueSchedule[]
+  recognitions          Recognition[]
+}
+
+model Squad {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leaderId    String
+  leader      User     @relation("SquadLeader", fields: [leaderId], references: [id])
+  members     User[]   @relation("SquadMembers")
+}
+
+model Room {
+  id           String            @id @default(uuid())
+  name         String            @unique
+  reservations RoomReservation[]
+}
+
+model RoomReservation {
+  id                    String     @id @default(uuid())
+  date                  DateTime
+  title                 String?    @default("Sem título")
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  hourEnter             DateTime
+  hourLeave             DateTime
+  status                RoomStatus
+  roomId                String
+  room                  Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId                String?
+  user                  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleCalendarEventId String?
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  title     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String       @db.Text
+  role           String
+  createdAt      DateTime     @default(now())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeChunk {
+  id        String                      @id @default(uuid())
+  content   String                      @db.Text
+  embedding Unsupported("vector(768)")?
+  createdAt DateTime                    @default(now())
+}
+
+model LinkPoster {
+  id        String           @id @default(uuid())
+  title     String
+  imageUrl  String
+  link      String
+  areas     LinkPosterArea[]
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ReserveRequestToConections {
+  id          String   @id @default(uuid())
+  title       String
+  date        DateTime
+  description String
+
+  applicantId String
+  applicant   User          @relation("ConnectionRequestApplicant", fields: [applicantId], references: [id])
+  roleId      String
+  role        Role          @relation("ConnectionRequestRole", fields: [roleId], references: [id])
+  status      RequestStatus @default(PENDING)
+}
+
+model ReservableItem {
+  id           String            @id @default(uuid())
+  name         String            @unique // Ex: "Notebook Dell Vostro", "Câmera Canon T5i"
+  description  String            @db.Text
+  imageUrl     String?
+  status       ItemStatus        @default(AVAILABLE)
+  areas        ItemAreas[]
+  reservations ItemReservation[] // Um item pode ter várias reservas
+}
+
+// NOVO MODELO para as reservas dos itens
+model ItemReservation {
+  id        String         @id @default(uuid())
+  title     String
+  startDate DateTime // Data e hora de início
+  endDate   DateTime // Data e hora de fim
+  itemId    String
+  item      ReservableItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+}
+
+model NotificationUser {
+  id             String       @id @default(uuid())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  notificationId String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, notificationId])
+}
+
+model Notification {
+  id                String               @id @default(uuid())
+  notification      String               @db.Text
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  type              NotificationType?
+  link              String?
+  notificationUsers NotificationUser[]
+
+  // Campos para notificações gerenciadas por diretores
+  title             String?
+  scope             NotificationScope?
+  priority          NotificationPriority? @default(NORMAL)
+  createdById       String?
+  createdBy         User?                @relation("NotificationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  targetRoleId      String?
+  targetArea        AreaRoles?
+  scheduledFor      DateTime?
+  isSent            Boolean              @default(true)
+  isEvent           Boolean              @default(false)
+}
+
+model OraculoFile {
+  id         String   @id @default(uuid())
+  name       String
+  key        String   @unique // URL do arquivo no S3
+  fileType   String // Ex: "application/pdf", "image/png"
+  size       Int // Tamanho em bytes
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  folderId                String?
+  folder                  OraculoFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  restrictedToAreas       OraculoAreas[]
+  googleDriveModifiedTime DateTime?
+  googleDriveFileId       String?        @unique
+}
+
+// Modelo para as Pastas do Oráculo (com suporte a subpastas)
+model OraculoFolder {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  // Relação de aninhamento (subpastas)
+  parentId String?
+  parent   OraculoFolder?  @relation("Subfolders", fields: [parentId], references: [id], onDelete: Cascade)
+  children OraculoFolder[] @relation("Subfolders")
+
+  files               OraculoFile[] // Uma pasta contém muitos arquivos
+  restrictedToAreas   OraculoAreas[]
+  googleDriveFolderId String?        @unique
+}
+
+model SyncLog {
+  id         String    @id @default(uuid())
+  service    String // Ex: "GOOGLE_DRIVE"
+  status     String // Ex: "SUCCESS", "FAILED"
+  details    String?   @db.Text
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  isFixed   Boolean? @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- Melhorias e Novas Relações ---
+  type PostType @default(ORIGINAL) // Identifica o tipo de post
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Relação para Reposts
+  originalPostId String?
+  originalPost   Post?   @relation("Reposts", fields: [originalPostId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reposts        Post[]  @relation("Reposts") // Lista de todos os reposts deste post
+
+  // Relações de Engajamento
+  likedBy     User[]           @relation("PostLikes")
+  favoritedBy User[]           @relation("PostFavorites") // NOVO: Quem favoritou (salvou)
+  repostedBy  User[]           @relation("PostReposts") // NOVO: Quem deu repost
+  comments    Comment[]
+  attachments FileAttachment[]
+
+  // Relações existentes
+  layouts PostsLayout[] @relation("LayoutPosts")
+
+  @@index([authorId])
+  @@index([originalPostId])
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  content   String    @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likedBy   User[]    @relation("CommentLikes")
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  replies   Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model PostsLayout {
+  id        String   @id @default(uuid())
+  title     String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]   @relation("LayoutPosts")
+}
+
+model Channel {
+  id          String      @id @default(uuid())
+  name        String
+  description String?     @db.Text
+  type        ChannelType @default(PUBLIC)
+  imageUrl    String? // Imagem para canais destacados
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  isPinned    Boolean     @default(false)
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Restringe o canal a uma ou mais áreas específicas
+  restrictedToAreas AreaRoles[]
+  allowExMembers    Boolean     @default(false)
+
+  // Relações
+  members  ChannelMember[]
+  messages ChannelMessage[]
+}
+
+model ChannelMember {
+  id       String            @id @default(uuid())
+  role     ChannelMemberRole @default(MEMBER)
+  joinedAt DateTime          @default(now())
+
+  // Relações
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId]) // Garante que um usuário só pode entrar uma vez no mesmo canal
+  @@index([userId])
+  @@index([channelId])
+}
+
+model ChannelMessage {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  isPinned  Boolean  @default(false)
+  isDeleted Boolean  @default(false) // Soft delete
+  isEdited  Boolean  @default(false) @map("is_edited")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // Para responder a uma mensagem
+  parentId String?
+  parent   ChannelMessage?  @relation("MessageReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  ChannelMessage[] @relation("MessageReplies")
+
+  // Anexos e Reações
+  attachments FileAttachment[] // Você precisará adicionar a relação no modelo FileAttachment
+  reactions   MessageReaction[]
+
+  @@index([channelId])
+  @@index([authorId])
+}
+
+model MessageReaction {
+  id String @id @default(uuid())
+
+  emoji String?
+
+  // Relações
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channelMessageId String?
+  channelMessage   ChannelMessage? @relation(fields: [channelMessageId], references: [id], onDelete: Cascade)
+  directMessageId  String?
+  directMessage    DirectMessage?  @relation(fields: [directMessageId], references: [id], onDelete: Cascade)
+  customEmojiId    String?
+  customEmoji      CustomEmoji?    @relation(fields: [customEmojiId], references: [id]) // O caractere do emoji, ex: "👍"
+
+  @@unique([userId, channelMessageId, customEmojiId]) // Garante reação única por usuário em uma mensagem de CANAL
+  @@unique([userId, directMessageId, customEmojiId]) // Garante reação única por usuário em uma mensagem DIRETA
+  @@index([directMessageId, channelMessageId])
+}
+
+model CustomEmoji {
+  id        String            @id @default(uuid())
+  reactions MessageReaction[]
+  name      String            @unique // Ex: ":odin:"
+  imageUrl  String // URL da imagem no S3
+  creatorId String
+  creator   User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+}
+
+// --- Conversas Diretas (DMs) ---
+
+model DirectConversation {
+  id        String   @id @default(uuid())
+  title     String? // Opcional, pode ser nulo para conversas entre duas pessoas
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  participants User[]          @relation("DirectConversationParticipants")
+  messages     DirectMessage[]
+  createdById  String
+  createdBy    User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt]) // Para ordenar as conversas pela mais recente
+}
+
+model DirectMessage {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isEdited  Boolean  @default(false) @map("is_edited")
+  // Relações
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  attachments FileAttachment[]
+  reactions   MessageReaction[]
+
+  parentId String?
+  parent   DirectMessage?  @relation("DirectMessageReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  DirectMessage[] @relation("DirectMessageReplies")
+
+  @@index([conversationId])
+}
+
+model InovationInitiative {
+  id               String                    @id @default(uuid())
+  type             InovationInitiativeType
+  imageUrl         String?
+  status           InovationInitiativeStatus @default(PENDING)
+  title            String //Plataforma Interna de Inovação
+  description      String                    @db.Text // Plataforma com varias abas uteis
+  isFixed          Boolean                   @default(false)
+  shortDescription String                    @db.Text
+  inovationHorizon InovationHorizonTypes?
+  semesterId       String
+  semester         Semester                  @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  tags             String[] //Tecnologia, Inovação
+  links            Link[]
+  dateImplemented  String?
+  dateColected     String?
+  dateChecked      String?
+  isRunning        Boolean                   @default(false)
+  reviewNotes      String?                   @db.Text
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  /**
+   * Relations
+   */
+  authorId    String
+  author      User                         @relation("InovationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  reviewerId  String?
+  reviewer    User?                        @relation("InovationReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  relatedFrom InitiativeRelation[]         @relation("InitiativeFrom")
+  relatedTo   InitiativeRelation[]         @relation("InitiativeTo")
+  areas       AreaInovationInitiative[]
+  subAreas    SubAreaInovationInitiative[]
+  members     User[]                       @relation("InitiativesMembers")
+  sentido     String?                      @db.Text
+  organizacao String?                      @db.Text
+  cultura     String?                      @db.Text
+  influencia  String?                      @db.Text
+  operacao    String?                      @db.Text
+}
+
+model Link {
+  id        String   @id @default(uuid())
+  label     String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  initiativeId String
+  initiative   InovationInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+}
+
+model InitiativeRelation {
+  id String @id @default(uuid())
+
+  fromId String
+  from   InovationInitiative @relation("InitiativeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+
+  toId String
+  to   InovationInitiative @relation("InitiativeTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+}
+
+// Models Área de Pessoas
+
+model MonthlyValueSchedule {
+  id           String        @id @default(uuid())
+  month        Int // 1 a 12
+  year         Int // 2024, 2025...
+  // Relação com o seu model Value existente
+  valueId      String
+  value        Value         @relation(fields: [valueId], references: [id])
+  // Reconhecimentos vinculados a este mês (foco no Casinha)
+  recognitions Recognition[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([month, year]) // Garante apenas um valor por mês/ano
+}
+
+model RecognitionModel {
+  id           String             @id @default(uuid())
+  title        String // Ex: "Semana 1", "Casinha Especial"
+  description  String?            @db.Text
+  isActive    Boolean  @default(true)
+  type         RecognitionType
+  areas        RecognitionAreas[] @default([GERAL])
+  recognitions Recognition[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model Recognition {
+  id                 String                @id @default(uuid())
+  date               String
+  description        String?               @db.Text
+  modelTitleSnapshot String   
+  recognitionModelId String
+  recognitionModel   RecognitionModel @relation(fields: [recognitionModelId], references: [id], onDelete: Restrict)
+  // Vincula ao valor do mês (opcional, pois AGO/Guinness podem não ter um "valor do mês")
+  scheduleId         String?
+  schedule           MonthlyValueSchedule? @relation(fields: [scheduleId], references: [id])
+  // Membros reconhecidos (N:N - Pode ser um ou vários membros)
+  winners            User[]                @relation("UserRecognitions")
+  authorId           String
+  author             User                  @relation("RecognitionGiver", fields: [authorId], references: [id], onDelete: Cascade)
+  receivedFrom      User?                @relation("UserRecognitionsSent", fields:[receivedFromId], references: [id], onDelete: Cascade)
+  receivedFromId    String?
+
+  // Fotos do momento
+  media              FileAttachment[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  value              Value?                @relation(fields: [valueId], references: [id])
+  valueId            String?
+}
+
+// enum FarolType {
+//   VERMELHO
+//   AMARELO
+//   VERDE
+//   NENHUM
+// }
+
+// enum PessoasMomentStatusType {
+//  REALIZADO
+//  MARCADOR
+//  MARCAR
+// }
+
+// enum PessoasPAFaceType {
+//   INTERNA
+//   EXTERNA
+// }
+
+// enum PessoasPDIStatusType {
+//   ATIVO
+//   INATIVO
+// }
+
+// enum PessoasPAType {
+//   PROATIVO
+//   REATIVO
+// }
+
+// enum  PessoasPAStatusType {
+//   ANDAMENTO
+//   REALIZADO
+//   PARADO
+//   PAUSADO
+//   CANCELADO
+// }
+
+// model PessoasUser {
+//   id           String             @id @default(uuid()) 
+//   userId       String
+//   user         User @relation(fields:[userId], references:[id], onDelete: Cascade)
+//   lastContactPoint   String
+//   farol             FarolType
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// model PessoasMoment{
+//   id           String             @id @default(uuid())
+//   status       PessoasMomentStatusType
+//   order        Int
+//   dateRealized String
+//   personId     String
+//   farol        FarolType
+//   person       PessoasUser  @relation(fields:[personId], references:[id], onDelete: Cascade)     
+//   authorId     String
+//   author       User   @relation(fields:[authorId], references:[id], onDelete: Cascade)
+//   pdiID        String?
+//   pdi          PessoasPDI? @relation(fields:[pdiID], references:[id], onDelete: Cascade)
+//   attachments  FileAttachment[]
+//   links        Link[]
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// model LevelPDI {
+//   id           String             @id @default(uuid()) 
+//   name         String  
+//   PDIs         PessoasPDI[] 
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// model PessoasPACategory {
+//   id           String             @id @default(uuid()) 
+//   name         String 
+//   PAs          PessoasPDIPA[]
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// model Skills {
+//   id           String             @id @default(uuid()) 
+//   name         String
+//   PAs          PessoasPDIPA[]
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// model PessoasPDIPA{
+//   id           String             @id @default(uuid()) 
+//   objective    String
+//   details      String?   @db.Text
+//   status       PessoasPAStatusType
+//   dateStart    String
+//   dateEnd      String
+//   kpi          String
+//   okr          String
+//   strategyPAs   String
+//   face         PessoasPAFaceType
+//   pdiID        String
+//   avaliation   Int
+//   pdi          PessoasPDI @relation(fields:[pdiID], references:[id], onDelete: Cascade)
+//   responsibleId   String
+//   responsible User   @relation(fields:[responsibleId], references:[id], onDelete: Cascade)
+//   attachments  FileAttachment[]
+//   links        Link[]
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// model PessoasPDI {
+//   id           String             @id @default(uuid()) 
+//   levelId      String 
+//   level        LevelPDI           @relation(fields:[levelId], references:[id], onDelete: Restrict)
+//   status       PessoasPDIStatusType
+//   PAs          PessoasPDIPA[]
+//   createdAt          DateTime              @default(now())
+//   updatedAt          DateTime              @updatedAt
+// }
+
+// FIM Área de Pessoas
+
+// ================================================================
+// SISTEMA DE PERMISSÕES DINÂMICAS
+// ================================================================
+
+// Uma "política" é um conjunto de regras reutilizável.
+// Ex: "Apenas Diretoria", "Diretoria + Gerente de Conexões"
+model PermissionPolicy {
+  id             String       @id @default(uuid())
+  name           String       @unique  // Ex: "Apenas Diretoria"
+  description    String?      @db.Text
+  allowExMembers Boolean      @default(false)
+  isPublic       Boolean      @default(false) // true = qualquer autenticado passa
+  isBuiltIn      Boolean      @default(false) // true = não pode ser deletada pelo admin
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  rules           PolicyRule[]
+  routePermissions RoutePermission[]
+  actionPermissions ActionPermission[]
+}
+
+// Cada regra diz: "quem tem essa área OU esse cargo específico passa"
+// Múltiplas regras dentro de uma policy são unidas por OR
+model PolicyRule {
+  id       String @id @default(uuid())
+  policyId String
+  policy   PermissionPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  // OR entre si: basta satisfazer UMA das condições abaixo
+  allowedAreas AreaRoles[]  // Ex: [DIRETORIA, TATICO]
+  allowedRoleIds String[]   // IDs de cargos específicos do model Role
+
+  @@index([policyId])
+}
+
+// Mapeamento rota → política (substitui ROUTE_PERMISSIONS hardcoded)
+model RoutePermission {
+  id       String @id @default(uuid())
+  path     String @unique  // Ex: "/salas-eaufba", "/usuarios"
+  label    String          // Nome amigável para o admin: "Reservas Salas EAUFBA"
+  policyId String
+  policy   PermissionPolicy @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Ações específicas do sistema (ex: "manage_room_reservations")
+// A chave (key) é hardcoded no código, mas QUEM pode fazer é configurável
+model ActionPermission {
+  id       String @id @default(uuid())
+  // Esta chave corresponde a um valor do enum AppAction no TypeScript
+  actionKey String @unique  // Ex: "manage_room_reservations", "approve_jr_points"
+  label    String           // "Gerenciar Reservas de Salas EAUFBA"
+  description String?       @db.Text
+  policyId String
+  policy   PermissionPolicy @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
