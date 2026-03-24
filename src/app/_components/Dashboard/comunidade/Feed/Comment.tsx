@@ -18,6 +18,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { AreaRoles } from '@prisma/client';
 
 // Cache data types for optimistic updates
 interface CommentPage {
@@ -49,6 +50,7 @@ const Comment = ({ comment, postId, currentUserId }: CommentProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwner = comment.authorId === currentUserId;
+  const isDirector = user?.currentRole?.area?.includes(AreaRoles.DIRETORIA) ?? false;
 
   // --- Mutação para Curtir/Descurtir Comentário ---
   const { mutate: likeComment } = useMutation({
@@ -255,7 +257,7 @@ const Comment = ({ comment, postId, currentUserId }: CommentProps) => {
           >
             Responder
           </button>
-          {isOwner && ( // Botão Deletar
+          {(isOwner || isDirector) && ( // Botão Deletar
              <button
                 onClick={() => handleDeleteComment()}
                 className="text-gray-400 hover:text-red-500"

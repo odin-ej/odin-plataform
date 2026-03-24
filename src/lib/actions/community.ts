@@ -33,6 +33,7 @@ import { S3_UPLOAD } from "../constants";
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getPresignedUrlSchema = z.object({
   fileType: z.string(),
   fileSize: z.number(),
@@ -535,8 +536,11 @@ export async function deleteMessage(
     contextId = message?.channelId ?? null;
   }
 
-  if (!message || message.authorId !== authUser.id) {
-    throw new Error("Acesso negado ou mensagem não encontrada.");
+  if (!message) {
+    throw new Error("Mensagem não encontrada.");
+  }
+  if (message.authorId !== authUser.id && !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    throw new Error("Acesso negado.");
   }
   if (!contextId) {
     throw new Error("Contexto da mensagem não encontrado.");
@@ -735,6 +739,7 @@ export async function createCustomEmoji({
   return { success: true };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const detailsSchemaServer = z.object({
   channelId: z.string(),
   name: z.string().min(3).max(50),

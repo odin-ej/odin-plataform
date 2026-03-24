@@ -970,7 +970,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       <HistoryItemDetailsModal
         isOpen={!!viewingItem}
         onClose={() => setViewingItem(null)}
-        item={viewingItem}
+        item={viewingItem as React.ComponentProps<typeof HistoryItemDetailsModal>["item"]}
         isDirector={isDirector}
       />
     </>
