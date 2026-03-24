@@ -33,7 +33,6 @@ import ManageModelsList from "./ManageModelsList";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { toast } from "sonner";
 import { AreaRoles } from "@prisma/client";
-import type { getYearlyValueSchedule } from "@/lib/actions/recognitions";
 
 type YearlySchedule = Awaited<ReturnType<typeof getYearlyValueSchedule>>;
 type ScheduleItem = YearlySchedule[number];
@@ -236,8 +235,8 @@ const RecognitionsContent = ({ initialData }: RecognitionsContentProps) => {
                 {rec.winners.map((winner: WinnerItem) => (
                   <CasinhaWinnerCard
                     key={winner.id}
-                    winner={winner}
-                    recognizerName={rec.receivedFrom.name}
+                    winner={winner as unknown as import("@/lib/server-utils").FullUser}
+                    recognizerName={rec.receivedFrom?.name}
                     isDirector={isDirector}
                     onDelete={() => setItemToDelete(rec.id)}
                     title={rec.recognitionModel.title}

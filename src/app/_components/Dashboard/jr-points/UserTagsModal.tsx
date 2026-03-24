@@ -28,7 +28,7 @@ import {
   FullJRPointsSolicitation,
 } from "./SolicitationsBoard";
 import { format } from "date-fns";
-import HistoryItemDetailsModal from "./HistoryItemDetailsModal";
+import HistoryItemDetailsModal, { HistoryItemData } from "./HistoryItemDetailsModal";
 import { GenericSnapshot } from "./EnterprisePageContent";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
@@ -70,10 +70,7 @@ const UserTagsModal = ({
   const {user} = useAuth()
   const queryClient = useQueryClient();
   const [selectedView, setSelectedView] = useState("current");
-  const [viewingItem, setViewingItem] = useState<{
-    type: "tag" | "solicitation" | "report";
-    data: UserTagWithRelations | FullJRPointsSolicitation | FullJRPointsReport;
-  } | null>(null);
+  const [viewingItem, setViewingItem] = useState<HistoryItemData | null>(null);
 
   const isDirector = useMemo (() => checkUserPermission(user, DIRECTORS_ONLY), [user])
 
@@ -358,7 +355,7 @@ const UserTagsModal = ({
                     }
                     itemsPerPage={5}
                     onRowClick={(item) =>
-                      setViewingItem({ type: "tag", data: item })
+                      setViewingItem({ type: "tag", data: item } as HistoryItemData)
                     }
                     type={"onlyDelete"}
                   />
@@ -370,7 +367,7 @@ const UserTagsModal = ({
                     itemsPerPage={5}
                     type="onlyView"
                     onRowClick={(item) => {
-                      setViewingItem({ type: "solicitation", data: item });
+                      setViewingItem({ type: "solicitation", data: item } as HistoryItemData);
                  
                     }}
                   />
@@ -379,7 +376,7 @@ const UserTagsModal = ({
                     columns={reportColumns}
                     data={historyData.reports}
                     onRowClick={(item) =>
-                      setViewingItem({ type: "report", data: item })
+                      setViewingItem({ type: "report", data: item } as HistoryItemData)
                     }
                     filterColumns={["description", "status"]}
                     itemsPerPage={5}

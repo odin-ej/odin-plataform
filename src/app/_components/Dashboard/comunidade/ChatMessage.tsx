@@ -251,8 +251,8 @@ const ChatMessage = ({
                       <Badge
                         onClick={() =>
                           toggleReactionMutation({
-                            emoji: reactionData.emoji,
-                            customEmojiId: reactionData.customEmojiId,
+                            emoji: reactionData.emoji ?? undefined,
+                            customEmojiId: reactionData.customEmojiId ?? undefined,
                           })
                         }
                         className={cn(
@@ -263,10 +263,10 @@ const ChatMessage = ({
                       >
                         {reactionData.customEmoji ? (
                           <CustomEmojiImage
-                            emoji={reactionData.customEmoji}
+                            emoji={reactionData.customEmoji as CustomEmoji}
                             onEmojiSelect={() => {
                               toggleReactionMutation({
-                                customEmojiId: reactionData.customEmojiId,
+                                customEmojiId: reactionData.customEmojiId ?? undefined,
                               });
                             }}
                             isReaction={true}

@@ -12,13 +12,36 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import { Star, ExternalLink } from "lucide-react";
-import { TraineeDepartment, TraineeGradeCategory, TraineeEvaluation } from "@prisma/client";
 import DossieModal from "./DossieModal";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// Locally defined enums (mirrors Prisma schema)
+const TraineeDepartment = {
+  MARKETING: "MARKETING",
+  ORGANIZACIONAL: "ORGANIZACIONAL",
+  FINANCEIRO: "FINANCEIRO",
+} as const;
+type TraineeDepartment = (typeof TraineeDepartment)[keyof typeof TraineeDepartment];
+
+const TraineeGradeCategory = {
+  AVALIACAO_PROCESSUAL: "AVALIACAO_PROCESSUAL",
+  PROVA: "PROVA",
+  DESAFIO: "DESAFIO",
+  EXTRA: "EXTRA",
+} as const;
+type TraineeGradeCategory = (typeof TraineeGradeCategory)[keyof typeof TraineeGradeCategory];
+
+interface TraineeEvaluationItem {
+  id: string;
+  department: TraineeDepartment;
+  category: TraineeGradeCategory;
+  grade: number;
+  feedback: string | null;
+}
+
 interface MinhasNotasContentProps {
-  evaluations: TraineeEvaluation[];
+  evaluations: TraineeEvaluationItem[];
   userName: string;
 }
 
@@ -46,7 +69,7 @@ const departments = Object.values(TraineeDepartment);
 const categories = Object.values(TraineeGradeCategory);
 
 function getDepartmentAverage(
-  evaluations: TraineeEvaluation[],
+  evaluations: TraineeEvaluationItem[],
   department: TraineeDepartment
 ): number {
   const deptEvals = evaluations.filter((e) => e.department === department);
@@ -56,7 +79,7 @@ function getDepartmentAverage(
 }
 
 function getGradeForDeptCategory(
-  evaluations: TraineeEvaluation[],
+  evaluations: TraineeEvaluationItem[],
   department: TraineeDepartment,
   category: TraineeGradeCategory
 ): number {
