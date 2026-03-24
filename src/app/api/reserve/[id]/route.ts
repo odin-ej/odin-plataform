@@ -1,7 +1,9 @@
 import { prisma } from "@/db";
 import { getGoogleAuthToken } from "@/lib/google-auth";
+import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { roomReservationSchema } from "@/lib/schemas/reservationsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { checkUserPermission } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
@@ -16,9 +18,20 @@ export async function PATCH(
     }
     const { id } = await params;
 
+    // Verificar se o usuário é o dono da reserva, diretor ou Gerente de Conexões
+    const reservation = await prisma.roomReservation.findUnique({ where: { id } });
+    if (!reservation) {
+      return NextResponse.json({ message: "Reserva não encontrada" }, { status: 404 });
+    }
+    const isOwner = reservation.userId === authUser.id;
+    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isGerenteConexoes = checkUserPermission(authUser, { allowedRoles: ['Gerente de Conexões'] });
+    if (!isOwner && !isDirector && !isGerenteConexoes) {
+      return NextResponse.json({ message: "Sem permissão para editar esta reserva" }, { status: 403 });
+    }
+
     const body = await request.json();
     const validation = roomReservationSchema.partial().safeParse(body); // .partial() torna todos os campos opcionais
-    console.log(body)
     if (!validation.success) {
       console.error(validation.error.flatten().fieldErrors)
       return NextResponse.json({ message: "Dados inválidos" }, { status: 400 });
@@ -136,6 +149,18 @@ export async function DELETE(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
     const { id } = await params;
+
+    // Verificar se o usuário é o dono da reserva, diretor ou Gerente de Conexões
+    const reservation = await prisma.roomReservation.findUnique({ where: { id } });
+    if (!reservation) {
+      return NextResponse.json({ message: "Reserva não encontrada" }, { status: 404 });
+    }
+    const isOwner = reservation.userId === authUser.id;
+    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isGerenteConexoes = checkUserPermission(authUser, { allowedRoles: ['Gerente de Conexões'] });
+    if (!isOwner && !isDirector && !isGerenteConexoes) {
+      return NextResponse.json({ message: "Sem permissão para apagar esta reserva" }, { status: 403 });
+    }
 
     const roomToDelete = await prisma.roomReservation.delete({ where: { id } });
 

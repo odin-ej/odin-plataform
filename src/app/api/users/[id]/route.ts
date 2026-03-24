@@ -18,7 +18,7 @@ import { DeleteObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { s3Client, cognitoClient } from "@/lib/aws";
 import bcrypt from "bcrypt";
 import z from "zod";
-import { apiError, handleApiError } from "@/lib/api-utils";
+import { handleApiError } from "@/lib/api-utils";
 
 // Schema de validação Zod para a atualização de um utilizador (todos os campos são opcionais)
 
@@ -27,6 +27,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id } = await params;
   try {
     const authUser = await getAuthenticatedUser();
@@ -125,6 +126,7 @@ export async function PATCH(
     }
 
     const validatedData = validation.data;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { professionalInterests, roleHistory, ...restOfUserData } =
       validatedData;
     // --- Inicia a transação do Prisma ---
@@ -380,6 +382,7 @@ export async function PATCH(
     revalidatePath("/");
     revalidatePath("/usuarios");
     revalidatePath("/cultural");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = updatedUser;
     return NextResponse.json(userWithoutPassword);
   } catch (error: unknown) {
@@ -419,7 +422,7 @@ export async function DELETE(
       try {
         const url = new URL(user.imageUrl);
         s3KeysToDelete.push(decodeURIComponent(url.pathname.substring(1)));
-      } catch (e) {
+      } catch {
         console.error("URL de avatar inválida:", user.imageUrl);
       }
     }
@@ -430,7 +433,7 @@ export async function DELETE(
         try {
           const url = new URL(history.managementReport.url);
           s3KeysToDelete.push(decodeURIComponent(url.pathname.substring(1)));
-        } catch (e) {
+        } catch {
           console.error(
             "URL de relatório inválida:",
             history.managementReport.url
