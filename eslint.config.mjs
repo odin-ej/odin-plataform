@@ -17,9 +17,9 @@ const eslintConfig = [
       reportUnusedDisableDirectives: "off",
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "off",    // 👈 novo
-      "@next/next/no-img-element": "off",              // 👈 novo
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@next/next/no-img-element": "off",
     },
   },
 ];

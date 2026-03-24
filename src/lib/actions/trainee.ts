@@ -124,9 +124,9 @@ export async function getTrainees(): Promise<TraineeWithEvaluations[]> {
 
   const trainees = await prisma.user.findMany({
     where: {
-      roles: {
-        some: {
-          name: "Trainee",
+      currentRole: {
+        area: {
+          has: "TRAINEE",
         },
       },
       isExMember: false,

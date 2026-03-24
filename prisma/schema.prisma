@@ -76,6 +76,7 @@ enum AreaRoles {
   DIRETORIA
   CONSELHO
   OUTRO
+  TRAINEE
 }
 
 enum TagAreas {

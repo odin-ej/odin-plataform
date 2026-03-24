@@ -37,28 +37,17 @@ const Header = () => {
       return [];
     }
 
-    // 1. Filtra os links gerais
-    const filteredGeneralLinks = generalLinks.filter((link) => {
-      if (link.exMemberCanAccess === false && user.isExMember) {
-        return false;
-      }
-      return true;
-    });
+    // 1. Links gerais (todos os membros veem)
+    const filteredGeneralLinks = [...generalLinks];
 
-    // 2. Filtra os links pessoais
-    const filteredPersonalLinks = personalLinks.filter((link) => {
-      if (link.exMemberCanAccess === false && user.isExMember) {
-        return false;
-      }
-      return true;
-    });
+    // 2. Links pessoais (todos os membros veem)
+    const filteredPersonalLinks = [...personalLinks];
 
-    // 3. Filtra os links restritos
+    // 3. Filtra os links restritos por permissão
     const filteredRestrictedLinks = restrictedLinks.filter((link) =>
       checkUserPermission(user, {
         allowedRoles: link.roles.map((r) => r.name),
         allowedAreas: link.areas,
-        allowExMembers: link.exMemberCanAccess === true,
       })
     );
 

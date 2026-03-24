@@ -5,6 +5,7 @@ import { generalLinks, personalLinks, restrictedLinks } from "@/lib/links";
 import { usePathname } from "next/navigation";
 import { checkUserPermission } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { AreaRoles } from "@prisma/client";
 
 const LinksSidebar = () => {
   const pathname = usePathname();
@@ -15,41 +16,37 @@ const LinksSidebar = () => {
     setActiveLink(pathname);
   }, [pathname]);
 
+  const isTrainee = useMemo(() => {
+    if (!user?.currentRole) return false;
+    return user.currentRole.area.includes(AreaRoles.TRAINEE);
+  }, [user]);
+
   const filteredGeneralLinks = useMemo(() => {
     if (!user) return [];
-    return generalLinks.filter((link) => {
-      // Se o link não pode ser acessado por ex-membros e o usuário é um, esconde o link.
-      if (link.exMemberCanAccess === false && user.isExMember) {
-        return false;
-      }
-      return true;
-    });
-  }, [user]);
+    if (isTrainee) return [];
+    return generalLinks;
+  }, [user, isTrainee]);
 
   const filteredPersonalLinks = useMemo(() => {
     if (!user) return [];
-    return personalLinks.filter((link) => {
-      if (link.exMemberCanAccess === false && user.isExMember) {
-        return false;
-      }
-      return true;
-    });
-  }, [user]);
+    if (isTrainee) {
+      return personalLinks.filter(
+        (link) => link.name === "Minhas Notas" || link.name === "Meu Perfil"
+      );
+    }
+    return personalLinks;
+  }, [user, isTrainee]);
 
   const filteredRestrictedLinks = useMemo(() => {
-    if (!user || user?.isExMember) return [];
+    if (!user) return [];
+    if (isTrainee) return [];
     return restrictedLinks.filter((link) =>
-    {
-      if(user.isExMember && link.exMemberCanAccess === false) return false;
-      return checkUserPermission(user, {
-        allowedRoles: link.roles.map((role) => role.name), // Extrai os nomes dos cargos
+      checkUserPermission(user, {
+        allowedRoles: link.roles.map((role) => role.name),
         allowedAreas: link.areas,
-        // Garante que a regra 'exMemberCanAccess' do link seja respeitada
-        allowExMembers: link.exMemberCanAccess  === false ? false : true,
       })
-    }
     );
-  }, [user]);
+  }, [user, isTrainee]);
 
   return (
     <SidebarContent className="bg-[#010d26] scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-transparent">
