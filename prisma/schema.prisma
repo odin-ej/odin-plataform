@@ -53,6 +53,15 @@ enum ReportStatus {
   APPROVED
 }
 
+enum ReportCategory {
+  DENUNCIA
+  SUGESTAO
+  FEEDBACK
+  BUG
+  SOLICITACAO
+  OUTRO
+}
+
 enum AreaRoles {
   CONSULTORIA
   TATICO
@@ -708,19 +717,22 @@ model Project {
 }
 
 model Report {
-  id              String       @id @default(uuid())
+  id              String          @id @default(uuid())
   title           String
   status          ReportStatus
-  content         String       @db.Text
+  category        ReportCategory  @default(OUTRO)
+  isAnonymous     Boolean         @default(false)
+  content         String          @db.Text
   recipientNotes  String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  resolvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   referentId      String?
-  referent        User?        @relation("ReportReferent", fields: [referentId], references: [id], onDelete: SetNull)
+  referent        User?           @relation("ReportReferent", fields: [referentId], references: [id], onDelete: SetNull)
   recipientUserId String?
-  recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipientUser   User?           @relation("ReportRecipientUser", fields: [recipientUserId], references: [id], onDelete: SetNull)
   recipientRoleId String?
-  recipientRole   Role?        @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id], onDelete: SetNull)
+  recipientRole   Role?           @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id], onDelete: SetNull)
 }
 
 model EstrategyPlan {
