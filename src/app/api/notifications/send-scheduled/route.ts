@@ -1,37 +1,24 @@
 import { NextResponse } from "next/server";
 import { sendScheduledNotifications } from "@/lib/actions/notifications";
 
-/**
- * GET /api/notifications/send-scheduled
- *
- * Endpoint para ser chamado por um cron job (ex: Vercel Cron, AWS EventBridge, etc.)
- * Processa notificações agendadas cuja data já passou e envia emails via SES.
- *
- * Protegido por uma chave secreta via header Authorization.
- */
+// Vercel Cron calls this every 5 minutes
 export async function GET(request: Request) {
+  // Verify cron secret to prevent unauthorized calls
   const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await sendScheduledNotifications();
-
-  if (!result.success) {
+  try {
+    const result = await sendScheduledNotifications();
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Cron send-scheduled error:", error);
     return NextResponse.json(
-      { error: result.error, sent: result.sent },
+      { success: false, error: "Internal error" },
       { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    success: true,
-    sent: result.sent,
-    message:
-      result.sent > 0
-        ? `${result.sent} notificação(ões) agendada(s) enviada(s) com sucesso`
-        : "Nenhuma notificação agendada pendente",
-  });
 }
+
+export const dynamic = "force-dynamic";
