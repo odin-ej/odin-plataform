@@ -32,7 +32,8 @@ interface CommandMultiSelectProps {
   disabled?: boolean;
   page?: string;
   // Props para react-hook-form
-  form?: UseFormReturn<FieldValues>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form?: UseFormReturn<any>;
   name?: string;
 
   // Props para modo controlado

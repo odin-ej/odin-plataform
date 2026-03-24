@@ -432,9 +432,14 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
             setSelectedItem(null);
           }}
           actionType={actionModalState.type}
-          itemToEdit={actionModalState.item}
+          itemToEdit={actionModalState.item ? {
+            id: actionModalState.item.id,
+            name: actionModalState.item.name,
+            type: "parentId" in actionModalState.item ? "folder" : "file",
+            restrictedToAreas: actionModalState.item.restrictedToAreas,
+          } : undefined}
           currentFolderId={currentFolderId ?? "root"}
-          onConfirm={actionMutation}
+          onConfirm={actionMutation as React.ComponentProps<typeof OraculoActionModal>["onConfirm"]}
           isLoading={isActionLoading}
         />
       )}

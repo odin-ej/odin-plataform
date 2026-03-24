@@ -180,10 +180,12 @@ const AdminActionsModal = ({
         queryKey: ["enterprisePointsData", "userPoints", "notifications"],
       });
     },
-    onError: (error: AxiosError<{ message: string }>) =>
+    onError: (error: Error) =>
       toast.error("Erro ao atribuir pontos", {
         description:
-          error.response?.data?.message || "Ocorreu um erro inesperado.",
+          axios.isAxiosError<{ message: string }>(error)
+            ? error.response?.data?.message || "Ocorreu um erro inesperado."
+            : error.message,
       }),
   });
 

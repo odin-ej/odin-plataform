@@ -28,7 +28,8 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
   const userId = authUser?.id;
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [formRef, setFormRef] = useState<UseFormReturn<Record<string, unknown>> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [formRef, setFormRef] = useState<UseFormReturn<any> | null>(null);
 
   const { data, isLoading: isLoadingData } = useQuery({
     queryKey: ["userProfile", userId],
@@ -54,7 +55,9 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
       // 1. Prepara o upload da imagem de perfil
       if (image && image instanceof File) {
         uploadPromises.push(
-          uploadFile({ file: image, olderFileKey: data?.user?.imageUrl })
+          uploadFile({ file: image, olderFileKey: data?.user?.imageUrl }).then(
+            (result) => (typeof result === "string" ? result : result.url)
+          )
         );
       }
 
@@ -117,7 +120,8 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
     },
   });
 
-  const handleFileSelect = (file: File, form: UseFormReturn<Record<string, unknown>>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleFileSelect = (file: File, form: UseFormReturn<any>) => {
     if (file) {
       setFormRef(form);
       const reader = new FileReader();
@@ -210,10 +214,10 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
             onSubmit={(data) => updateProfile(data)}
             roles={roles}
             title="Enviar"
-            values={formInitialValues}
+            values={formInitialValues as never}
             schema={exMemberUpdateSchema}
             canChangeRole={false}
-            onFileSelect={handleFileSelect}
+            onFileSelect={handleFileSelect as never}
             interestCategories={interestCategories}
             isPerfilPage={true} // <-- Isso já garante que os campos extras apareçam
           />
@@ -222,11 +226,11 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
             isLoading={isUpdating}
             onSubmit={(data) => updateProfile(data)}
             roles={roles}
-            values={formInitialValues}
+            values={formInitialValues as never}
             schema={memberUpdateSchema}
             title="Enviar"
             canChangeRole={canChangeRole}
-            onFileSelect={handleFileSelect}
+            onFileSelect={handleFileSelect as never}
             interestCategories={interestCategories}
             view="profile" // <-- Diz ao formulário para mostrar as seções de Interesses e Histórico
           />

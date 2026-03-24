@@ -986,6 +986,7 @@ const SocioInput = ({ letter, label, description, field, disabled }: SocioInputP
     </FormLabel>
     <Textarea
       {...field}
+      value={String(field.value ?? "")}
       disabled={disabled}
       className="bg-[#020817] border-blue-900/30 text-white h-20 text-sm resize-none focus-visible:ring-amber-400/30"
     />

@@ -14,15 +14,27 @@ import { Bar } from "react-chartjs-2";
 import { toast } from "sonner";
 import { Pencil, GraduationCap } from "lucide-react";
 import {
-  TraineeDepartment,
-  TraineeGradeCategory,
-} from "@prisma/client";
-import {
   TraineeWithEvaluations,
   upsertTraineeEvaluation,
   getTrainees,
   getTraineeOverview,
 } from "@/lib/actions/trainee";
+
+// Locally defined enums (mirrors Prisma schema)
+const TraineeDepartment = {
+  MARKETING: "MARKETING",
+  ORGANIZACIONAL: "ORGANIZACIONAL",
+  FINANCEIRO: "FINANCEIRO",
+} as const;
+type TraineeDepartment = (typeof TraineeDepartment)[keyof typeof TraineeDepartment];
+
+const TraineeGradeCategory = {
+  AVALIACAO_PROCESSUAL: "AVALIACAO_PROCESSUAL",
+  PROVA: "PROVA",
+  DESAFIO: "DESAFIO",
+  EXTRA: "EXTRA",
+} as const;
+type TraineeGradeCategory = (typeof TraineeGradeCategory)[keyof typeof TraineeGradeCategory];
 import {
   Dialog,
   DialogContent,

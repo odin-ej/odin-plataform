@@ -10,7 +10,7 @@ import {
 import { Filter, Search, X } from "lucide-react";
 import { useMemo } from "react";
 
-interface InitiativesFilterState {
+export interface InitiativesFilterState {
   searchQuery: string;
   statusFilter: string;
   areaFilter: string;

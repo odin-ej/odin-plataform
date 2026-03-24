@@ -52,7 +52,7 @@ const CreateModelModal = () => {
     try {
       await createRecognitionModel({
         title,
-        type,
+        type: type as RecognitionType,
         description,
         areas: selectedAreas as RecognitionAreas[],
       });

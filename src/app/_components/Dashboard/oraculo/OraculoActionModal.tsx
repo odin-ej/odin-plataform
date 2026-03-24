@@ -32,6 +32,7 @@ import {
   uploadFileSchema,
 } from "@/lib/schemas/oraculoSchema";
 import z from "zod";
+import { Resolver } from "react-hook-form";
 import CustomCheckboxGroup from "../../Global/Custom/CustomCheckboxGroup";
 import { AreaRoles, OraculoAreas } from "@prisma/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -81,7 +82,7 @@ const OraculoActionModal = ({
   }, [actionType]);
 
   const form = useForm<OraculoFormValues>({
-    resolver: zodResolver(activeSchema),
+    resolver: zodResolver(activeSchema) as unknown as Resolver<OraculoFormValues>,
   });
 
   // Efeito para resetar o formulário com os valores corretos quando o modal abre

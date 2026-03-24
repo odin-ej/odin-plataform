@@ -7,16 +7,34 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  TraineeDepartment,
-  TraineeGradeCategory,
-  TraineeEvaluation,
-} from "@prisma/client";
+// Locally defined enums (mirrors Prisma schema)
+const TraineeDepartment = {
+  MARKETING: "MARKETING",
+  ORGANIZACIONAL: "ORGANIZACIONAL",
+  FINANCEIRO: "FINANCEIRO",
+} as const;
+type TraineeDepartment = (typeof TraineeDepartment)[keyof typeof TraineeDepartment];
+
+const TraineeGradeCategory = {
+  AVALIACAO_PROCESSUAL: "AVALIACAO_PROCESSUAL",
+  PROVA: "PROVA",
+  DESAFIO: "DESAFIO",
+  EXTRA: "EXTRA",
+} as const;
+type TraineeGradeCategory = (typeof TraineeGradeCategory)[keyof typeof TraineeGradeCategory];
+
+interface TraineeEvaluationItem {
+  id: string;
+  department: TraineeDepartment;
+  category: TraineeGradeCategory;
+  grade: number;
+  feedback: string | null;
+}
 
 interface DossieModalProps {
   isOpen: boolean;
   onClose: () => void;
-  evaluations: TraineeEvaluation[];
+  evaluations: TraineeEvaluationItem[];
 }
 
 const DEPARTMENT_LABELS: Record<TraineeDepartment, string> = {
@@ -47,7 +65,7 @@ export default function DossieModal({
     useState<TraineeGradeCategory | null>(null);
 
   const toggleCategory = (category: TraineeGradeCategory) => {
-    setExpandedCategory((prev) => (prev === category ? null : category));
+    setExpandedCategory((prev: TraineeGradeCategory | null) => (prev === category ? null : category));
   };
 
   const getEvaluation = (
