@@ -10,6 +10,7 @@ import {
   Clock,
   EyeIcon,
   Goal,
+  GraduationCap,
   HomeIcon,
   LayoutDashboard,
   Lightbulb,
@@ -108,6 +109,12 @@ export const generalLinks: Links[] = [
 ];
 
 export const personalLinks: Links[] = [
+  {
+    name: "Minhas Notas",
+    href: "/minhas-notas",
+    icon: GraduationCap,
+    exMemberCanAccess: false,
+  },
   {
     name: "Minhas Pendências",
     href: "/minhas-pendencias",
