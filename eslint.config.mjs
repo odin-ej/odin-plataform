@@ -13,8 +13,11 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    linterOptions: {
+      reportUnusedDisableDirectives: "off", // 👈 adiciona isso
+    },
     rules: {
-      "@typescript-eslint/no-unused-vars": "off", // 👈 desativa
+      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 ];
