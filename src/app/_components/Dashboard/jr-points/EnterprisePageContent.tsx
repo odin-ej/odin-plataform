@@ -739,7 +739,7 @@ const EnterprisePageContent = ({
               ? createVersionMutation
               : createSemesterMutation
         }
-        fields={modalType === "version" ? versionFields : semesterFields}
+        fields={modalType === "version" ? versionFields : semesterFields as FieldConfig<Record<string, unknown>>[]}
         title={
           editingItem
             ? `Editar ${modalType === "version" ? "Versão" : "Semestre"}`

@@ -36,6 +36,7 @@ type MessageForm = z.infer<typeof messageSchema>;
 type ContextType = "direct" | "channel";
 
 // Define includes comuns para ambos os tipos de mensagem
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const messageIncludes = {
   author: true,
   reactions: {

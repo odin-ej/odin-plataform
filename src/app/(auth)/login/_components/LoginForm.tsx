@@ -19,6 +19,7 @@ const signInSchema = z.object({
 const LoginForm = () => {
   const router = useRouter();
   const { checkAuth } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof signInSchema>>({

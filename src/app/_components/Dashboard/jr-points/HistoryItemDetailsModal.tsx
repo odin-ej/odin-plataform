@@ -314,7 +314,7 @@ const HistoryItemDetailsModal = ({
                   <DetailRow
                     icon={<Building size={16} />}
                     label="É para a empresa?"
-                    value={data.isForEnterprise ? "Sim" : "Não"}
+                    value={"isForEnterprise" in data && data.isForEnterprise ? "Sim" : "Não"}
                   />
                 )}
                 <DetailRow
@@ -389,7 +389,7 @@ const HistoryItemDetailsModal = ({
                   <DetailRow
                     icon={<Building size={16} />}
                     label="É para a empresa?"
-                    value={data.isForEnterprise ? "Sim" : "Não"}
+                    value={"isForEnterprise" in data && data.isForEnterprise ? "Sim" : "Não"}
                   />
                 )}
                 <DetailRow
