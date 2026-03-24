@@ -398,7 +398,6 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
                 likedBy: original.likedBy ?? [],
                 favoritedBy: original.favoritedBy ?? [],
                 repostedBy: original.repostedBy ?? [],
-                originalPost: "originalPost" in original ? (original as FullPost).originalPost ?? null : null,
               } as FullPost;
               return {
                 ...p,

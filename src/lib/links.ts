@@ -29,7 +29,6 @@ interface Links {
   name: string;
   href: string;
   icon: React.ElementType;
-  exMemberCanAccess?: boolean;
 }
 
 interface RestrictedLinks extends Links {
@@ -47,19 +46,16 @@ export const generalLinks: Links[] = [
     name: "Chat IA",
     href: "/chat",
     icon: MessageSquare,
-    exMemberCanAccess: false,
   },
   {
     name: "JR Points",
     href: "/jr-points",
     icon: JrPointIconWhite,
-    exMemberCanAccess: false,
   },
   {
     name: "Metas da Casinha",
     href: "/metas",
     icon: Goal,
-    exMemberCanAccess: false,
   },
   {
     name: "Área Cultural",
@@ -70,7 +66,6 @@ export const generalLinks: Links[] = [
     name: "Tarefas",
     href: "/tarefas",
     icon: ClipboardList,
-    exMemberCanAccess: false,
   },
   {
     name: "Reports",
@@ -81,19 +76,16 @@ export const generalLinks: Links[] = [
     name: "Central de Reservas",
     href: "/central-de-reservas",
     icon: CalendarClock,
-    exMemberCanAccess: false,
   },
   {
     name: "Oráculo",
     href: "/oraculo",
     icon: EyeIcon,
-    exMemberCanAccess: false,
   },
   {
     name: 'Comunidade',
     href: '/comunidade',
     icon: UsersRound,
-    exMemberCanAccess: true,
   },
   {
     name: 'Inovação',
@@ -104,7 +96,6 @@ export const generalLinks: Links[] = [
     name: 'Reconhecimentos',
     href: '/reconhecimentos',
     icon: Trophy,
-    exMemberCanAccess: false,
   }
 ];
 
@@ -113,19 +104,16 @@ export const personalLinks: Links[] = [
     name: "Minhas Notas",
     href: "/minhas-notas",
     icon: GraduationCap,
-    exMemberCanAccess: false,
   },
   {
     name: "Minhas Pendências",
     href: "/minhas-pendencias",
     icon: Clock,
-    exMemberCanAccess: false,
   },
   {
     name: "Meus Pontos",
     href: "/meus-pontos",
     icon: Award,
-    exMemberCanAccess: false,
   },
   {
     name: "Meu Perfil",
@@ -147,7 +135,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Solicitações de cadastro",
@@ -161,7 +148,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Atualizar Estrategia",
@@ -176,7 +162,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Projetos" },
       { name: "Gerente de Performance" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Conhecimento da IA",
@@ -190,7 +175,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Gerenciar Link Posters",
@@ -204,7 +188,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Gerenciar Cargos",
@@ -218,7 +201,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Gerenciar JR Points",
@@ -232,7 +214,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Gerenciar Notificações",
@@ -246,7 +227,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Gerenciar Trainees",
@@ -260,7 +240,6 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
   {
     name: "Gerenciar Permissões",
@@ -274,6 +253,5 @@ export const restrictedLinks: RestrictedLinks[] = [
       { name: "Diretor(a) de Operações" },
       { name: "Diretor(a) de Projetos" },
     ],
-    exMemberCanAccess: false,
   },
 ];

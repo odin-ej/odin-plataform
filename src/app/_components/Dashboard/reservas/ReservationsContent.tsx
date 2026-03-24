@@ -33,6 +33,7 @@ import {
   EaufbaReservationFormValues,
   ExtendedReservation,
   ItemForm,
+  ReservationFormValues,
   RoomReservationFormValues,
 } from "@/lib/schemas/reservationsSchema";
 import DailyScheduleView from "./DailyScheduleView";
@@ -316,9 +317,9 @@ const ReservationsContent = ({
             setSelectedDate(null);
           }}
           selectedDate={selectedDate}
-          createRoomReservation={createReservation}
-          createItemReservation={createItem}
-          createEaufbaRequest={createEaufba}
+          createRoomReservation={createReservation as unknown as (data: ReservationFormValues) => void}
+          createItemReservation={createItem as unknown as (data: ReservationFormValues) => void}
+          createEaufbaRequest={createEaufba as unknown as (data: ReservationFormValues) => void}
           rooms={rooms}
           items={reservableItems}
           existingItemReservations={itemReservations}

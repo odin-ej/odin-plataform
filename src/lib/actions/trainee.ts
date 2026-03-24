@@ -2,11 +2,23 @@
 
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import {
-  TraineeDepartment,
-  TraineeGradeCategory,
-  AreaRoles,
-} from "@prisma/client";
+import { AreaRoles } from "@prisma/client";
+
+// Local enum definitions (mirrors prisma schema — needs `prisma generate` to use from @prisma/client)
+const TraineeDepartment = {
+  MARKETING: "MARKETING",
+  ORGANIZACIONAL: "ORGANIZACIONAL",
+  FINANCEIRO: "FINANCEIRO",
+} as const;
+type TraineeDepartment = (typeof TraineeDepartment)[keyof typeof TraineeDepartment];
+
+const TraineeGradeCategory = {
+  AVALIACAO_PROCESSUAL: "AVALIACAO_PROCESSUAL",
+  PROVA: "PROVA",
+  DESAFIO: "DESAFIO",
+  EXTRA: "EXTRA",
+} as const;
+type TraineeGradeCategory = (typeof TraineeGradeCategory)[keyof typeof TraineeGradeCategory];
 
 // --- Types ---
 
@@ -112,9 +124,9 @@ export async function getTrainees(): Promise<TraineeWithEvaluations[]> {
 
   const trainees = await prisma.user.findMany({
     where: {
-      roles: {
-        some: {
-          name: "Trainee",
+      currentRole: {
+        area: {
+          has: "TRAINEE",
         },
       },
       isExMember: false,

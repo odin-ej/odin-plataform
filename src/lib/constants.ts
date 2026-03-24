@@ -15,6 +15,7 @@ export const AREA_HIERARCHY_ORDER: readonly AreaRoles[] = [
   AreaRoles.TATICO,
   AreaRoles.CONSULTORIA,
   AreaRoles.OUTRO,
+  AreaRoles.TRAINEE,
 ] as const;
 
 // ─── Labels para áreas ─────────────────────────────────────────────
@@ -32,6 +33,7 @@ export const ROLE_AREA_LABELS: Record<AreaRoles, string> = {
   [AreaRoles.TATICO]: "Tático",
   [AreaRoles.CONSULTORIA]: "Consultoria",
   [AreaRoles.OUTRO]: "Outro",
+  [AreaRoles.TRAINEE]: "Trainee",
 } as const;
 
 // ─── Labels para link areas ────────────────────────────────────────

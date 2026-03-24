@@ -39,7 +39,8 @@ interface ContentSidebarLeftProps {
   user: FullUser;
   channels: FullChannel[];
   conversations: (DirectConversation & { participants: FullUser[] })[];
-  onAction: (action: string, data?: Record<string, unknown>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onAction: (action: string, data?: any) => void;
 }
 
 const ContentSidebarLeft = ({

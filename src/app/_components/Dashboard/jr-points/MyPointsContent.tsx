@@ -36,7 +36,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { checkUserPermission } from "@/lib/utils";
 import { DIRECTORS_ONLY } from "@/lib/permissions";
-import HistoryItemDetailsModal from "./HistoryItemDetailsModal";
+import HistoryItemDetailsModal, { HistoryItemData } from "./HistoryItemDetailsModal";
 
 interface HistoryData {
   tags: TagWithAction[];
@@ -78,10 +78,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const [selectedView, setSelectedView] = useState<string>("current");
   const [activeTab, setActiveTab] = useState<string>("tags");
   const requestForm = useForm<FormDataType>();
-  const [viewingItem, setViewingItem] = useState<{
-    type: "tag" | "solicitation" | "report";
-    data: TagWithAction | FullJRPointsSolicitation | FullJRPointsReport;
-  } | null>(null);
+  const [viewingItem, setViewingItem] = useState<HistoryItemData | null>(null);
 
   // --- BUSCA DE DADOS ---
   const { data, isLoading, isError } = useQuery({
@@ -361,7 +358,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     item: TagWithAction | FullJRPointsSolicitation | FullJRPointsReport,
     type: "tag" | "solicitation" | "report"
   ) => {
-    setViewingItem({ data: item, type });
+    setViewingItem({ data: item, type } as HistoryItemData);
   };
 
   const getStatusBadge = (status: string) => {

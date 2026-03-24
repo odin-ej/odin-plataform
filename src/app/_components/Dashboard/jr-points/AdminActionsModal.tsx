@@ -183,7 +183,9 @@ const AdminActionsModal = ({
     onError: (error: Error) =>
       toast.error("Erro ao atribuir pontos", {
         description:
-          axios.isAxiosError(error) ? error.response?.data?.message : error.message,
+          axios.isAxiosError<{ message: string }>(error)
+            ? error.response?.data?.message || "Ocorreu um erro inesperado."
+            : error.message,
       }),
   });
 

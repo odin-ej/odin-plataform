@@ -35,24 +35,10 @@ import { INOVATION_LEADERS } from "@/lib/permissions";
 import Pagination from "../../Global/Custom/Pagination";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { toast } from "sonner";
-import InovationFilters from "./InovationFilters";
+import InovationFilters, { InitiativesFilterState } from "./InovationFilters";
 
 interface InovationContentProps {
   initialData: FullInovationInitiative[];
-}
-
-interface MyInitiativesFilter {
-  searchQuery: string;
-  statusFilter: string;
-  areaFilter: string;
-  semesterFilter: string;
-  subAreaFilter: string;
-  [key: string]: string | undefined;
-}
-
-interface EnterpriseInitiativesFilter extends MyInitiativesFilter {
-  fixedFilter?: string;
-  memberFilter?: string;
 }
 
 // Configuração de textos para as categorias
@@ -89,7 +75,7 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   const [activeTab, setActiveTab] = useState<InovationInitiativeType>(
     InovationInitiativeType.Iniciativa
   );
-  const [myInitiativesFilter, setMyInitiativesFilter] = useState<MyInitiativesFilter>({
+  const [myInitiativesFilter, setMyInitiativesFilter] = useState<InitiativesFilterState>({
     searchQuery: "",
     statusFilter: "all",
     areaFilter: "all",
@@ -97,7 +83,7 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     subAreaFilter: "all",
   });
   const [enterpriseInitiativesFilter, setEnterpriseInitiativesFilter] =
-    useState<EnterpriseInitiativesFilter>({
+    useState<InitiativesFilterState>({
       searchQuery: "",
       statusFilter: "all",
       areaFilter: "all",
