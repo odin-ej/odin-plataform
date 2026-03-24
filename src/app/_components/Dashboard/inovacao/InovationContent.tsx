@@ -47,11 +47,12 @@ interface MyInitiativesFilter {
   areaFilter: string;
   semesterFilter: string;
   subAreaFilter: string;
+  [key: string]: string | undefined;
 }
 
 interface EnterpriseInitiativesFilter extends MyInitiativesFilter {
-  fixedFilter: string;
-  memberFilter: string;
+  fixedFilter?: string;
+  memberFilter?: string;
 }
 
 // Configuração de textos para as categorias

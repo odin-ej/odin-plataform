@@ -209,7 +209,7 @@ const HistoryItemDetailsModal = ({
                 <DetailRow
                   icon={<PencilLine size={16} />}
                   label="Título"
-                  value={template.name ?? "-"}
+                  value={template?.name ?? "-"}
                 />
                 <DetailRow
                   icon={<PencilLine size={16} />}
@@ -253,7 +253,7 @@ const HistoryItemDetailsModal = ({
                 <DetailRow
                   icon={<Building size={16} />}
                   label="É para a empresa?"
-                  value={data.isForEnterprise ? "Sim" : "Não"}
+                  value={"isForEnterprise" in data && data.isForEnterprise ? "Sim" : "Não"}
                 />
                 <DetailRow
                   icon={<User size={16} />}
@@ -319,7 +319,7 @@ const HistoryItemDetailsModal = ({
                   <DetailRow
                     icon={<Building size={16} />}
                     label="É para a empresa?"
-                    value={data.isForEnterprise ? "Sim" : "Não"}
+                    value={"isForEnterprise" in data && data.isForEnterprise ? "Sim" : "Não"}
                   />
                 )}
                 <DetailRow
@@ -394,13 +394,13 @@ const HistoryItemDetailsModal = ({
                   <DetailRow
                     icon={<Building size={16} />}
                     label="É para a empresa?"
-                    value={data.isForEnterprise ? "Sim" : "Não"}
+                    value={"isForEnterprise" in data && data.isForEnterprise ? "Sim" : "Não"}
                   />
                 )}
                 <DetailRow
                   icon={<Tag size={16} />}
                   label="Tag Contestada"
-                  value={data.tag.template.name ?? ""}
+                  value={data.tag.template?.name ?? ""}
                 />
                 <DetailRow
                   icon={<Star size={16} />}

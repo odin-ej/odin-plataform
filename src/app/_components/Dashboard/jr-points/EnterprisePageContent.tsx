@@ -270,7 +270,7 @@ const EnterprisePageContent = ({
     item: Record<string, unknown> & { id: string },
     type: "tag-template" | "action-type" | "version" | "semester"
   ) => {
-    form.reset(item); // Preenche o formulário com os dados do item
+    form.reset(item as Parameters<typeof form.reset>[0]); // Preenche o formulário com os dados do item
     setEditingItem({ ...item, type });
     // Reutiliza o mesmo modal de criação/edição para versões e semestres
     if (type === "version" || type === "semester") {
@@ -278,17 +278,17 @@ const EnterprisePageContent = ({
         form.reset({
           ...item,
           implementationDate: item.implementationDate
-            ? format(item.implementationDate, "yyyy-MM-dd")
+            ? format(new Date(item.implementationDate as string), "yyyy-MM-dd")
             : "",
-          endDate: item.endDate ? format(item.endDate, "yyyy-MM-dd") : "",
-        });
+          endDate: item.endDate ? format(new Date(item.endDate as string), "yyyy-MM-dd") : "",
+        } as Parameters<typeof form.reset>[0]);
       }
       if (type === "semester") {
         form.reset({
           ...item,
-          startDate: item.startDate ? format(item.startDate, "yyyy-MM-dd") : "",
-          endDate: item.endDate ? format(item.endDate, "yyyy-MM-dd") : "",
-        });
+          startDate: item.startDate ? format(new Date(item.startDate as string), "yyyy-MM-dd") : "",
+          endDate: item.endDate ? format(new Date(item.endDate as string), "yyyy-MM-dd") : "",
+        } as Parameters<typeof form.reset>[0]);
       }
       setModalType(type);
       setIsCreateModalOpen(true);
@@ -710,9 +710,9 @@ const EnterprisePageContent = ({
         <CustomModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          form={form}
+          form={form as unknown as UseFormReturn<Record<string, unknown>>}
           onSubmit={(data) => editItem(data)}
-          fields={getFieldsForType(editingItem.type, form)}
+          fields={getFieldsForType(editingItem.type as "tag-template" | "action-type", form as unknown as UseFormReturn<Record<string, unknown>>)}
           title={`Editar ${editingItem.type === "tag-template" ? "Modelo de Tag" : "Tipo de Ação"}`}
           isEditing={true}
           isLoading={isEditingItem}
@@ -727,7 +727,7 @@ const EnterprisePageContent = ({
           setEditingItem(null);
           form.reset();
         }}
-        form={form}
+        form={form as unknown as UseFormReturn<Record<string, unknown>>}
         onSubmit={
           editingItem
             ? (data) => editItem(data)
@@ -735,7 +735,7 @@ const EnterprisePageContent = ({
               ? createVersionMutation
               : createSemesterMutation
         }
-        fields={modalType === "version" ? versionFields : semesterFields}
+        fields={modalType === "version" ? versionFields : semesterFields as FieldConfig<Record<string, unknown>>[]}
         title={
           editingItem
             ? `Editar ${modalType === "version" ? "Versão" : "Semestre"}`
@@ -749,7 +749,7 @@ const EnterprisePageContent = ({
       <RequestReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        request={reviewingRequest}
+        request={reviewingRequest as React.ComponentProps<typeof RequestReviewModal>["request"]}
         allSolicitations={solicitations}
         onReview={reviewRequestMutation}
         isReviewing={isReviewing}

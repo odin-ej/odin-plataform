@@ -54,17 +54,17 @@ const CommunitySidebarLeft = ({
           method = "post";
           break;
         case "deleteChannel":
-          await deleteChannel({channelId: data.id})
+          await deleteChannel({channelId: data.id as string})
           return;
         case "leaveConversation":
-          await leaveConversation({conversationId: data.id})
+          await leaveConversation({conversationId: data.id as string})
           return;
         case 'pinChannel':
-          endpoint = `/api/community/channels/${data.id}/pin`;
+          endpoint = `/api/community/channels/${data.id as string}/pin`;
           method = "patch";
           break;
         case "deleteConversation":
-          await deleteConversation({conversationId: data.id})
+          await deleteConversation({conversationId: data.id as string})
           return;
         // Adicione outras mutations aqui
       }
@@ -87,7 +87,7 @@ const CommunitySidebarLeft = ({
       actionMutation({
         action,
         data: {
-          id: data.channelId
+          id: data?.channelId
         },
       })
     }
@@ -178,7 +178,7 @@ const CommunitySidebarLeft = ({
           isOpen={true}
           onClose={() => setModalState({ type: null })}
           action={"create"}
-          channel={modalState.data?.channel}
+          channel={modalState.data?.channel as FullChannel | undefined}
           allUsers={allUsers}
           onConfirm={(data: Record<string, unknown>) =>
             actionMutation({
@@ -209,7 +209,7 @@ const CommunitySidebarLeft = ({
         <UserSettingsModal
           isOpen={true}
           onClose={() => setModalState({ type: null })}
-          user={modalState.data}
+          user={modalState.data as FullUser}
           isCurrentUser={user.id === (modalState.data as Record<string, unknown>).id}
         />
       )}
@@ -217,7 +217,7 @@ const CommunitySidebarLeft = ({
         <UserSettingsModal
           isOpen={true}
           onClose={() => setModalState({ type: null })}
-          user={modalState.data}
+          user={modalState.data as FullUser}
           isCurrentUser={user.id === (modalState.data as Record<string, unknown>).id}
         />
       )}

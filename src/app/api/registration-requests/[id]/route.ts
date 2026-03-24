@@ -82,6 +82,7 @@ export async function PATCH(request: Request) {
       );
     }
 
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const {
       id,
       roleId,
@@ -98,6 +99,7 @@ export async function PATCH(request: Request) {
       roleHistory,
       ...dataToUpdate
     } = validation.data;
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
 
 
