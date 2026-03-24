@@ -17,6 +17,7 @@ import {
   Link,
   Megaphone,
   MessageSquare,
+  Shield,
   TicketCheck,
   Users,
   Trophy,
@@ -251,6 +252,20 @@ export const restrictedLinks: RestrictedLinks[] = [
     name: "Gerenciar Trainees",
     href: "/gerenciar-trainees",
     icon: GraduationCap,
+     roles: [
+      { name: "Conselho" },
+      { name: "Diretor(a) Presidente" },
+      { name: "Diretor(a) de Gestão de Pessoas" },
+      { name: "Diretor(a) de Mercado" },
+      { name: "Diretor(a) de Operações" },
+      { name: "Diretor(a) de Projetos" },
+    ],
+    exMemberCanAccess: false,
+  },
+  {
+    name: "Gerenciar Permissões",
+    href: "/gerenciar-permissoes",
+    icon: Shield,
     roles: [
       { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
@@ -262,5 +277,3 @@ export const restrictedLinks: RestrictedLinks[] = [
     exMemberCanAccess: false,
   },
 ];
-
-
