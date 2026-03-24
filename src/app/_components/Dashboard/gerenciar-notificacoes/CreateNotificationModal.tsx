@@ -48,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import Image from "next/image";
 
 type SimpleUser = {
   id: string;
@@ -330,9 +331,11 @@ export default function CreateNotificationModal({
                                     : "opacity-0"
                                 )}
                               />
-                              <img
+                              <Image
                                 src={user.imageUrl}
-                                alt=""
+                                alt={user.name}
+                                width={25}
+                                height={25}
                                 className="w-5 h-5 rounded-full mr-2"
                               />
                               {user.name}

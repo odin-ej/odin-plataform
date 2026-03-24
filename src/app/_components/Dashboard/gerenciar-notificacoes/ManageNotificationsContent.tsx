@@ -62,6 +62,7 @@ import CreateNotificationModal from "./CreateNotificationModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 type SimpleUser = {
   id: string;
@@ -533,7 +534,13 @@ export default function ManageNotificationsContent({
                     <div className="col-span-2">
                       <p className="text-xs text-gray-500">Criada por</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <img src={detailModal.createdBy.imageUrl} alt="" className="w-5 h-5 rounded-full" />
+                        <Image
+                          src={detailModal.createdBy.imageUrl}
+                          alt={detailModal.createdBy.name}
+                          width={25}
+                          height={25}
+                          className="w-5 h-5 rounded-full"
+                        />
                         <span className="text-sm text-gray-300">{detailModal.createdBy.name}</span>
                       </div>
                     </div>
@@ -551,9 +558,11 @@ export default function ManageNotificationsContent({
                         className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md hover:bg-[#00205e]"
                       >
                         <div className="flex items-center gap-2">
-                          <img
+                          <Image
                             src={nu.user.imageUrl}
                             alt={nu.user.name}
+                            width={35}
+                            height={35}
                             className="w-7 h-7 rounded-full"
                           />
                           <div>
