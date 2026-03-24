@@ -10,6 +10,7 @@ import {
   Clock,
   EyeIcon,
   Goal,
+  GraduationCap,
   HomeIcon,
   LayoutDashboard,
   Lightbulb,
@@ -108,6 +109,12 @@ export const generalLinks: Links[] = [
 ];
 
 export const personalLinks: Links[] = [
+  {
+    name: "Minhas Notas",
+    href: "/minhas-notas",
+    icon: GraduationCap,
+    exMemberCanAccess: false,
+  },
   {
     name: "Minhas Pendências",
     href: "/minhas-pendencias",
@@ -232,6 +239,20 @@ export const restrictedLinks: RestrictedLinks[] = [
     href: "/gerenciar-notificacoes",
     icon: Bell,
     roles: [
+      { name: "Conselho" },
+      { name: "Diretor(a) Presidente" },
+      { name: "Diretor(a) de Gestão de Pessoas" },
+      { name: "Diretor(a) de Mercado" },
+      { name: "Diretor(a) de Operações" },
+      { name: "Diretor(a) de Projetos" },
+    ],
+    exMemberCanAccess: false,
+  },
+  {
+    name: "Gerenciar Trainees",
+    href: "/gerenciar-trainees",
+    icon: GraduationCap,
+     roles: [
       { name: "Conselho" },
       { name: "Diretor(a) Presidente" },
       { name: "Diretor(a) de Gestão de Pessoas" },

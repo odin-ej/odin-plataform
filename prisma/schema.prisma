@@ -363,6 +363,8 @@ model User {
   recognitionsSent              Recognition[]                 @relation("UserRecognitionsSent")
   lastActiveAt DateTime? @map("last_active_at")
   createdNotifications          Notification[]               @relation("NotificationCreator")
+  traineeEvaluations            TraineeEvaluation[]          @relation("TraineeEvaluations")
+  evaluatorEvaluations          TraineeEvaluation[]          @relation("EvaluatorEvaluations")
 }
 
 model UserRoleHistory {
@@ -1468,4 +1470,37 @@ model ActionPermission {
   isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// --- TRAINEE EVALUATIONS ---
+
+enum TraineeDepartment {
+  MARKETING
+  ORGANIZACIONAL
+  FINANCEIRO
+}
+
+enum TraineeGradeCategory {
+  AVALIACAO_PROCESSUAL
+  PROVA
+  DESAFIO
+  EXTRA
+}
+
+model TraineeEvaluation {
+  id          String               @id @default(uuid())
+  traineeId   String
+  trainee     User                 @relation("TraineeEvaluations", fields: [traineeId], references: [id], onDelete: Cascade)
+  evaluatorId String
+  evaluator   User                 @relation("EvaluatorEvaluations", fields: [evaluatorId], references: [id], onDelete: Cascade)
+  department  TraineeDepartment
+  category    TraineeGradeCategory
+  grade       Float
+  feedback    String?              @db.Text
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([traineeId, department, category])
+  @@index([traineeId])
+  @@index([evaluatorId])
 }
