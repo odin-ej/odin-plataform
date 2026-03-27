@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Shield,
@@ -17,7 +17,10 @@ import {
   Globe,
   UserX,
   FileText,
+  Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import Pagination from "@/app/_components/Global/Custom/Pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -89,6 +92,14 @@ export default function ManagePermissionsContent({
     null
   );
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // ─── Pagination & Search ────────────────────────────────────────────
+  const [routesPage, setRoutesPage] = useState(1);
+  const [actionsPage, setActionsPage] = useState(1);
+  const [policiesPage, setPoliciesPage] = useState(1);
+  const [routesSearch, setRoutesSearch] = useState("");
+  const [actionsSearch, setActionsSearch] = useState("");
+  const ITEMS_PER_PAGE = 10;
 
   // ─── Queries ──────────────────────────────────────────────────────────
 
@@ -207,6 +218,67 @@ export default function ManagePermissionsContent({
     [policies, routes, actions]
   );
 
+  // ─── Paginated / Filtered Data ──────────────────────────────────────
+
+  const paginatedRoutes = useMemo(() => {
+    let filtered = routes || [];
+    if (routesSearch) {
+      const q = routesSearch.toLowerCase();
+      filtered = filtered.filter(
+        (r) =>
+          r.path.toLowerCase().includes(q) ||
+          (r.label && r.label.toLowerCase().includes(q))
+      );
+    }
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+    return {
+      data: filtered.slice(
+        (routesPage - 1) * ITEMS_PER_PAGE,
+        routesPage * ITEMS_PER_PAGE
+      ),
+      totalPages,
+      total: filtered.length,
+    };
+  }, [routes, routesPage, routesSearch]);
+
+  const paginatedActions = useMemo(() => {
+    let filtered = actions || [];
+    if (actionsSearch) {
+      const q = actionsSearch.toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.actionKey.toLowerCase().includes(q) ||
+          (a.label && a.label.toLowerCase().includes(q))
+      );
+    }
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+    return {
+      data: filtered.slice(
+        (actionsPage - 1) * ITEMS_PER_PAGE,
+        actionsPage * ITEMS_PER_PAGE
+      ),
+      totalPages,
+      total: filtered.length,
+    };
+  }, [actions, actionsPage, actionsSearch]);
+
+  const paginatedPolicies = useMemo(() => {
+    const filtered = policies || [];
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+    return {
+      data: filtered.slice(
+        (policiesPage - 1) * ITEMS_PER_PAGE,
+        policiesPage * ITEMS_PER_PAGE
+      ),
+      totalPages,
+      total: filtered.length,
+    };
+  }, [policies, policiesPage]);
+
+  // Reset pages when search changes
+  useEffect(() => { setRoutesPage(1); }, [routesSearch]);
+  useEffect(() => { setActionsPage(1); }, [actionsSearch]);
+
   // ─── Render ───────────────────────────────────────────────────────────
 
   return (
@@ -300,7 +372,7 @@ export default function ManagePermissionsContent({
         <TabsList className="bg-[#010d26] border border-[#0126fb]/20 p-1 rounded-xl h-auto flex-wrap">
           <TabsTrigger
             value="routes"
-            className="data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#0126fb]/20 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
+            className="data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#0126fb]/20 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all text-[#0126fb]"
           >
             <Route className="h-4 w-4" />
             Rotas
@@ -310,7 +382,7 @@ export default function ManagePermissionsContent({
           </TabsTrigger>
           <TabsTrigger
             value="actions"
-            className="data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#0126fb]/20 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
+            className="data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#0126fb]/20 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all text-[#0126fb]"
           >
             <Zap className="h-4 w-4" />
             Acoes
@@ -320,7 +392,7 @@ export default function ManagePermissionsContent({
           </TabsTrigger>
           <TabsTrigger
             value="policies"
-            className="data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#0126fb]/20 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all"
+            className="data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-[#0126fb]/20 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all text-[#0126fb]"
           >
             <Shield className="h-4 w-4" />
             Politicas
@@ -346,9 +418,22 @@ export default function ManagePermissionsContent({
             </div>
           ) : (
             <>
+              {/* Search */}
+              <div className="mb-4">
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por path ou label..."
+                    value={routesSearch}
+                    onChange={(e) => setRoutesSearch(e.target.value)}
+                    className="pl-10 bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
+
               {/* Mobile Card View for Routes */}
               <div className="md:hidden space-y-3">
-                {routes.map((route) => (
+                {paginatedRoutes.data.map((route) => (
                   <div
                     key={route.id}
                     className="bg-[#010d26] border border-[#0126fb]/20 rounded-xl p-4 space-y-3 hover:border-[#0126fb]/40 transition-colors"
@@ -425,7 +510,7 @@ export default function ManagePermissionsContent({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {routes.map((route) => (
+                    {paginatedRoutes.data.map((route) => (
                       <TableRow
                         key={route.id}
                         className="border-b border-[#0126fb]/10 hover:bg-[#00205e]/20 transition-colors"
@@ -503,6 +588,15 @@ export default function ManagePermissionsContent({
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Pagination */}
+              {paginatedRoutes.totalPages > 1 && (
+                <Pagination
+                  currentPage={routesPage}
+                  totalPages={paginatedRoutes.totalPages}
+                  onPageChange={setRoutesPage}
+                />
+              )}
             </>
           )}
         </TabsContent>
@@ -523,9 +617,22 @@ export default function ManagePermissionsContent({
             </div>
           ) : (
             <>
+              {/* Search */}
+              <div className="mb-4">
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por acao ou label..."
+                    value={actionsSearch}
+                    onChange={(e) => setActionsSearch(e.target.value)}
+                    className="pl-10 bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
+
               {/* Mobile Card View for Actions */}
               <div className="md:hidden space-y-3">
-                {actions.map((action) => (
+                {paginatedActions.data.map((action) => (
                   <div
                     key={action.id}
                     className="bg-[#010d26] border border-[#0126fb]/20 rounded-xl p-4 space-y-3 hover:border-[#0126fb]/40 transition-colors"
@@ -606,7 +713,7 @@ export default function ManagePermissionsContent({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {actions.map((action) => (
+                    {paginatedActions.data.map((action) => (
                       <TableRow
                         key={action.id}
                         className="border-b border-[#0126fb]/10 hover:bg-[#00205e]/20 transition-colors"
@@ -689,6 +796,15 @@ export default function ManagePermissionsContent({
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Pagination */}
+              {paginatedActions.totalPages > 1 && (
+                <Pagination
+                  currentPage={actionsPage}
+                  totalPages={paginatedActions.totalPages}
+                  onPageChange={setActionsPage}
+                />
+              )}
             </>
           )}
         </TabsContent>
@@ -718,8 +834,9 @@ export default function ManagePermissionsContent({
               </Button>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {policies.map((policy) => {
+              {paginatedPolicies.data.map((policy) => {
                 const usageCount =
                   policy._count.routePermissions +
                   policy._count.actionPermissions;
@@ -817,6 +934,16 @@ export default function ManagePermissionsContent({
                 );
               })}
             </div>
+
+            {/* Pagination */}
+            {paginatedPolicies.totalPages > 1 && (
+              <Pagination
+                currentPage={policiesPage}
+                totalPages={paginatedPolicies.totalPages}
+                onPageChange={setPoliciesPage}
+              />
+            )}
+            </>
           )}
         </TabsContent>
       </Tabs>

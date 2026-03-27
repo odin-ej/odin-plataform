@@ -16,14 +16,16 @@ import {
   MemberUpdateType,
   ExMemberUpdateType,
 } from "@/lib/schemas/profileUpdateSchema";
-import { checkUserPermission, formatDateForInput, uploadFile } from "@/lib/utils";
+import { formatDateForInput, uploadFile } from "@/lib/utils";
 import { UseFormReturn } from "react-hook-form";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
   const { user: authUser, checkAuth } = useAuth();
+  const { canDo } = useAllowedActions();
   const queryClient = useQueryClient();
   const userId = authUser?.id;
 
@@ -147,10 +149,7 @@ const PerfilContent = ({ initialData }: { initialData: PerfilPageData }) => {
 
   const { user, roles, interestCategories } = data || {};
 
-  const canChangeRole = useMemo(
-    () => (user ? checkUserPermission(user, DIRECTORS_ONLY) : false),
-    [user]
-  );
+  const canChangeRole = canDo(AppAction.MANAGE_USERS);
 
   const formInitialValues = useMemo(() => {
     if (!user) return undefined;

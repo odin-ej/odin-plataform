@@ -25,8 +25,9 @@ import {
   NotificationType,
   Prisma,
 } from "@prisma/client";
-import { checkUserPermission, getLabelForRoleArea } from "../utils";
-import { DIRECTORS_ONLY } from "../permissions";
+import { getLabelForRoleArea } from "../utils";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "../permissions";
 import { createNotification } from "./notifications";
 import { S3_UPLOAD } from "../constants";
 
@@ -277,7 +278,7 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
 
     if (
       authUser.id !== channel?.createdById &&
-      !checkUserPermission(authUser, DIRECTORS_ONLY)
+      !await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS)
     ) {
       throw new Error("Somente o criador pode deletar o canal.");
     }
@@ -913,7 +914,7 @@ export async function togglePinChannel(data: {
   const authUser = await getAuthenticatedUser();
   if (!authUser) throw new Error("Não autorizado");
 
-  if (!checkUserPermission(authUser, DIRECTORS_ONLY))
+  if (!await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS))
     throw new Error("Não autorizado");
 
   await prisma.channel.update({

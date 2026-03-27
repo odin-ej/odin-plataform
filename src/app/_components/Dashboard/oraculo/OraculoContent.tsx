@@ -18,8 +18,9 @@ import {
   OraculoPageProps,
 } from "@/app/(dashboard)/oraculo/page";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { checkUserPermission, cn } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { cn } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { OraculoAreas } from "@prisma/client";
 import OraculoActionModal from "./OraculoActionModal";
 import { SyncOraculoPanel } from "./SyncOraculoPanel";
@@ -31,6 +32,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -64,7 +66,7 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     if (!data || !user) return [];
 
     const userAreas = (user.currentRole?.area as OraculoAreas[]) || [];
-    const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+    const isDirector = canDo(AppAction.MANAGE_AI_KNOWLEDGE);
 
     const hasDirectPermission = (item: FullOraculoFile | FullOraculoFolder) => {
         if (isDirector) return true;
@@ -267,10 +269,7 @@ const OraculoContent = ({ initialData }: { initialData: OraculoPageProps }) => {
     }
   };
 
-  const isDirector = useMemo(
-    () => checkUserPermission(user, DIRECTORS_ONLY),
-    [user]
-  );
+  const isDirector = canDo(AppAction.MANAGE_AI_KNOWLEDGE);
 
   return (
     <>

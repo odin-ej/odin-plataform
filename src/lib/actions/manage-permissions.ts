@@ -2,8 +2,8 @@
 
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import {
   createPolicySchema,
@@ -18,7 +18,7 @@ import {
 
 async function requireDirector() {
   const authUser = await getAuthenticatedUser();
-  if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (!authUser || !await can(authUser, AppAction.MANAGE_PERMISSIONS)) {
     throw new Error("Não autorizado");
   }
   return authUser;

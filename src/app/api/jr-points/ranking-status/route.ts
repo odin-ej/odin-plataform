@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import {  DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 
 export async function PATCH(request: Request) {
   try {
@@ -14,7 +14,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 401 });
     }
 
-    if (!checkUserPermission(user, DIRECTORS_ONLY)) {
+    if (!await can(user, AppAction.MANAGE_JR_POINTS_CONFIG)) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
 

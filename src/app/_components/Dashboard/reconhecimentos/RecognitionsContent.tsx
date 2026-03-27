@@ -17,7 +17,9 @@ import {
 } from "@/lib/actions/recognitions";
 import CustomCard from "../../Global/Custom/CustomCard";
 import CasinhaWinnerCard from "./CasinhaWinnerCard";
-import { checkUserPermission, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import {
   Carousel,
   CarouselContent,
@@ -32,7 +34,6 @@ import CreateModelModal from "./CreateModelModal";
 import ManageModelsList from "./ManageModelsList";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { toast } from "sonner";
-import { AreaRoles } from "@prisma/client";
 
 type YearlySchedule = Awaited<ReturnType<typeof getYearlyValueSchedule>>;
 type ScheduleItem = YearlySchedule[number];
@@ -53,11 +54,9 @@ const RecognitionsContent = ({ initialData }: RecognitionsContentProps) => {
   );
 
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
 
-  const isDirector = checkUserPermission(user!, {
-    allowedRoles: ["Gerente de Conexões", 'Gerente de Captação'],
-    allowedAreas: [AreaRoles.DIRETORIA]
-  });
+  const isDirector = canDo(AppAction.MANAGE_RECOGNITION_MODELS);
 
   const { data: schedule } = useQuery({
     queryKey: ["yearlySchedule", currentYear],

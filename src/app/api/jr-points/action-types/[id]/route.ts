@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission } from "@/lib/utils";
+import { AppAction } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
 
 export async function PATCH(
   request: Request,
@@ -17,7 +17,7 @@ export async function PATCH(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.MANAGE_JR_POINTS_CONFIG);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
@@ -53,7 +53,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.MANAGE_JR_POINTS_CONFIG);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });

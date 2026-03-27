@@ -1,8 +1,8 @@
 import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
@@ -57,7 +57,7 @@ export async function PATCH(
       );
 
     const isOwner = folderToRename.ownerId === authUser.id;
-    if (!isOwner && !checkUserPermission(authUser, DIRECTORS_ONLY))
+    if (!isOwner && !await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE))
       return NextResponse.json({ message: "Não autorizado" }, { status: 403 });
 
     await prisma.oraculoFolder.update({
@@ -96,7 +96,7 @@ export async function DELETE(
         { status: 404 }
       );
     const isOwner = folderToDelete.ownerId === authUser.id;
-    if (!isOwner && !checkUserPermission(authUser, DIRECTORS_ONLY))
+    if (!isOwner && !await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE))
       return NextResponse.json({ message: "Não autorizado" }, { status: 403 });
     await deleteFolderContentsS3(id);
     // Depois, deleta o registro da pasta no Prisma. O 'onDelete: Cascade' cuidará do resto.

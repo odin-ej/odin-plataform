@@ -13,7 +13,9 @@ import AccountCard from "./AccountCard";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { checkUserPermission, exportToExcel } from "@/lib/utils";
+import { exportToExcel } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import Organograma from "../gerenciar-cargos/Organograma";
 import { Label } from "@/components/ui/label";
 import {
@@ -64,10 +66,9 @@ const CulturalContent = ({ initialData }: CulturalContentProps) => {
     semester: "all",
   });
 
-  const isDirector = useMemo(() => {
-    if (!user) return false;
-    return checkUserPermission(user, { allowedAreas: [AreaRoles.DIRETORIA] });
-  }, [user]);
+  const { canDo } = useAllowedActions();
+
+  const isDirector = canDo(AppAction.MANAGE_CULTURE);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["culturalPageData"],

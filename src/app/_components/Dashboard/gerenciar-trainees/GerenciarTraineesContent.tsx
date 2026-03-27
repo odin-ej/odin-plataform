@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,7 +24,17 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Pagination from "@/app/_components/Global/Custom/Pagination";
 import {
   TraineeWithEvaluations,
   upsertTraineeEvaluation,
@@ -148,6 +158,12 @@ export default function GerenciarTraineesContent({
   const [isPending, startTransition] = useTransition();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
+  // ─── Search, Filter & Pagination ────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
+
   // Form state for grades and feedback
   const [formData, setFormData] = useState<
     Record<string, { grade: string; feedback: string }>
@@ -195,6 +211,52 @@ export default function GerenciarTraineesContent({
       },
     },
   };
+
+  // --- Filtered & Paginated Trainees ---
+
+  const filteredTrainees = useMemo(() => {
+    let result = trainees;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          t.email.toLowerCase().includes(q)
+      );
+    }
+
+    if (gradeFilter === "prova10") {
+      result = result.filter((t) =>
+        t.evaluations.some((e) => e.category === "PROVA" && e.grade === 10)
+      );
+    } else if (gradeFilter === "desafio10") {
+      result = result.filter((t) =>
+        t.evaluations.some((e) => e.category === "DESAFIO" && e.grade === 10)
+      );
+    } else if (gradeFilter === "media8") {
+      result = result.filter((t) => {
+        if (t.evaluations.length === 0) return false;
+        const avg =
+          t.evaluations.reduce((s, e) => s + e.grade, 0) /
+          t.evaluations.length;
+        return avg >= 8;
+      });
+    }
+
+    return result;
+  }, [trainees, searchQuery, gradeFilter]);
+
+  const totalPages = Math.ceil(filteredTrainees.length / ITEMS_PER_PAGE);
+  const paginatedTrainees = filteredTrainees.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, gradeFilter]);
 
   // --- Stats ---
 
@@ -425,11 +487,35 @@ export default function GerenciarTraineesContent({
             Trainees
           </h2>
           <span className="ml-2 text-xs font-medium text-gray-400 bg-white/5 px-2.5 py-1 rounded-full">
-            {trainees.length}
+            {filteredTrainees.length}
           </span>
         </div>
 
-        {trainees.length === 0 ? (
+        {/* Search & Filter */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar por nome ou email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500"
+            />
+          </div>
+          <Select value={gradeFilter} onValueChange={setGradeFilter}>
+            <SelectTrigger className="w-full sm:w-[200px] bg-[#00205e]/60 border border-white/10 text-white">
+              <SelectValue placeholder="Filtrar por nota" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+              <SelectItem value="all" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Todos</SelectItem>
+              <SelectItem value="prova10" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Nota 10 na Prova</SelectItem>
+              <SelectItem value="desafio10" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Nota 10 no Desafio</SelectItem>
+              <SelectItem value="media8" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Media {">="} 8</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {filteredTrainees.length === 0 ? (
           <div className="rounded-2xl border border-[#0126fb]/30 bg-[#010d26] p-12 text-center">
             <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#0126fb]/10 border border-[#0126fb]/20 mx-auto mb-4">
               <GraduationCap className="h-8 w-8 text-[#0126fb]/50" />
@@ -438,12 +524,15 @@ export default function GerenciarTraineesContent({
               Nenhum trainee encontrado
             </p>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
-              Certifique-se de que existe o cargo &quot;Trainee&quot; atribuido a algum usuario para comecar a avaliar.
+              {searchQuery || gradeFilter !== "all"
+                ? "Nenhum resultado para os filtros selecionados."
+                : "Certifique-se de que existe o cargo \"Trainee\" atribuido a algum usuario para comecar a avaliar."}
             </p>
           </div>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {trainees.map((trainee) => {
+            {paginatedTrainees.map((trainee) => {
               const overallNum = getOverallAverageNum(trainee);
               const overallStr = getOverallAverage(trainee);
               const isExpanded = expandedCard === trainee.id;
@@ -610,6 +699,16 @@ export default function GerenciarTraineesContent({
               );
             })}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
+          </>
         )}
       </div>
 

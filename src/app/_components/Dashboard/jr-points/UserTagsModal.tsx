@@ -31,8 +31,8 @@ import { format } from "date-fns";
 import HistoryItemDetailsModal, { HistoryItemData } from "./HistoryItemDetailsModal";
 import { GenericSnapshot } from "./EnterprisePageContent";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 
 interface UserTagsModalProps {
   isOpen: boolean;
@@ -68,11 +68,12 @@ const UserTagsModal = ({
   allTagTemplates,
 }: UserTagsModalProps) => {
   const {user} = useAuth()
+  const { canDo } = useAllowedActions();
   const queryClient = useQueryClient();
   const [selectedView, setSelectedView] = useState("current");
   const [viewingItem, setViewingItem] = useState<HistoryItemData | null>(null);
 
-  const isDirector = useMemo (() => checkUserPermission(user, DIRECTORS_ONLY), [user])
+  const isDirector = canDo(AppAction.MANAGE_JR_POINTS_CONFIG);
 
   const targetSnapshots = useMemo(
     () => snapshots.filter((s) => s.targetId === target?.id),

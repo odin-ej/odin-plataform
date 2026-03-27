@@ -2,7 +2,8 @@
 
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { AreaRoles } from "@prisma/client";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 
 // Local enum definitions (mirrors prisma schema — needs `prisma generate` to use from @prisma/client)
 const TraineeDepartment = {
@@ -44,13 +45,6 @@ export interface TraineeWithEvaluations {
   }[];
 }
 
-// --- Helpers ---
-
-function isDirector(user: Awaited<ReturnType<typeof getAuthenticatedUser>>) {
-  if (!user) return false;
-  return user.currentRole?.area.includes(AreaRoles.DIRETORIA) ?? false;
-}
-
 // --- Actions ---
 
 /**
@@ -63,8 +57,8 @@ export async function getTraineeEvaluations(traineeId?: string) {
 
   const targetId = traineeId ?? user.id;
 
-  // Se não for diretor e está tentando ver de outro usuário, nega
-  if (targetId !== user.id && !isDirector(user)) {
+  // Se não tem permissão e está tentando ver de outro usuário, nega
+  if (targetId !== user.id && !await can(user, AppAction.MANAGE_TRAINEES)) {
     throw new Error("Sem permissão");
   }
 
@@ -83,7 +77,7 @@ export async function getTraineeEvaluations(traineeId?: string) {
 export async function upsertTraineeEvaluation(data: TraineeEvaluationData) {
   const user = await getAuthenticatedUser();
   if (!user) throw new Error("Não autenticado");
-  if (!isDirector(user)) throw new Error("Sem permissão");
+  if (!await can(user, AppAction.MANAGE_TRAINEES)) throw new Error("Sem permissão");
 
   if (data.grade < 0 || data.grade > 10) {
     throw new Error("Nota deve estar entre 0 e 10");
