@@ -5,6 +5,7 @@ import { getNotifications } from "@/lib/actions/notifications";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
+import { AreaRoles } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +26,15 @@ const Page = async () => {
     getNotifications(50),
   ]);
 
+  const isTrainee = authUser.currentRole?.area?.includes(AreaRoles.TRAINEE) ?? false;
+
   return (
     <div className="md:p-8 p-4">
       <MinhasNotasContent
         evaluations={evaluations}
         userName={authUser.name}
         initialNotifications={initialNotifications}
+        isTrainee={isTrainee}
       />
     </div>
   );

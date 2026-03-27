@@ -25,6 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -160,9 +161,31 @@ export default function GerenciarTraineesContent({
 
   // ─── Search, Filter & Pagination ────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("all");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [minGrade, setMinGrade] = useState<string>("");
+  const [maxGrade, setMaxGrade] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("name-asc");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
+
+  const hasActiveFilters = searchQuery || deptFilter !== "all" || categoryFilter !== "all" || minGrade || maxGrade;
+  const activeFilterCount = [
+    searchQuery,
+    deptFilter !== "all" ? deptFilter : "",
+    categoryFilter !== "all" ? categoryFilter : "",
+    minGrade,
+    maxGrade,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setDeptFilter("all");
+    setCategoryFilter("all");
+    setMinGrade("");
+    setMaxGrade("");
+    setSortBy("name-asc");
+  };
 
   // Form state for grades and feedback
   const [formData, setFormData] = useState<
@@ -215,8 +238,9 @@ export default function GerenciarTraineesContent({
   // --- Filtered & Paginated Trainees ---
 
   const filteredTrainees = useMemo(() => {
-    let result = trainees;
+    let result = [...trainees];
 
+    // Search by name or email
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -226,26 +250,50 @@ export default function GerenciarTraineesContent({
       );
     }
 
-    if (gradeFilter === "prova10") {
-      result = result.filter((t) =>
-        t.evaluations.some((e) => e.category === "PROVA" && e.grade === 10)
-      );
-    } else if (gradeFilter === "desafio10") {
-      result = result.filter((t) =>
-        t.evaluations.some((e) => e.category === "DESAFIO" && e.grade === 10)
-      );
-    } else if (gradeFilter === "media8") {
+    // Filter by department + category + grade range
+    if (deptFilter !== "all" || categoryFilter !== "all" || minGrade || maxGrade) {
       result = result.filter((t) => {
-        if (t.evaluations.length === 0) return false;
-        const avg =
-          t.evaluations.reduce((s, e) => s + e.grade, 0) /
-          t.evaluations.length;
-        return avg >= 8;
+        const evals = t.evaluations.filter((e) => {
+          if (deptFilter !== "all" && e.department !== deptFilter) return false;
+          if (categoryFilter !== "all" && e.category !== categoryFilter) return false;
+          return true;
+        });
+
+        if (deptFilter !== "all" || categoryFilter !== "all") {
+          if (evals.length === 0) return false;
+        }
+
+        if (minGrade) {
+          const min = parseFloat(minGrade);
+          if (!evals.some((e) => e.grade >= min)) return false;
+        }
+        if (maxGrade) {
+          const max = parseFloat(maxGrade);
+          if (!evals.some((e) => e.grade <= max)) return false;
+        }
+
+        return true;
       });
     }
 
+    // Sort
+    switch (sortBy) {
+      case "name-asc":
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        result.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "avg-desc":
+        result.sort((a, b) => getOverallAverageNum(b) - getOverallAverageNum(a));
+        break;
+      case "avg-asc":
+        result.sort((a, b) => getOverallAverageNum(a) - getOverallAverageNum(b));
+        break;
+    }
+
     return result;
-  }, [trainees, searchQuery, gradeFilter]);
+  }, [trainees, searchQuery, deptFilter, categoryFilter, minGrade, maxGrade, sortBy]);
 
   const totalPages = Math.ceil(filteredTrainees.length / ITEMS_PER_PAGE);
   const paginatedTrainees = filteredTrainees.slice(
@@ -256,7 +304,7 @@ export default function GerenciarTraineesContent({
   // Reset page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, gradeFilter]);
+  }, [searchQuery, deptFilter, categoryFilter, minGrade, maxGrade, sortBy]);
 
   // --- Stats ---
 
@@ -491,28 +539,121 @@ export default function GerenciarTraineesContent({
           </span>
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar por nome ou email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500"
-            />
+        {/* Filters */}
+        <div className="rounded-xl border border-[#0126fb]/20 bg-[#010d26] p-4 mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-[#f5b719]" />
+              <span className="text-sm font-semibold text-white">Filtros</span>
+              {activeFilterCount > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#f5b719] text-[#010d26] text-[10px] font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+                Limpar filtros
+              </button>
+            )}
           </div>
-          <Select value={gradeFilter} onValueChange={setGradeFilter}>
-            <SelectTrigger className="w-full sm:w-[200px] bg-[#00205e]/60 border border-white/10 text-white">
-              <SelectValue placeholder="Filtrar por nota" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
-              <SelectItem value="all" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Todos</SelectItem>
-              <SelectItem value="prova10" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Nota 10 na Prova</SelectItem>
-              <SelectItem value="desafio10" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Nota 10 no Desafio</SelectItem>
-              <SelectItem value="media8" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Media {">="} 8</SelectItem>
-            </SelectContent>
-          </Select>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+            {/* Search */}
+            <div className="xl:col-span-2">
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Buscar</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Nome ou email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500"
+                />
+              </div>
+            </div>
+
+            {/* Department */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Departamento</label>
+              <Select value={deptFilter} onValueChange={setDeptFilter}>
+                <SelectTrigger className="w-full bg-[#00205e]/60 border border-white/10 text-white">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                  <SelectItem value="all" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Todos</SelectItem>
+                  <SelectItem value="MARKETING" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Marketing</SelectItem>
+                  <SelectItem value="ORGANIZACIONAL" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Organizacional</SelectItem>
+                  <SelectItem value="FINANCEIRO" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Financeiro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Categoria</label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full bg-[#00205e]/60 border border-white/10 text-white">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                  <SelectItem value="all" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Todas</SelectItem>
+                  <SelectItem value="AVALIACAO_PROCESSUAL" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Avaliacao Processual</SelectItem>
+                  <SelectItem value="PROVA" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Prova</SelectItem>
+                  <SelectItem value="DESAFIO" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Desafio</SelectItem>
+                  <SelectItem value="EXTRA" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Extra</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Grade range (min/max in one cell) */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Faixa de Nota</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  placeholder="Min"
+                  value={minGrade}
+                  onChange={(e) => setMinGrade(e.target.value)}
+                  className="bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500 text-center"
+                />
+                <span className="text-gray-500 text-xs">-</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  placeholder="Max"
+                  value={maxGrade}
+                  onChange={(e) => setMaxGrade(e.target.value)}
+                  className="bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500 text-center"
+                />
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Ordenar por</label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full bg-[#00205e]/60 border border-white/10 text-white">
+                  <SelectValue placeholder="Nome A-Z" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                  <SelectItem value="name-asc" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Nome A-Z</SelectItem>
+                  <SelectItem value="name-desc" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Nome Z-A</SelectItem>
+                  <SelectItem value="avg-desc" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Maior Media</SelectItem>
+                  <SelectItem value="avg-asc" className="hover:!bg-[#0126fb] hover:!text-white focus:!bg-[#0126fb] focus:!text-white">Menor Media</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
         {filteredTrainees.length === 0 ? (
@@ -524,7 +665,7 @@ export default function GerenciarTraineesContent({
               Nenhum trainee encontrado
             </p>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
-              {searchQuery || gradeFilter !== "all"
+              {hasActiveFilters
                 ? "Nenhum resultado para os filtros selecionados."
                 : "Certifique-se de que existe o cargo \"Trainee\" atribuido a algum usuario para comecar a avaliar."}
             </p>

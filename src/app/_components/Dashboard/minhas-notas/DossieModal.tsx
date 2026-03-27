@@ -153,7 +153,7 @@ export default function DossieModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl bg-[#010d26] border border-[#0126fb]/30 text-white p-0 gap-0 [&>button]:hidden overflow-hidden max-h-[90vh]">
+      <DialogContent className="max-w-4xl bg-[#010d26] border border-[#0126fb]/30 text-white p-0 gap-0 [&>button]:hidden overflow-hidden max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="p-6 pb-5 border-b border-[#0126fb]/10">
           <div className="flex items-center justify-between mb-5">
@@ -229,7 +229,7 @@ export default function DossieModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4 overflow-y-auto max-h-[55vh]">
+        <div className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
           {categories.map((cat) => {
             const eval_ = getEvaluation(activeDepartment, cat);
             const grade = eval_?.grade;
