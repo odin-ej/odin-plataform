@@ -42,8 +42,17 @@ const LoginForm = () => {
       });
       toast.success("Login efetuado com sucesso!");
       if (isSignedIn) {
-        await checkAuth();
-        const redirectPath = await getLoginRedirectPath();
+        try {
+          await checkAuth();
+        } catch (e) {
+          console.error("[login] checkAuth failed:", e);
+        }
+        let redirectPath = "/";
+        try {
+          redirectPath = await getLoginRedirectPath();
+        } catch (e) {
+          console.error("[login] getLoginRedirectPath failed:", e);
+        }
         router.push(redirectPath);
       }
     } catch (err: unknown) {
