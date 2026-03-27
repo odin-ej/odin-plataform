@@ -1,6 +1,7 @@
 import MinhasNotasContent from "@/app/_components/Dashboard/minhas-notas/MinhasNotasContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getTraineeEvaluations } from "@/lib/actions/trainee";
+import { getNotifications } from "@/lib/actions/notifications";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
@@ -19,13 +20,17 @@ const Page = async () => {
   });
   if (!hasPermission) return <DeniedAccess />;
 
-  const evaluations = await getTraineeEvaluations();
+  const [evaluations, initialNotifications] = await Promise.all([
+    getTraineeEvaluations(),
+    getNotifications(50),
+  ]);
 
   return (
     <div className="md:p-8 p-4">
       <MinhasNotasContent
         evaluations={evaluations}
         userName={authUser.name}
+        initialNotifications={initialNotifications}
       />
     </div>
   );

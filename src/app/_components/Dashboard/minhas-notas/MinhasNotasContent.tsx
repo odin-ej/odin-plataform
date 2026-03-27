@@ -24,7 +24,20 @@ import {
   GraduationCap,
   Swords,
   Sparkles,
+  Bell,
+  CheckCheck,
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  getNotifications,
+  markNotificationsAsRead,
+  FullNotification,
+} from "@/lib/actions/notifications";
+import { Badge } from "@/components/ui/badge";
+import Pagination from "@/app/_components/Global/Custom/Pagination";
+import Link from "next/link";
 import DossieModal from "./DossieModal";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -56,7 +69,33 @@ interface TraineeEvaluationItem {
 interface MinhasNotasContentProps {
   evaluations: TraineeEvaluationItem[];
   userName: string;
+  initialNotifications: FullNotification[];
 }
+
+const NOTIFS_PER_PAGE = 5;
+
+const NOTIFICATION_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
+  POINTS_AWARDED: {
+    label: "Pontos",
+    className: "bg-[#f5b719]/20 text-[#f5b719] border-[#f5b719]/30",
+  },
+  REQUEST_APPROVED: {
+    label: "Aprovado",
+    className: "bg-emerald-400/20 text-emerald-400 border-emerald-400/30",
+  },
+  REQUEST_REJECTED: {
+    label: "Rejeitado",
+    className: "bg-red-400/20 text-red-400 border-red-400/30",
+  },
+  NEW_MENTION: {
+    label: "Mencao",
+    className: "bg-[#0126fb]/20 text-[#0126fb] border-[#0126fb]/30",
+  },
+  GENERAL_ALERT: {
+    label: "Aviso",
+    className: "bg-gray-400/20 text-gray-300 border-gray-400/30",
+  },
+};
 
 const DEPARTMENT_LABELS: Record<TraineeDepartment, string> = {
   MARKETING: "Marketing",
@@ -176,8 +215,32 @@ function getCatIcon(cat: TraineeGradeCategory) {
 export default function MinhasNotasContent({
   evaluations,
   userName,
+  initialNotifications,
 }: MinhasNotasContentProps) {
   const [isDossieOpen, setIsDossieOpen] = useState(false);
+  const [notifPage, setNotifPage] = useState(1);
+  const queryClient = useQueryClient();
+
+  const { data: notifications = [] } = useQuery<FullNotification[]>({
+    queryKey: ["notifications", "minhas-notas"],
+    queryFn: () => getNotifications(50),
+    initialData: initialNotifications,
+    refetchInterval: 60000,
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => markNotificationsAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const totalNotifPages = Math.max(1, Math.ceil(notifications.length / NOTIFS_PER_PAGE));
+  const paginatedNotifications = notifications.slice(
+    (notifPage - 1) * NOTIFS_PER_PAGE,
+    notifPage * NOTIFS_PER_PAGE
+  );
 
   const departmentAverages = useMemo(() => {
     return departments.map((dept) => ({
@@ -263,6 +326,105 @@ export default function MinhasNotasContent({
           </div>
         </div>
 
+        {/* Notifications Section */}
+        <div className="rounded-2xl border border-[#0126fb]/30 bg-[#010d26] overflow-hidden">
+          <div className="p-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#0126fb]/10">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#0126fb]/10 border border-[#0126fb]/20">
+                <Bell className="h-5 w-5 text-[#0126fb]" />
+              </div>
+              <h2 className="text-lg font-bold text-white">Suas Notificacoes</h2>
+              {unreadCount > 0 && (
+                <Badge className="bg-[#0126fb] text-white text-xs px-2 py-0.5 rounded-full border-none">
+                  {unreadCount} {unreadCount === 1 ? "nova" : "novas"}
+                </Badge>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={() => markAllReadMutation.mutate()}
+                disabled={markAllReadMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                {markAllReadMutation.isPending ? "Marcando..." : "Marcar todas como lidas"}
+              </button>
+            )}
+          </div>
+
+          {notifications.length === 0 ? (
+            <div className="p-8 text-center">
+              <Bell className="h-8 w-8 text-gray-600 mx-auto mb-3" />
+              <p className="text-sm text-gray-400">Nenhuma notificacao por enquanto.</p>
+            </div>
+          ) : (
+            <>
+              <div className="divide-y divide-[#0126fb]/10">
+                {paginatedNotifications.map((notif) => {
+                  const typeConfig = NOTIFICATION_TYPE_CONFIG[notif.notification.type ?? "GENERAL_ALERT"] ?? NOTIFICATION_TYPE_CONFIG.GENERAL_ALERT;
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`p-4 flex items-start gap-3 transition-colors hover:bg-white/[0.02] ${
+                        !notif.isRead ? "border-l-2 border-l-[#0126fb] bg-[#0126fb]/[0.03]" : "border-l-2 border-l-transparent"
+                      }`}
+                    >
+                      <div className="pt-1.5 flex-shrink-0">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            !notif.isRead ? "bg-[#0126fb]" : "bg-transparent"
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <Badge
+                            className={`text-[10px] px-1.5 py-0 rounded border font-medium ${typeConfig.className}`}
+                          >
+                            {typeConfig.label}
+                          </Badge>
+                          {notif.notification.title && (
+                            <span className="text-sm font-semibold text-white truncate">
+                              {notif.notification.title}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                          {notif.notification.notification}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatDistanceToNow(new Date(notif.notification.createdAt), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </p>
+                      </div>
+                      {notif.notification.link && notif.notification.link !== "/" && (
+                        <Link
+                          href={notif.notification.link}
+                          className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {totalNotifPages > 1 && (
+                <div className="px-4 pb-2">
+                  <Pagination
+                    currentPage={notifPage}
+                    totalPages={totalNotifPages}
+                    onPageChange={setNotifPage}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         <div className="rounded-2xl border border-[#0126fb]/30 bg-[#010d26] p-12 text-center">
           <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-[#f5b719]/10 border border-[#f5b719]/20 mx-auto mb-5">
             <BookOpen className="h-10 w-10 text-[#f5b719]/50" />
@@ -301,6 +463,110 @@ export default function MinhasNotasContent({
           <ExternalLink className="h-4 w-4" />
           Ver Dossie Completo
         </button>
+      </div>
+
+      {/* Notifications Section */}
+      <div className="rounded-2xl border border-[#0126fb]/30 bg-[#010d26] overflow-hidden">
+        <div className="p-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#0126fb]/10">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#0126fb]/10 border border-[#0126fb]/20">
+              <Bell className="h-5 w-5 text-[#0126fb]" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Suas Notificacoes</h2>
+            {unreadCount > 0 && (
+              <Badge className="bg-[#0126fb] text-white text-xs px-2 py-0.5 rounded-full border-none">
+                {unreadCount} {unreadCount === 1 ? "nova" : "novas"}
+              </Badge>
+            )}
+          </div>
+          {unreadCount > 0 && (
+            <button
+              onClick={() => markAllReadMutation.mutate()}
+              disabled={markAllReadMutation.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              {markAllReadMutation.isPending ? "Marcando..." : "Marcar todas como lidas"}
+            </button>
+          )}
+        </div>
+
+        {notifications.length === 0 ? (
+          <div className="p-8 text-center">
+            <Bell className="h-8 w-8 text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-400">Nenhuma notificacao por enquanto.</p>
+          </div>
+        ) : (
+          <>
+            <div className="divide-y divide-[#0126fb]/10">
+              {paginatedNotifications.map((notif) => {
+                const typeConfig = NOTIFICATION_TYPE_CONFIG[notif.notification.type ?? "GENERAL_ALERT"] ?? NOTIFICATION_TYPE_CONFIG.GENERAL_ALERT;
+                return (
+                  <div
+                    key={notif.id}
+                    className={`p-4 flex items-start gap-3 transition-colors hover:bg-white/[0.02] ${
+                      !notif.isRead ? "border-l-2 border-l-[#0126fb] bg-[#0126fb]/[0.03]" : "border-l-2 border-l-transparent"
+                    }`}
+                  >
+                    {/* Unread dot */}
+                    <div className="pt-1.5 flex-shrink-0">
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          !notif.isRead ? "bg-[#0126fb]" : "bg-transparent"
+                        }`}
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge
+                          className={`text-[10px] px-1.5 py-0 rounded border font-medium ${typeConfig.className}`}
+                        >
+                          {typeConfig.label}
+                        </Badge>
+                        {notif.notification.title && (
+                          <span className="text-sm font-semibold text-white truncate">
+                            {notif.notification.title}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-300 leading-relaxed">
+                        {notif.notification.notification}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatDistanceToNow(new Date(notif.notification.createdAt), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </p>
+                    </div>
+
+                    {/* Link button */}
+                    {notif.notification.link && notif.notification.link !== "/" && (
+                      <Link
+                        href={notif.notification.link}
+                        className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {totalNotifPages > 1 && (
+              <div className="px-4 pb-2">
+                <Pagination
+                  currentPage={notifPage}
+                  totalPages={totalNotifPages}
+                  onPageChange={setNotifPage}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Overall Average Hero Card */}
