@@ -540,7 +540,7 @@ export async function deleteMessage(
   if (!message) {
     throw new Error("Mensagem não encontrada.");
   }
-  if (message.authorId !== authUser.id && !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (message.authorId !== authUser.id && !await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS)) {
     throw new Error("Acesso negado.");
   }
   if (!contextId) {

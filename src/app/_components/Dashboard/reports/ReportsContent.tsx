@@ -56,7 +56,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   ExtendedReport,
   ReportFormValues,
-  reportSchema,
+  baseReportSchema,
   CATEGORY_CONFIG,
   STATUS_CONFIG,
 } from "@/lib/schemas/reportSchema";
@@ -96,7 +96,7 @@ const ReportsContent = ({ initialData }: { initialData: ReportsPageData }) => {
   const [editNotes, setEditNotes] = useState("");
 
   const form = useForm<ReportFormValues>({
-    resolver: zodResolver(reportSchema),
+    resolver: zodResolver(baseReportSchema),
     defaultValues: {
       title: "",
       content: "",
