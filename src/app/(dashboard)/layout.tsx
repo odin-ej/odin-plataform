@@ -7,6 +7,7 @@ import Footer from "../_components/Global/Footer";
 import { AllowedActionsProvider } from "@/lib/auth/AllowedActionsProvider";
 import { getUserAllowedActions } from "@/lib/actions/server-helpers";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { AppAction } from "@/lib/permissions";
 
 export default async function Layout({
   children,
@@ -17,7 +18,12 @@ export default async function Layout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
   const user = await getAuthenticatedUser();
-  const allowedActions = user ? await getUserAllowedActions(user) : [];
+  let allowedActions: AppAction[] = [];
+  try {
+    allowedActions = user ? await getUserAllowedActions(user) : [];
+  } catch (error) {
+    console.error("[layout] Failed to load allowed actions:", error);
+  }
 
   return (
     <div className="flex min-h-screen overflow-hidden">

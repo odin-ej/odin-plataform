@@ -20,28 +20,33 @@ export type ResolvedPolicy = {
 export const getAllRoutePermissions = cache(async (): Promise<
   Record<string, ResolvedPolicy>
 > => {
-  const routes = await prisma.routePermission.findMany({
-    where: { isActive: true },
-    include: {
-      policy: {
-        include: { rules: true },
+  try {
+    const routes = await prisma.routePermission.findMany({
+      where: { isActive: true },
+      include: {
+        policy: {
+          include: { rules: true },
+        },
       },
-    },
-  });
+    });
 
-  return Object.fromEntries(
-    routes.map((r) => [
-      r.path,
-      {
-        allowExMembers: r.policy.allowExMembers,
-        isPublic: r.policy.isPublic,
-        rules: r.policy.rules.map((rule) => ({
-          allowedAreas: rule.allowedAreas,
-          allowedRoleIds: rule.allowedRoleIds,
-        })),
-      },
-    ])
-  );
+    return Object.fromEntries(
+      routes.map((r) => [
+        r.path,
+        {
+          allowExMembers: r.policy.allowExMembers,
+          isPublic: r.policy.isPublic,
+          rules: r.policy.rules.map((rule) => ({
+            allowedAreas: rule.allowedAreas,
+            allowedRoleIds: rule.allowedRoleIds,
+          })),
+        },
+      ])
+    );
+  } catch (error) {
+    console.error("[permissions] Failed to load route permissions:", error);
+    return {};
+  }
 });
 
 /**
@@ -50,26 +55,31 @@ export const getAllRoutePermissions = cache(async (): Promise<
 export const getAllActionPermissions = cache(async (): Promise<
   Record<string, ResolvedPolicy>
 > => {
-  const actions = await prisma.actionPermission.findMany({
-    where: { isActive: true },
-    include: {
-      policy: {
-        include: { rules: true },
+  try {
+    const actions = await prisma.actionPermission.findMany({
+      where: { isActive: true },
+      include: {
+        policy: {
+          include: { rules: true },
+        },
       },
-    },
-  });
+    });
 
-  return Object.fromEntries(
-    actions.map((a) => [
-      a.actionKey,
-      {
-        allowExMembers: a.policy.allowExMembers,
-        isPublic: a.policy.isPublic,
-        rules: a.policy.rules.map((rule) => ({
-          allowedAreas: rule.allowedAreas,
-          allowedRoleIds: rule.allowedRoleIds,
-        })),
-      },
-    ])
-  );
+    return Object.fromEntries(
+      actions.map((a) => [
+        a.actionKey,
+        {
+          allowExMembers: a.policy.allowExMembers,
+          isPublic: a.policy.isPublic,
+          rules: a.policy.rules.map((rule) => ({
+            allowedAreas: rule.allowedAreas,
+            allowedRoleIds: rule.allowedRoleIds,
+          })),
+        },
+      ])
+    );
+  } catch (error) {
+    console.error("[permissions] Failed to load action permissions:", error);
+    return {};
+  }
 });
