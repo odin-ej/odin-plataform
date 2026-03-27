@@ -1,10 +1,11 @@
 import { constructMetadata } from "@/lib/metadata";
 import HomeContent from "../_components/Dashboard/home/HomeContent";
-import { Goal, LinkPoster, LinkPosterArea, UsefulLink } from "@prisma/client";
+import { AreaRoles, Goal, LinkPoster, LinkPosterArea, UsefulLink } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 import { verifyAccess } from "@/lib/utils";
 import DeniedAccess from "../_components/Global/DeniedAccess";
+import { redirect } from "next/navigation";
 
 // Tipagem para os dados que a página e o componente cliente esperam
 export interface HomeContentData {
@@ -111,6 +112,11 @@ async function getPageData(): Promise<HomeContentData> {
 export default async function Home() {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
+
+  if (user?.currentRole?.area.includes(AreaRoles.TRAINEE)) {
+    redirect("/minhas-notas");
+  }
+
   const hasPermission = verifyAccess({ pathname: "/", user: user! });
   if (!hasPermission) return <DeniedAccess />;
 

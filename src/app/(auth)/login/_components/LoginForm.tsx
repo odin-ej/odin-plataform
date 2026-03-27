@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { getLoginRedirectPath } from "@/lib/actions/auth-helpers";
 
 const signInSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
@@ -42,7 +43,8 @@ const LoginForm = () => {
       toast.success("Login efetuado com sucesso!");
       if (isSignedIn) {
         await checkAuth();
-        router.push("/");
+        const redirectPath = await getLoginRedirectPath();
+        router.push(redirectPath);
       }
     } catch (err: unknown) {
       let message = "Ocorreu um erro ao fazer login.";
