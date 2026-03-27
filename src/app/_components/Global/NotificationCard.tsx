@@ -1,6 +1,6 @@
 
 import { cn } from "@/lib/utils"; // Se você usa tailwind-merge ou clsx
-import { NotificationType } from "./Header";
+import { FullNotification } from "@/lib/actions/notifications";
 import { Notification } from "@prisma/client";
 import Link from "next/link";
 
@@ -27,7 +27,7 @@ const getNotificationStyles = (
 };
 
 interface Props {
-  notificationUser: NotificationType;
+  notificationUser: FullNotification;
 }
 
 const NotificationCard = ({ notificationUser }: Props) => {
