@@ -1,14 +1,14 @@
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { itemSchema } from "@/lib/schemas/reservationsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    if (!authUser || !await can(authUser, AppAction.MANAGE_ITEM_RESERVATIONS)) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
     const { id } = await params;
     const body = await request.json();
@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    if (!authUser || !await can(authUser, AppAction.MANAGE_ITEM_RESERVATIONS)) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
     const { id } = await params;
     await prisma.reservableItem.delete({ where: { id } });

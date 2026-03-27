@@ -7,7 +7,9 @@ import { Conversation, Message } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, MessageSquare, Paperclip, Clock } from "lucide-react";
-import { checkUserPermission, cn, fileToBase64 } from "@/lib/utils";
+import { cn, fileToBase64 } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
@@ -15,7 +17,6 @@ import Image from "next/image";
 import ChatHistorySheet from "./ChatHistorySheet";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import CustomCard from "../../Global/Custom/CustomCard";
-import { AreaRoles } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import ReactMarkdown from "react-markdown";
@@ -216,9 +217,8 @@ const ChatContent = ({
     }
   };
 
-  const isDirector = checkUserPermission(user, {
-    allowedAreas: [AreaRoles.DIRETORIA],
-  });
+  const { canDo } = useAllowedActions();
+  const isDirector = canDo(AppAction.MANAGE_AI_KNOWLEDGE);
   const limitCount = isDirector ? 40 : 20;
 
   return (

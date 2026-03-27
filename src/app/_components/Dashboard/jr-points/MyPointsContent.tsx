@@ -34,8 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import HistoryItemDetailsModal, { HistoryItemData } from "./HistoryItemDetailsModal";
 
 interface HistoryData {
@@ -55,6 +55,7 @@ const fetchMyPoints = async (userId: string): Promise<MyPointsData> => {
 
 const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const userId = user?.id;
   const queryClient = useQueryClient();
 
@@ -163,7 +164,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
 
   const isPendingRequest = isCreating || isUpdating;
 
-  const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+  const isDirector = canDo(AppAction.MANAGE_JR_POINTS_CONFIG);
 
   const {
     myPoints,

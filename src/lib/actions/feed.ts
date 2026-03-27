@@ -14,8 +14,8 @@ import {
 } from "@/lib/types/feed"; // Ajuste o caminho
 import { z } from "zod";
 import { s3Client } from "@/lib/aws"; // Import S3 client and command
-import { checkUserPermission } from "../utils";
-import { DIRECTORS_ONLY } from "../permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "../permissions";
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { createNotification } from "./notifications";
 
@@ -486,7 +486,7 @@ export async function deletePost(postId: string) {
   if (!post) throw new Error("Post não encontrado.");
   if (
     post.authorId !== authUser.id &&
-    !checkUserPermission(authUser, DIRECTORS_ONLY)
+    !await can(authUser, AppAction.MANAGE_FEED)
   ) {
     throw new Error("Acesso negado.");
   }
@@ -530,7 +530,7 @@ export async function deleteComment(commentId: string) {
   if (!comment) throw new Error("Comentário não encontrado.");
   if (
     comment.authorId !== authUser.id &&
-    !checkUserPermission(authUser, DIRECTORS_ONLY)
+    !await can(authUser, AppAction.MANAGE_FEED)
   ) {
     throw new Error("Acesso negado.");
   }
@@ -547,7 +547,7 @@ export async function togglePinPost(postId: string, pin: boolean) {
   const authUser = await getAuthenticatedUser();
   if (!authUser) throw new Error("Não autorizado");
 
-  if (!checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (!await can(authUser, AppAction.MANAGE_FEED)) {
     throw new Error("Acesso negado.");
   }
   await prisma.post.update({

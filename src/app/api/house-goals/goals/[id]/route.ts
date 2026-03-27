@@ -1,8 +1,8 @@
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { goalUpdateSchema } from "@/lib/schemas/strategyUpdateSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
@@ -17,7 +17,7 @@ export async function PATCH(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.UPDATE_STRATEGY);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });

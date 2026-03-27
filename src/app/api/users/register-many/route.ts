@@ -12,8 +12,8 @@ import bcrypt from "bcrypt";
 import { exMemberWelcomeEmailCommand, welcomeEmailCommand } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 
 // Configuração dos clientes da AWS
 const cognitoClient = new CognitoIdentityProviderClient({
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Não autorizado." }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.APPROVE_REGISTRATIONS);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });

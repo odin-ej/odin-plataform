@@ -29,9 +29,10 @@ import {
 } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { InitiativeWizard } from "./InitiativeWizard";
-import { checkUserPermission, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { INOVATION_LEADERS } from "@/lib/permissions";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import Pagination from "../../Global/Custom/Pagination";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { toast } from "sonner";
@@ -100,6 +101,7 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
   const [isReviewMode, setIsReviewMode] = useState(false);
 
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const queryClient = useQueryClient();
 
   const { data: initiatives } = useQuery({
@@ -108,7 +110,7 @@ const InovationContent = ({ initialData }: InovationContentProps) => {
     initialData,
   });
 
-  const canManage = checkUserPermission(user, INOVATION_LEADERS);
+  const canManage = canDo(AppAction.REVIEW_INITIATIVES);
 
   const { mutate: togglePin } = useMutation({
     mutationFn: ({ id, isFixed }: { id: string; isFixed: boolean }) =>

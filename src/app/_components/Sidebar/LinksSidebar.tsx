@@ -3,14 +3,16 @@ import DivisionSidebar from "./DivisionSidebar";
 import { SidebarContent, SidebarSeparator } from "@/components/ui/sidebar";
 import { generalLinks, personalLinks, restrictedLinks } from "@/lib/links";
 import { usePathname } from "next/navigation";
-import { checkUserPermission } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { AreaRoles } from "@prisma/client";
 
 const LinksSidebar = () => {
   const pathname = usePathname();
   const [activeLink, setActiveLink] = useState(pathname);
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
 
   useEffect(() => {
     setActiveLink(pathname);
@@ -41,12 +43,9 @@ const LinksSidebar = () => {
     if (!user) return [];
     if (isTrainee) return [];
     return restrictedLinks.filter((link) =>
-      checkUserPermission(user, {
-        allowedRoles: link.roles.map((role) => role.name),
-        allowedAreas: link.areas,
-      })
+      link.requiredAction ? canDo(link.requiredAction) : canDo(AppAction.MANAGE_USERS)
     );
-  }, [user, isTrainee]);
+  }, [user, isTrainee, canDo]);
 
   return (
     <SidebarContent className="bg-[#010d26] scrollbar-thin scrollbar-thumb-[#0126fb] scrollbar-track-transparent">

@@ -1,7 +1,7 @@
 "use server";
 import { prisma } from "@/db";
-import { checkUserPermission } from "../utils";
-import { INOVATION_LEADERS } from "../permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "../permissions";
 import {
   InovationHorizonTypes,
   InovationInitiativeStatus,
@@ -357,8 +357,7 @@ export async function auditInovationInitiative({
   reviewNotes: string;
 }) {
   const authUser = await getAuthenticatedUser();
-  // Aqui você deve validar se o usuário tem permissão de auditor (ex: checkUserPermission)
-  if (!authUser || !checkUserPermission(authUser, INOVATION_LEADERS))
+  if (!authUser || !await can(authUser, AppAction.REVIEW_INITIATIVES))
     throw new Error("Unauthorized");
 
   try {

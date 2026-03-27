@@ -13,6 +13,8 @@ import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { checkUserPermission, getLabelForLinkArea } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { LinkFormData, linkSchema } from "@/lib/schemas/linksSchema";
 import { HomeContentData } from "@/app/(dashboard)/page";
 import Pagination from "../../Global/Custom/Pagination";
@@ -28,6 +30,7 @@ const UsefulLinksSection = ({
   isGlobal?: boolean;
 }) => {
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<UsefulLink | null>(null);
@@ -213,9 +216,7 @@ const UsefulLinksSection = ({
     if (!user?.currentRole) {
       return [];
     }
-    const isDiretor = checkUserPermission(user, {
-      allowedAreas: [AreaRoles.DIRETORIA],
-    });
+    const isDiretor = canDo(AppAction.MANAGE_USERS);
     const isTatico = checkUserPermission(user, {
       allowedAreas: [AreaRoles.TATICO],
     });
@@ -306,9 +307,7 @@ const UsefulLinksSection = ({
               <span className="truncate hover:underline">{link.title}</span>
             </Link>
             {(link.userId === user?.id ||
-              checkUserPermission(user, {
-                allowedAreas: [AreaRoles.DIRETORIA],
-              })) && (
+              canDo(AppAction.MANAGE_USERS)) && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"

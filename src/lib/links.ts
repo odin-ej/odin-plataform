@@ -24,6 +24,7 @@ import {
   UsersRound
 } from "lucide-react";
 import { JrPointIconWhite } from "@/app/_components/Global/JrPointsIcon";
+import { AppAction } from "./permissions";
 
 interface Links {
   name: string;
@@ -34,6 +35,7 @@ interface Links {
 interface RestrictedLinks extends Links {
   roles: Pick<Role, "name">[];
   areas?: AreaRoles[];
+  requiredAction?: AppAction;
 }
 
 export const generalLinks: Links[] = [
@@ -127,131 +129,70 @@ export const restrictedLinks: RestrictedLinks[] = [
     name: "Usuários",
     href: "/usuarios",
     icon: Users,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_USERS,
+    roles: [],
   },
   {
     name: "Solicitações de cadastro",
     href: "/aprovacao-cadastro",
     icon: TicketCheck,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.APPROVE_REGISTRATIONS,
+    roles: [],
   },
   {
     name: "Atualizar Estrategia",
     href: "/atualizar-estrategia",
     icon: Goal,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-      { name: "Gerente de Performance" },
-    ],
+    requiredAction: AppAction.UPDATE_STRATEGY,
+    roles: [],
   },
   {
     name: "Conhecimento da IA",
     href: "/conhecimento-ia",
     icon: BrainCog,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_AI_KNOWLEDGE,
+    roles: [],
   },
   {
     name: "Gerenciar Link Posters",
     href: "/gerenciar-link-posters",
     icon: Link,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_LINK_POSTERS,
+    roles: [],
   },
   {
     name: "Gerenciar Cargos",
     href: "/gerenciar-cargos",
     icon: BookUser,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_ROLES,
+    roles: [],
   },
   {
     name: "Gerenciar JR Points",
     href: "/gerenciar-jr-points",
     icon: JrPointIconWhite,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_JR_POINTS_CONFIG,
+    roles: [],
   },
   {
     name: "Gerenciar Notificações",
     href: "/gerenciar-notificacoes",
     icon: Bell,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_NOTIFICATIONS,
+    roles: [],
   },
   {
     name: "Gerenciar Trainees",
     href: "/gerenciar-trainees",
     icon: GraduationCap,
-     roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_TRAINEES,
+    roles: [],
   },
   {
     name: "Gerenciar Permissões",
     href: "/gerenciar-permissoes",
     icon: Shield,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
+    requiredAction: AppAction.MANAGE_PERMISSIONS,
+    roles: [],
   },
 ];

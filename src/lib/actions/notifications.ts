@@ -11,8 +11,8 @@ import {
   ManagedNotification,
   ManagedNotificationDetail,
 } from "@/lib/schemas/notificationSchema";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 import { sesClient } from "@/lib/aws";
 import { notificationEmailCommand } from "@/lib/email";
 
@@ -147,7 +147,7 @@ export async function createNotification(data: NotificationData) {
  */
 export async function getManagedNotifications(): Promise<ManagedNotification[]> {
   const authUser = await getAuthenticatedUser();
-  if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (!authUser || !await can(authUser, AppAction.MANAGE_NOTIFICATIONS)) {
     return [];
   }
 
@@ -182,7 +182,7 @@ export async function getManagedNotificationById(
   id: string
 ): Promise<ManagedNotificationDetail | null> {
   const authUser = await getAuthenticatedUser();
-  if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (!authUser || !await can(authUser, AppAction.MANAGE_NOTIFICATIONS)) {
     return null;
   }
 
@@ -209,7 +209,7 @@ export async function createManagedNotification(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.MANAGE_NOTIFICATIONS)) {
       return { success: false, error: "Não autorizado" };
     }
 
@@ -335,7 +335,7 @@ export async function deleteManagedNotification(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.MANAGE_NOTIFICATIONS)) {
       return { success: false, error: "Não autorizado" };
     }
 

@@ -16,8 +16,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { FullUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import {
@@ -51,9 +51,10 @@ const ContentSidebarLeft = ({
 }: ContentSidebarLeftProps) => {
   const pathname = usePathname();
   const [isLoadingUrls, setIsLoadingUrls] = useState(true);
+  const { canDo } = useAllowedActions();
 
   const isActive = (href: string) => pathname === href;
-  const isDirector = checkUserPermission(user!, DIRECTORS_ONLY);
+  const isDirector = canDo(AppAction.MANAGE_COMMUNITY_CHANNELS);
   //Somente donos podem editar/deletar canais
   const canEditChannel = (channel: FullChannel) =>
     user.id === channel.createdById ||

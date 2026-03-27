@@ -1,9 +1,9 @@
 import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
 import { embeddingModel } from "@/lib/gemini";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import pdf from "pdf-parse";
@@ -29,10 +29,13 @@ async function streamToBuffer(stream: Readable): Promise<Buffer> {
 export async function POST(request: Request) {
   try {
     const authUser = await getAuthenticatedUser();
+    if (!authUser) {
+      return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE);
 
-    if (!authUser || !hasPermission) {
+    if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
