@@ -70,6 +70,7 @@ interface MinhasNotasContentProps {
   evaluations: TraineeEvaluationItem[];
   userName: string;
   initialNotifications: FullNotification[];
+  isTrainee: boolean;
 }
 
 const NOTIFS_PER_PAGE = 5;
@@ -216,6 +217,7 @@ export default function MinhasNotasContent({
   evaluations,
   userName,
   initialNotifications,
+  isTrainee,
 }: MinhasNotasContentProps) {
   const [isDossieOpen, setIsDossieOpen] = useState(false);
   const [notifPage, setNotifPage] = useState(1);
@@ -235,9 +237,16 @@ export default function MinhasNotasContent({
     },
   });
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const totalNotifPages = Math.max(1, Math.ceil(notifications.length / NOTIFS_PER_PAGE));
-  const paginatedNotifications = notifications.slice(
+  const filteredNotifications = useMemo(() => {
+    if (isTrainee) {
+      return notifications.filter((n) => n.notification.type === "GENERAL_ALERT");
+    }
+    return notifications;
+  }, [notifications, isTrainee]);
+
+  const unreadCount = filteredNotifications.filter((n) => !n.isRead).length;
+  const totalNotifPages = Math.max(1, Math.ceil(filteredNotifications.length / NOTIFS_PER_PAGE));
+  const paginatedNotifications = filteredNotifications.slice(
     (notifPage - 1) * NOTIFS_PER_PAGE,
     notifPage * NOTIFS_PER_PAGE
   );
@@ -311,6 +320,41 @@ export default function MinhasNotasContent({
 
   // Empty state
   if (evaluations.length === 0) {
+    // Non-trainee with no evaluations: show friendly message, no notifications
+    if (!isTrainee) {
+      return (
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#f5b719]/10 border border-[#f5b719]/20">
+              <Star className="h-6 w-6 text-[#f5b719]" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Minhas Notas</h1>
+              <p className="text-sm text-gray-400">
+                Ola, {userName.split(" ")[0]}! Aqui voce acompanha suas avaliacoes.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#0126fb]/30 bg-[#010d26] p-12 text-center">
+            <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-[#f5b719]/10 border border-[#f5b719]/20 mx-auto mb-5">
+              <BookOpen className="h-10 w-10 text-[#f5b719]/50" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">
+              Voce nao possui avaliacoes de trainee
+            </h2>
+            <p className="text-gray-400 text-sm max-w-md mx-auto leading-relaxed">
+              Esta pagina e destinada ao acompanhamento de avaliacoes do programa
+              de trainees. Caso acredite que isso seja um erro, entre em contato
+              com a diretoria.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Trainee with no evaluations: show encouraging message + notifications
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -352,7 +396,7 @@ export default function MinhasNotasContent({
             )}
           </div>
 
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <div className="p-8 text-center">
               <Bell className="h-8 w-8 text-gray-600 mx-auto mb-3" />
               <p className="text-sm text-gray-400">Nenhuma notificacao por enquanto.</p>
@@ -430,10 +474,10 @@ export default function MinhasNotasContent({
             <BookOpen className="h-10 w-10 text-[#f5b719]/50" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">
-            Nenhuma avaliacao ainda
+            Nenhuma avaliacao registrada ainda
           </h2>
           <p className="text-gray-400 text-sm max-w-md mx-auto leading-relaxed">
-            Suas avaliacoes aparecerão aqui assim que os diretores registrarem
+            Suas avaliacoes aparecerao aqui assim que os diretores registrarem
             notas para voce. Continue se dedicando!
           </p>
         </div>
@@ -491,7 +535,7 @@ export default function MinhasNotasContent({
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <div className="p-8 text-center">
             <Bell className="h-8 w-8 text-gray-600 mx-auto mb-3" />
             <p className="text-sm text-gray-400">Nenhuma notificacao por enquanto.</p>
