@@ -247,7 +247,7 @@ export async function deleteConversation({
     await prisma.directConversation.delete({ where: { id: conversationId } });
 
     await createNotification({
-      type: NotificationType.NEW_MENTION,
+      type: "COMMUNITY_MESSAGE" as NotificationType,
       description: `A conversa "${conversation.title || "Sem Título"}" foi deletada pelo criador(a).`,
       link: `/comunidade`,
       targetUsersIds: conversation.participants.map(p => p.id)
@@ -284,7 +284,7 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
     }
 
     await createNotification({
-      type: NotificationType.NEW_MENTION,
+      type: "COMMUNITY_MESSAGE" as NotificationType,
       description: `O canal "${channel.name}" foi deletado pelo criador(a).`,
       link: `/comunidade`,
       targetUsersIds: (await prisma.channelMember.findMany({
@@ -447,7 +447,7 @@ export async function sendMessage(
 
 
     await createNotification({
-      type: NotificationType.NEW_MENTION,
+      type: "COMMUNITY_MESSAGE" as NotificationType,
       description: notificationMessage,
       link: contextType === "channel" ? `/comunidade/canais/${contextId}` : `/comunidade/conversas/${contextId}`,
       ...(channel && {targetUsersIds: channel?.members.filter((member) => member.id !== authUser.id).map((member) => member.userId)}),
@@ -930,7 +930,7 @@ export async function togglePinChannel(data: {
   });
 
   await createNotification({
-    type: NotificationType.NEW_MENTION,
+    type: "COMMUNITY_MESSAGE" as NotificationType,
     description: `O canal foi ${
       data.isPinned ? "fixado" : "desfixado"
     } na lista de canais.`,
@@ -1036,7 +1036,7 @@ export async function removeChannelMember(data: {
   });
 
   await createNotification({
-    type: NotificationType.NEW_MENTION,
+    type: "COMMUNITY_MESSAGE" as NotificationType,
     description: `Você foi removido do canal.`,
     link: `/comunidade`,
     targetUserId: deletedMember.userId,
