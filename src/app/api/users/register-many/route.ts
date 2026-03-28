@@ -251,7 +251,7 @@ export async function POST(request: Request) {
         const notification = await prisma.notification.create({
           data: {
             link: `/cultural`,
-            type: "NEW_MENTION",
+            type: "MEMBER_REGISTERED",
             notification: `Um novo ${
               newUser.isExMember ? "ex-membro" : "membro"
             } está na Plataforma da Casinha dos Sonhos: ${newUser.name}.`,

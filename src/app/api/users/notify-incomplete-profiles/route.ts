@@ -50,7 +50,7 @@ export async function GET(request: Request) {
         notification:
           "Seu perfil está quase completo! Adicione seus interesses e histórico para receber oportunidades personalizadas.",
         link: "/perfil",
-        type: "GENERAL_ALERT",
+        type: "PROFILE_INCOMPLETE",
       },
     });
 

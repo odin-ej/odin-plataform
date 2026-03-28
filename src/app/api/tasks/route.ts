@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     const notification = await prisma.notification.create({
       data: {
         link: `/minhas-pendencias`,
-        type: "NEW_MENTION",
+        type: "TASK_ASSIGNED",
         notification: `${authorName} criou uma nova tarefa. Clique no link para ver os detalhes.`,
       },
     });

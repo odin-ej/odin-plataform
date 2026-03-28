@@ -145,7 +145,7 @@ export async function POST(request: Request) {
         link: `/central-de-reservas`,
         notification:
           "Uma nova reserva foi criada. Clique no link para ver os detalhes.",
-        type: "GENERAL_ALERT",
+        type: "ROOM_RESERVATION",
       },
     });
 

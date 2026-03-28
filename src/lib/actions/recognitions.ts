@@ -275,7 +275,7 @@ export async function assignRecognitionToUser(formData: FormData) {
         giver.name
       } no valor: ${schedule.value.name}!`,
       link: "/reconhecimentos",
-      type: NotificationType.NEW_MENTION,
+      type: "RECOGNITION_RECEIVED" as NotificationType,
       targetUsersIds: usersToNotificate.map((user) => user.id),
     });
 
