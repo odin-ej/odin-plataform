@@ -1,6 +1,7 @@
 "use client";
 import { Conversation, Message } from "@prisma/client";
 import ChatContent from "@/app/_components/Dashboard/chat/ChatContent";
+import KrakenChatContent from "@/app/_components/Dashboard/chat/KrakenChatContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { verifyAccess } from "@/lib/utils";
 import ChatSkeleton from "@/app/_components/Dashboard/chat/ChatSkeleton";
@@ -11,6 +12,8 @@ import axios from "axios";
 import { useParams } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const KRAKEN_ENABLED = process.env.NEXT_PUBLIC_KRAKEN_ENABLED === "true";
+
 // CORREÇÃO: A função agora busca os dados da sua API local.
 async function getConversation(
   conversationId: string
@@ -36,6 +39,22 @@ const ConversationPage = () => {
 
   const { user } = useAuth(); // A verificação de permissão seria feita aqui
 
+  const hasAccess = verifyAccess({
+    pathname: `/chat/${conversationId}`,
+    user: user!,
+  });
+  if (!hasAccess) return <DeniedAccess />;
+
+  // Kraken mode: render the new multi-agent chat
+  if (KRAKEN_ENABLED) {
+    return (
+      <div className="sm:p-8 p-4">
+        <KrakenChatContent />
+      </div>
+    );
+  }
+
+  // Legacy mode: render the original Gemini-based chat
   const {
     data: conversation,
     isLoading,
@@ -46,11 +65,6 @@ const ConversationPage = () => {
     retry: 1, // Tenta buscar apenas uma vez antes de falhar
   });
 
-  const hasAccess = verifyAccess({
-    pathname: `/chat/${conversationId}`,
-    user: user!,
-  });
-  if (!hasAccess) return <DeniedAccess />;
   if (isLoading) {
     return (
       <div className="sm:p-8 p-4">

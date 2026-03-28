@@ -70,6 +70,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/atualizar-estrategia": STRATEGY_LEADERS,
   "/aprovacao-cadastro": DIRECTORS_ONLY,
   "/conhecimento-ia": DIRECTORS_ONLY,
+  "/admin-kraken": DIRECTORS_ONLY,
   "/gerenciar-link-posters": DIRECTORS_ONLY,
   "/gerenciar-cargos": DIRECTORS_ONLY,
   "/gerenciar-jr-points": DIRECTORS_ONLY,
@@ -141,6 +142,10 @@ export enum AppAction {
   MANAGE_CULTURE             = "manage_culture",
   VIEW_REPORTS               = "view_reports",
   MANAGE_TASKS               = "manage_tasks",
+
+  // Kraken IA
+  MANAGE_KRAKEN              = "manage_kraken",
+  MANAGE_KRAKEN_KNOWLEDGE    = "manage_kraken_knowledge",
 }
 
 /**
@@ -235,6 +240,14 @@ export const ACTION_METADATA: Record<AppAction, { label: string; description: st
   [AppAction.MANAGE_TASKS]: {
     label: "Gerenciar Tarefas",
     description: "Criar, editar e atribuir tarefas para membros da equipe",
+  },
+  [AppAction.MANAGE_KRAKEN]: {
+    label: "Gerenciar Kraken IA",
+    description: "Administrar o sistema de IA multi-agente Kraken: agentes, knowledge base, rate limits e métricas",
+  },
+  [AppAction.MANAGE_KRAKEN_KNOWLEDGE]: {
+    label: "Gerenciar Conhecimento do Kraken",
+    description: "Upload e gestão de documentos da knowledge base do Kraken",
   },
 } as const;
 
