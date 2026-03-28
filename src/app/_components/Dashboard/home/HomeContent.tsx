@@ -4,9 +4,11 @@ import CustomCard from "../../Global/Custom/CustomCard";
 import CustomCarousel, { SlideData } from "../../Global/Custom/CustomCarousel";
 import CustomCalendarOAuth from "../../Global/Calendar/CalendarOAuth";
 import { useMemo, useState } from "react";
-import { checkUserPermission, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { CombinedUser, useAuth } from "@/lib/auth/AuthProvider";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { formatReaisResumo } from "../metas-casinha/GoalCard";
 import UsefulLinksSection from "./UsefulLinksSection";
 import axios from "axios";
@@ -21,7 +23,8 @@ import {
 } from "@prisma/client";
 import ExMemberHomeContent from "./ExMemberHomeContent";
 import LinkPosterCarousel from "../../Global/LinkPosterCarousel";
-import { DIRECTORS_ONLY, TATICOS_ONLY } from "@/lib/permissions";
+import { checkUserPermission } from "@/lib/utils";
+import { TATICOS_ONLY } from "@/lib/permissions";
 import NotificationPanel from "../../Global/NotificationPanel";
 import { getEventNotifications, dismissEventNotification } from "@/lib/actions/notifications";
 import { X, AlertTriangle } from "lucide-react";
@@ -32,6 +35,7 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
   const [view, setView] = useState<"personal" | "odin">("odin");
   const [viewMode, setViewMode] = useState<"member" | "exMember">("member");
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const queryClient = useQueryClient();
 
   const fetchHomeData = async (): Promise<HomeContentData> => {
@@ -112,10 +116,10 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
   const isConsultant = useMemo(
     () =>
       user
-        ? checkUserPermission(user as CombinedUser, {
+        ? checkUserPermission(user, {
             allowedAreas: [AreaRoles.CONSULTORIA],
           })
-        : false, // If user is null, then permission is false
+        : false,
     [user]
   );
   const getSpecificLinks = () => {
@@ -173,7 +177,7 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
       )
     );
 
-    const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+    const isDirector = canDo(AppAction.MANAGE_USERS);
 
     const isTatico = checkUserPermission(user, TATICOS_ONLY);
 
@@ -206,12 +210,9 @@ const HomeContent = ({ initialData }: { initialData: HomeContentData }) => {
     });
 
     return { memberLinkPosters: finalPosters, exMemberLinkPosters };
-  }, [data.linkPosters, user, isConsultant]);
+  }, [data.linkPosters, user, isConsultant, canDo]);
 
-  const isDirector = useMemo(
-    () => (user ? checkUserPermission(user, DIRECTORS_ONLY) : false),
-    [user]
-  );
+  const isDirector = canDo(AppAction.MANAGE_USERS);
 
   // Event notifications banner
   const { data: eventNotifications = [] } = useQuery({

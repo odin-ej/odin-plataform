@@ -223,6 +223,7 @@ const ChannelDetailsModal = ({
   }); // --- Handlers ---
 
   const onSubmit = (data: DetailsForm) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { imageUrl: _imageUrl, ...detailsData } = data;
 
     // Limpa campos não relevantes baseado no tipo ANTES de enviar

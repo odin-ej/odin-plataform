@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 import { OraculoAreas } from "@prisma/client";
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
     const userAreas = (authUser.currentRole?.area as OraculoAreas[]) || [];
-    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isDirector = await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE);
 
     const whereClause = isDirector
       ? {}

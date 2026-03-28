@@ -1,8 +1,8 @@
 // /api/jr-points/solicitations/[id]/approve/route.ts
 
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { differenceInDays } from "date-fns";
@@ -20,7 +20,7 @@ export async function PATCH(
 ) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.APPROVE_JR_POINTS)) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
 

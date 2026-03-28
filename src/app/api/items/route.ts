@@ -1,8 +1,8 @@
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { itemSchema } from "@/lib/schemas/reservationsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    if (!authUser || !await can(authUser, AppAction.MANAGE_ITEM_RESERVATIONS)) return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
 
     const body = await request.json();
     const validation = itemSchema.safeParse(body);

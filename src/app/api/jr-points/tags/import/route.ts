@@ -1,8 +1,8 @@
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { tagTemplateSchema } from "@/lib/schemas/pointsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const authUser = await getAuthenticatedUser();
     if (!authUser)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isDirector = await can(authUser, AppAction.MANAGE_JR_POINTS_CONFIG);
     if (!isDirector)
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
 

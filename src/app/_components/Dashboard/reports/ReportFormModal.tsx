@@ -1,9 +1,9 @@
 "use client";
+
 import { toast } from "sonner";
-// Componentes UI e Tipos
-import CustomInput from "../../Global/Custom/CustomInput"; // Supondo a existência destes componentes
+import CustomInput from "../../Global/Custom/CustomInput";
 import CustomTextArea from "../../Global/Custom/CustomTextArea";
-import { X } from "lucide-react";
+import { X, Check, ChevronsUpDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +21,22 @@ import {
   FormLabel,
   FormMessage,
   FormControl,
+  FormDescription,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ReportFormValues } from "@/lib/schemas/reportSchema";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  ReportFormValues,
+  CATEGORY_CONFIG,
+} from "@/lib/schemas/reportSchema";
 import { UseFormReturn } from "react-hook-form";
 import { useState } from "react";
 import {
@@ -31,7 +44,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -47,7 +59,6 @@ interface ReportModalProps {
   onClose: () => void;
   form: UseFormReturn<ReportFormValues>;
   onSubmit: (data: ReportFormValues) => void;
-  // Dados para popular os selects
   users: { value: string; label: string }[];
   isLoading: boolean;
 }
@@ -61,6 +72,7 @@ const ReportFormModal = ({
   isLoading,
 }: ReportModalProps) => {
   const [popoverOpen, setPopoverOpen] = useState(false);
+
   const onInvalid = (errors: Record<string, { message?: string }>) => {
     console.error("Erros de validação do formulário:", errors);
     toast.error("Formulário Inválido", {
@@ -94,9 +106,69 @@ const ReportFormModal = ({
                 placeholder="Descreva o problema ou a situação..."
               />
 
+              {/* Category + Anonymous row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Category Select */}
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-[#00205e] border-2 border-white/20 text-white">
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
+                          {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
+                            <SelectItem
+                              key={key}
+                              value={key}
+                              className="hover:!bg-[#0126fb] focus:!bg-[#0126fb]"
+                            >
+                              {config.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Anonymous Toggle */}
+                <FormField
+                  control={form.control}
+                  name="isAnonymous"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col justify-end">
+                      <div className="flex items-center gap-3 h-10">
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="data-[state=checked]:bg-[#0126fb]"
+                        />
+                        <Label className="text-sm text-white cursor-pointer">
+                          Enviar anonimamente
+                        </Label>
+                      </div>
+                      <FormDescription className="text-xs text-gray-400">
+                        O destinatário não verá quem enviou
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Recipient User Select */}
               <FormField
                 control={form.control}
-                name={"recipientUserId"}
+                name="recipientUserId"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Destinatário:</FormLabel>
@@ -107,7 +179,7 @@ const ReportFormModal = ({
                             variant="outline"
                             role="combobox"
                             className={cn(
-                              "w-full justify-between bg-transparent hover:bg-gray-700 text-white",
+                              "w-full justify-between bg-[#00205e] border-2 border-white/20 hover:bg-[#00205e]/80 text-white",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -120,7 +192,7 @@ const ReportFormModal = ({
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] border-2 border-[#0126fb] bg-[#00205e] text-white">
-                        <Command className="bg-[#00205e] w-full scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent ">
+                        <Command className="bg-[#00205e] w-full scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                           <CommandInput
                             className="bg-transparent text-white"
                             placeholder="Procurar membro..."
@@ -128,7 +200,7 @@ const ReportFormModal = ({
                           <CommandList>
                             <CommandEmpty>
                               <span className="text-white">
-                                Nenhuma resultado encontrado.
+                                Nenhum resultado encontrado.
                               </span>
                             </CommandEmpty>
                             <CommandGroup>

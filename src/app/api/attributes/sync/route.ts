@@ -1,7 +1,7 @@
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -26,7 +26,7 @@ const syncSchema = z.object({
 export async function POST(request: Request) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.MANAGE_ROLES)) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
 

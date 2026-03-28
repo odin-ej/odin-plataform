@@ -3,8 +3,9 @@ import { prisma } from "@/db"; // Supondo que o seu singleton do Prisma está aq
 import { userProfileSchema } from "@/lib/schemas/memberFormSchema";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission, parseBrazilianDate } from "@/lib/utils";
+import { AppAction } from "@/lib/permissions";
+import { parseBrazilianDate } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { DeleteObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/aws";
 
@@ -19,7 +20,7 @@ export async function GET(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.APPROVE_REGISTRATIONS);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
@@ -58,7 +59,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.APPROVE_REGISTRATIONS);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
@@ -82,6 +83,7 @@ export async function PATCH(request: Request) {
       );
     }
 
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const {
       id,
       roleId,
@@ -98,6 +100,7 @@ export async function PATCH(request: Request) {
       roleHistory,
       ...dataToUpdate
     } = validation.data;
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
 
 
@@ -260,7 +263,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.APPROVE_REGISTRATIONS);
 
     if (!hasPermission) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });

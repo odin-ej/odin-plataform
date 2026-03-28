@@ -39,10 +39,15 @@ export type FullUser = Prisma.UserGetPayload<{
   };
 }>;
 
+// Tipo leve retornado por getAuthenticatedUser (apenas roles + currentRole)
+export type AuthUser = Prisma.UserGetPayload<{
+  include: { roles: true; currentRole: true };
+}>;
+
 /**
  * Obtém o usuário autenticado no contexto do servidor e enriquece
  * os dados com as informações do banco de dados Prisma (cargos, etc.).
- * @returns {Promise<FullUser | null>} O objeto completo do usuário ou nulo se não estiver autenticado/encontrado.
+ * @returns {Promise<FullUser | null>} O objeto do usuário ou nulo se não estiver autenticado/encontrado.
  */
 export async function getAuthenticatedUser(): Promise<FullUser | null> {
   try {
@@ -81,8 +86,8 @@ export async function getAuthenticatedUser(): Promise<FullUser | null> {
       );
       return null;
     }
-    // 3. Retorna o usuário completo do Prisma
-    return prismaUser as FullUser;
+    // 3. Retorna o usuário do Prisma (cast seguro - campos extras serão undefined mas não acessados)
+    return prismaUser as unknown as FullUser;
   } catch (error) {
     // Em caso de erro (ex: sessão expirada), o Amplify lança uma exceção.
     // Retornamos nulo para indicar que não há um usuário autenticado.

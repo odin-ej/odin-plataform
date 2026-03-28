@@ -19,7 +19,7 @@ import React from "react";
 interface SidebarItem {
   name: string;
   href: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  icon: React.ElementType;
 }
 
 interface DivisionSidebarProps {

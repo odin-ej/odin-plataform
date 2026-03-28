@@ -37,13 +37,14 @@ import {
   togglePinPost,
 } from "@/lib/actions/feed"; // Ajuste o caminho
 import { toast } from "sonner";
-import { checkUserPermission, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 import { PostType } from "@prisma/client";
 import CommentSection from "./CommentSection";
 import RenderAttachment from "../RenderAttachment";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { Textarea } from "@/components/ui/textarea";
 
 // Cache data types for optimistic updates
@@ -71,6 +72,7 @@ interface PostCardProps {
 
 const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const queryClient = useQueryClient();
   const [showComments, setShowComments] = useState(false); // Controla visibilidade dos comentários
   const [isDeleting, setIsDeleting] = useState(false);
@@ -89,14 +91,14 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
   const isOwnerOfWrapper = post.authorId === currentUserId; // Dono do repost ou do post original
   const isOwnerOfOriginal = displayPost.authorId === currentUserId; // Dono do conteúdo exibido
-  const canPin = checkUserPermission(user, DIRECTORS_ONLY); // Apenas diretores podem fixar
+  const canPin = canDo(AppAction.MANAGE_FEED); // Apenas quem pode gerenciar o feed pode fixar
   // Só pode editar o post original (não o repost) e se for o dono
   const canEdit = !isRepost && isOwnerOfOriginal;
   // Pode deletar o repost (se for dono) ou o post original (se dono ou diretor)
   const canDelete =
     isOwnerOfWrapper ||
     isOwnerOfOriginal ||
-    checkUserPermission(user, DIRECTORS_ONLY);
+    canDo(AppAction.MANAGE_FEED);
   // --- Mutações com Atualização Otimista ---
   const { mutate: likePost } = useMutation({
     mutationFn: () => togglePostLike(interactionTargetPost.id),
@@ -398,7 +400,6 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
                 likedBy: original.likedBy ?? [],
                 favoritedBy: original.favoritedBy ?? [],
                 repostedBy: original.repostedBy ?? [],
-                originalPost: original.originalPost ?? null,
               } as FullPost;
               return {
                 ...p,

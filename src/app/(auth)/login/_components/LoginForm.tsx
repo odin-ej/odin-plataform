@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { getLoginRedirectPath } from "@/lib/actions/auth-helpers";
 
 const signInSchema = z.object({
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
@@ -19,6 +20,7 @@ const signInSchema = z.object({
 const LoginForm = () => {
   const router = useRouter();
   const { checkAuth } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof signInSchema>>({
@@ -40,8 +42,18 @@ const LoginForm = () => {
       });
       toast.success("Login efetuado com sucesso!");
       if (isSignedIn) {
-        await checkAuth();
-        router.push("/");
+        try {
+          await checkAuth();
+        } catch (e) {
+          console.error("[login] checkAuth failed:", e);
+        }
+        let redirectPath = "/";
+        try {
+          redirectPath = await getLoginRedirectPath();
+        } catch (e) {
+          console.error("[login] getLoginRedirectPath failed:", e);
+        }
+        router.push(redirectPath);
       }
     } catch (err: unknown) {
       let message = "Ocorreu um erro ao fazer login.";

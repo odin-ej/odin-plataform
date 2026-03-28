@@ -3,7 +3,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CustomEmoji } from "@prisma/client";
+import { AreaRoles, CustomEmoji } from "@prisma/client";
 import { Pencil, Trash2, Loader2, MessageCircleReply } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
@@ -46,7 +46,7 @@ interface ChatMessageProps {
 interface GroupedReaction {
   emoji?: string | null;
   customEmojiId?: string | null;
-  customEmoji?: { id: string; name: string; imageUrl: string } | null;
+  customEmoji?: { id: string; name: string; imageUrl: string; createdAt: Date; creatorId: string } | null;
   count: number;
   reactors: { id: string; name: string }[];
 }
@@ -64,6 +64,7 @@ const ChatMessage = ({
   const [decryptedContent, setDecryptedContent] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const isDirector = user?.currentRole?.area?.includes(AreaRoles.DIRETORIA) ?? false;
 
   useEffect(() => {
     // A descriptografia não depende do tipo
@@ -251,8 +252,8 @@ const ChatMessage = ({
                       <Badge
                         onClick={() =>
                           toggleReactionMutation({
-                            emoji: reactionData.emoji,
-                            customEmojiId: reactionData.customEmojiId,
+                            emoji: reactionData.emoji ?? undefined,
+                            customEmojiId: reactionData.customEmojiId ?? undefined,
                           })
                         }
                         className={cn(
@@ -263,10 +264,10 @@ const ChatMessage = ({
                       >
                         {reactionData.customEmoji ? (
                           <CustomEmojiImage
-                            emoji={reactionData.customEmoji}
+                            emoji={reactionData.customEmoji as CustomEmoji}
                             onEmojiSelect={() => {
                               toggleReactionMutation({
-                                customEmojiId: reactionData.customEmojiId,
+                                customEmojiId: reactionData.customEmojiId ?? undefined,
                               });
                             }}
                             isReaction={true}
@@ -321,7 +322,7 @@ const ChatMessage = ({
               <Pencil size={16} />
             </Button>
           )}
-          {isOwner && (
+          {(isOwner || isDirector) && (
             <Button
               size="icon"
               variant="ghost"

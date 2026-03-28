@@ -21,7 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { FieldValues, UseFormReturn } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
 
 type Option = { value: string; label: string };
 
@@ -32,7 +32,8 @@ interface CommandMultiSelectProps {
   disabled?: boolean;
   page?: string;
   // Props para react-hook-form
-  form?: UseFormReturn<FieldValues>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form?: UseFormReturn<any>;
   name?: string;
 
   // Props para modo controlado

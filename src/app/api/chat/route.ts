@@ -6,12 +6,12 @@ import {
   toolKeywords,
 } from "@/lib/ai-utils";
 import { embeddingModel, geminiFlash, geminiPro } from "@/lib/gemini";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import {
   getAuthenticatedUser,
   getConversationHistory,
 } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { Part } from "@google/generative-ai";
 import { isSameDay } from "date-fns";
 import { NextResponse } from "next/server";
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         { status: 404 }
       );
 
-    const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+    const isDirector = await can(user, AppAction.MANAGE_AI_KNOWLEDGE);
     const messageLimit = isDirector
       ? CHAT_LIMITS.DIRECTOR_DAILY_MESSAGES
       : CHAT_LIMITS.MEMBER_DAILY_MESSAGES;
