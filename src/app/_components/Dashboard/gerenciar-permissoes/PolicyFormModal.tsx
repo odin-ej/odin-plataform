@@ -269,12 +269,6 @@ export default function PolicyFormModal({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => onOpenChange(false)}
-                className="rounded-lg p-1.5 hover:bg-white/10 transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-400" />
-              </button>
             </DialogHeader>
           </div>
 

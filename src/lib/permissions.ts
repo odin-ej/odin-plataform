@@ -154,7 +154,7 @@ export enum AppAction {
  */
 export const ACTION_METADATA: Record<AppAction, { label: string; description: string }> = {
   [AppAction.MANAGE_ROOM_RESERVATIONS]: {
-    label: "Gerenciar Reservas de Salas EAUFBA",
+    label: "Gerenciar Reservas de Salas",
     description: "Criar, editar e cancelar qualquer reserva de sala",
   },
   [AppAction.VIEW_ALL_ROOM_RESERVATIONS]: {
