@@ -148,6 +148,18 @@ enum NotificationType {
   REQUEST_REJECTED
   NEW_MENTION
   GENERAL_ALERT
+  ROOM_RESERVATION
+  ITEM_RESERVATION
+  TASK_ASSIGNED
+  TASK_OVERDUE
+  INITIATIVE_SUBMITTED
+  INITIATIVE_REVIEWED
+  RECOGNITION_RECEIVED
+  MEMBER_REGISTERED
+  PROFILE_INCOMPLETE
+  FEED_INTERACTION
+  COMMUNITY_MESSAGE
+  SYSTEM_ANNOUNCEMENT
 }
 
 enum NotificationScope {
@@ -366,6 +378,8 @@ model User {
   createdNotifications          Notification[]               @relation("NotificationCreator")
   traineeEvaluations            TraineeEvaluation[]          @relation("TraineeEvaluations")
   evaluatorEvaluations          TraineeEvaluation[]          @relation("EvaluatorEvaluations")
+  ideas                         InovationIdea[]              @relation("IdeaAuthor")
+  ideaVotes                     IdeaVote[]                   @relation("IdeaVotes")
 }
 
 model UserRoleHistory {
@@ -1210,6 +1224,7 @@ model InovationInitiative {
   cultura     String?                      @db.Text
   influencia  String?                      @db.Text
   operacao    String?                      @db.Text
+  implementedIdeas InovationIdea[]         @relation("IdeaToInitiative")
 }
 
 model Link {
@@ -1504,4 +1519,92 @@ model TraineeEvaluation {
   @@unique([traineeId, department, category])
   @@index([traineeId])
   @@index([evaluatorId])
+}
+
+// --- JR BASEMENT (Repositório de Ideias) ---
+
+enum IdeaCategory {
+  PROCESSO
+  PRODUTO
+  TECNOLOGIA
+  CULTURA
+  OUTRO
+}
+
+enum IdeaStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ARCHIVED
+  IMPLEMENTED
+}
+
+enum IdeaType {
+  INTERNAL
+  EXTERNAL
+}
+
+model InovationIdea {
+  id                  String       @id @default(uuid())
+  title               String
+  description         String       @db.Text
+  category            IdeaCategory
+  status              IdeaStatus   @default(SUBMITTED)
+  ideaType            IdeaType     @default(INTERNAL)
+
+  // Autor
+  authorId            String
+  author              User         @relation("IdeaAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Metadados
+  tags                String[]
+  problemDescription  String?      @db.Text
+  targetAudience      String?
+  partners            String?      @db.Text
+  resources           String[]
+
+  // SMART Scores (1-5)
+  smartSpecific       Int          @default(3)
+  smartMeasurable     Int          @default(3)
+  smartAchievable     Int          @default(3)
+  smartRelevant       Int          @default(3)
+  smartTimeBound      Int          @default(3)
+
+  // SMART Textos descritivos
+  smartSpecificText   String?      @db.Text
+  smartMeasurableText String?      @db.Text
+  smartAchievableText String?      @db.Text
+  smartRelevantText   String?      @db.Text
+  smartTimeBoundText  String?      @db.Text
+
+  // Classificação automática
+  clusterLevel        Int          @default(1) // 1=Embrionária, 2=Em Desenvolvimento, 3=Madura, 4=Pronta
+  priorityScore       Int          @default(0) // % calculado do SMART total
+
+  // Vinculação com iniciativa (se implementada)
+  implementedAsId     String?
+  implementedAs       InovationInitiative? @relation("IdeaToInitiative", fields: [implementedAsId], references: [id], onDelete: SetNull)
+
+  // Votos
+  votes               IdeaVote[]
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([authorId])
+  @@index([status])
+  @@index([priorityScore(sort: Desc)])
+}
+
+model IdeaVote {
+  id        String        @id @default(uuid())
+  ideaId    String
+  idea      InovationIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation("IdeaVotes", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([ideaId, userId])
+  @@index([ideaId])
+  @@index([userId])
 }
