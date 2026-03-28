@@ -274,7 +274,7 @@ export async function createManagedNotification(
       const notification = await tx.notification.create({
         data: {
           notification: description,
-          type: "GENERAL_ALERT",
+          type: "SYSTEM_ANNOUNCEMENT",
           link: link || "/",
           title,
           scope: scope as NotificationScope,

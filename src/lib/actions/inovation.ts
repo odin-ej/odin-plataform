@@ -219,7 +219,7 @@ export async function createInovationInitiative(data: CreateInovationValues) {
       targetUsersIds: [gerProd, gerDes, doper]
         .filter(Boolean)
         .map((u) => u!.id),
-      type: "NEW_MENTION",
+      type: "INITIATIVE_SUBMITTED",
       description: `Iniciativa "${data.title}" foi criada e está aguardando aprovação.`,
       link: "/inovacao",
     });
@@ -375,7 +375,7 @@ export async function auditInovationInitiative({
 
     createNotification({
       targetUserId: initiative.authorId,
-      type: "NEW_MENTION",
+      type: "INITIATIVE_REVIEWED",
       description: `A Iniciativa "${initiative.title}" foi auditada por ${authUser.name}.`,
       link: "/inovacao",
     });

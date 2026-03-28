@@ -239,7 +239,7 @@ export async function POST(request: Request) {
     const notification = await prisma.notification.create({
       data: {
         link: "/aprovacao-cadastro",
-        type: "NEW_MENTION",
+        type: "MEMBER_REGISTERED",
         notification: `O utilizador ${name} fez uma nova solicitação de registo.`,
       },
     });

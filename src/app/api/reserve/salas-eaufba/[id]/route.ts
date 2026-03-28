@@ -80,7 +80,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const notification = await prisma.notification.create({
         data: {
           link: `/central-de-reservas`,
-          type: 'NEW_MENTION',
+          type: 'ROOM_RESERVATION',
           notification: `A solicitação de reserva: ${originalRequest.title} foi alterada para ${status === 'PENDING' ? 'Pendente' : status === 'APPROVED' ? 'Aprovada' : status === 'REQUESTED' ? 'Solicitada ao Apoio' : 'Rejeitada'}.`,
         },
       })

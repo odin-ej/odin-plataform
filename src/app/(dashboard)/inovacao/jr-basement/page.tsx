@@ -1,19 +1,16 @@
-import { FullInovationInitiative } from "@/app/_components/Dashboard/inovacao/InovationCard";
-import InovacaoHub from "@/app/_components/Dashboard/inovacao/InovacaoHub";
+import BasementContent from "@/app/_components/Dashboard/inovacao/JRBasement/BasementContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { getAllInovationInitiatives } from "@/lib/actions/inovation";
+import { getAllIdeas, getMyIdeas } from "@/lib/actions/basement";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { verifyAccess } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Espaço de Inovação",
+  title: "JR Basement",
 };
 
 const Page = async () => {
-  const initiatives: FullInovationInitiative[] = await getAllInovationInitiatives();
-
   const authUser = await getAuthenticatedUser();
 
   const hasAccess = verifyAccess({
@@ -23,7 +20,9 @@ const Page = async () => {
 
   if (!hasAccess) return <DeniedAccess />;
 
-  return <InovacaoHub initiatives={initiatives} />;
+  const [allIdeas, myIdeas] = await Promise.all([getAllIdeas(), getMyIdeas()]);
+
+  return <BasementContent initialAllIdeas={allIdeas} initialMyIdeas={myIdeas} />;
 };
 
 export default Page;

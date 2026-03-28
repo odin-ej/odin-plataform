@@ -60,6 +60,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import Image from "next/image";
 
 type SimpleUser = {
   id: string;
@@ -208,19 +209,79 @@ export default function CreateNotificationModal({
                   Mensagem
                   <span className="text-red-400">*</span>
                 </label>
-                <p className="text-xs text-gray-500 -mt-1">
-                  Conteudo que sera exibido na notificacao
-                </p>
-                <Textarea
-                  placeholder="Escreva o conteudo da notificacao..."
-                  rows={3}
-                  className="bg-[#00205e]/60 border border-white/10 text-white placeholder:text-gray-500 focus:border-[#0126fb] min-h-[100px] rounded-lg transition-colors resize-none"
-                  {...form.register("description")}
-                />
-                {form.formState.errors.description && (
-                  <p className="text-sm text-red-400">
-                    {form.formState.errors.description.message}
-                  </p>
+                <Popover open={userSelectOpen} onOpenChange={setUserSelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between bg-[#00205e] border-2 border-white/20 text-white hover:bg-[#00205e]/80 hover:text-white"
+                    >
+                      {selectedUserIds.length > 0
+                        ? `${selectedUserIds.length} selecionado(s)`
+                        : "Selecionar usuários"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0 bg-[#00205e] border-[#0126fb]"
+                    align="start"
+                  >
+                    <Command className="bg-[#00205e]">
+                      <CommandInput
+                        placeholder="Buscar usuário..."
+                        className="text-white"
+                      />
+                      <CommandList className="max-h-[200px]">
+                        <CommandEmpty className="text-gray-400 py-3 text-center text-sm">
+                          Nenhum usuário encontrado
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {users.map((user) => (
+                            <CommandItem
+                              key={user.id}
+                              onSelect={() => toggleUser(user.id)}
+                              className="text-white hover:!bg-[#0126fb] aria-selected:!bg-[#0126fb]"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedUserIds.includes(user.id)
+                                    ? "opacity-100 text-[#f5b719]"
+                                    : "opacity-0"
+                                )}
+                              />
+                              <Image
+                                src={user.imageUrl}
+                                alt={user.name}
+                                width={25}
+                                height={25}
+                                className="w-5 h-5 rounded-full mr-2"
+                              />
+                              {user.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {selectedUserIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedUserIds.map((id: string) => {
+                      const user = users.find((u) => u.id === id);
+                      return user ? (
+                        <Badge
+                          key={id}
+                          className="bg-[#0126fb]/20 text-[#f5b719] border border-[#0126fb]/40 gap-1"
+                        >
+                          {user.name}
+                          <X
+                            className="h-3 w-3 cursor-pointer hover:text-red-400"
+                            onClick={() => toggleUser(id)}
+                          />
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
                 )}
               </div>
 
