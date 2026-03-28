@@ -66,6 +66,7 @@ import CreateNotificationModal from "./CreateNotificationModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 type SimpleUser = {
   id: string;
@@ -760,6 +761,21 @@ export default function ManageNotificationsContent({
                       <p className="text-sm text-gray-500 mt-0.5">Envio imediato</p>
                     )}
                   </div>
+                  {detailModal.createdBy && (
+                    <div className="col-span-2">
+                      <p className="text-xs text-gray-500">Criada por</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Image
+                          src={detailModal.createdBy.imageUrl}
+                          alt={detailModal.createdBy.name}
+                          width={25}
+                          height={25}
+                          className="w-5 h-5 rounded-full"
+                        />
+                        <span className="text-sm text-gray-300">{detailModal.createdBy.name}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Recipients Section */}
@@ -781,19 +797,14 @@ export default function ManageNotificationsContent({
                         key={nu.id}
                         className="flex items-center justify-between text-sm py-2.5 px-3 hover:bg-[#00205e]/30 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <img
-                              src={nu.user.imageUrl}
-                              alt={nu.user.name}
-                              className="w-8 h-8 rounded-full ring-1 ring-white/10"
-                            />
-                            {nu.isRead && (
-                              <div className="absolute -bottom-0.5 -right-0.5 bg-green-500 rounded-full p-0.5">
-                                <CheckCircle2 className="h-2.5 w-2.5 text-white" />
-                              </div>
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src={nu.user.imageUrl}
+                            alt={nu.user.name}
+                            width={35}
+                            height={35}
+                            className="w-7 h-7 rounded-full"
+                          />
                           <div>
                             <span className="text-white font-medium text-sm">{nu.user.name}</span>
                             <p className="text-xs text-gray-500">

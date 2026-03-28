@@ -37,7 +37,7 @@ export async function GET(request: Request) {
       data: {
         link: `/minhas-pendencias`,
         notification: `Existem ${overdueTasks.length} tarefas atrasadas.`,
-        type: "NEW_MENTION",
+        type: "TASK_OVERDUE",
       },
     });
 

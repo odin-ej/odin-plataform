@@ -52,7 +52,7 @@ export async function PATCH(
     const notification = await prisma.notification.create({
       data: {
         link: `/tarefas`,
-        type: "NEW_MENTION",
+        type: "TASK_ASSIGNED",
         notification: `A tarefa: ${updatedTask.title} foi atualizada por ${authUser.name.split(" ")[0]}.`,
       },
     });
@@ -93,7 +93,7 @@ export async function DELETE(
     const notification = await prisma.notification.create({
       data: {
         link: `/minhas-pendencias`,
-        type: "NEW_MENTION",
+        type: "TASK_ASSIGNED",
         notification: `A tarefa: ${taskToDelete.title} foi apagada por ${authUser.name.split(" ")[0]}.`,
       },
     });
