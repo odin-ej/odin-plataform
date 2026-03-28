@@ -23,8 +23,8 @@ import ItemsContent from "./ItemsContent";
 import { ReservationsPageData } from "@/app/(dashboard)/central-de-reservas/page";
 import UnifiedCalendar, { CalendarEvent } from "./UnifiedCalendar";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import CreateReservationModal from "./CreateReservationModal"; // Modal genérico para criação
@@ -33,6 +33,7 @@ import {
   EaufbaReservationFormValues,
   ExtendedReservation,
   ItemForm,
+  ReservationFormValues,
   RoomReservationFormValues,
 } from "@/lib/schemas/reservationsSchema";
 import DailyScheduleView from "./DailyScheduleView";
@@ -52,11 +53,12 @@ const ReservationsContent = ({
   initialData: ReservationsPageData;
 }) => {
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const [activeTab, setActiveTab] = useState("salinhas");
 
   const queryClient = useQueryClient();
-  const canMutate = checkUserPermission(user, DIRECTORS_ONLY) || checkUserPermission(user, {allowedRoles: ['Gerente de Conexões']});
-  const isDirector = checkUserPermission(user, DIRECTORS_ONLY)
+  const isDirector = canDo(AppAction.MANAGE_ROOM_RESERVATIONS);
+  const canManageReservations = isDirector;
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -206,7 +208,7 @@ const ReservationsContent = ({
         rooms,
         reservations: roomReservations,
       }}
-      isDirector={canMutate}
+      isDirector={canManageReservations}
     />
   );
   const eaufbaContent = (
@@ -315,9 +317,9 @@ const ReservationsContent = ({
             setSelectedDate(null);
           }}
           selectedDate={selectedDate}
-          createRoomReservation={createReservation}
-          createItemReservation={createItem}
-          createEaufbaRequest={createEaufba}
+          createRoomReservation={createReservation as unknown as (data: ReservationFormValues) => void}
+          createItemReservation={createItem as unknown as (data: ReservationFormValues) => void}
+          createEaufbaRequest={createEaufba as unknown as (data: ReservationFormValues) => void}
           rooms={rooms}
           items={reservableItems}
           existingItemReservations={itemReservations}

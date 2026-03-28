@@ -37,14 +37,16 @@ const CommunitySidebarLeft = ({
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [modalState, setModalState] = useState<{
     type: string | null;
-    data?: Record<string, unknown>;
+    data?: any;
   }>({ type: null });
 
   // --- MUTATIONS ---
   const { mutate: actionMutation, isPending } = useMutation({
-    mutationFn: async ({ action, data }: { action: string; data: Record<string, unknown> }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: async ({ action, data }: { action: string; data: any }) => {
       let endpoint = "";
       let method: "post" | "patch" | "delete" = "post";
 
@@ -54,17 +56,17 @@ const CommunitySidebarLeft = ({
           method = "post";
           break;
         case "deleteChannel":
-          await deleteChannel({channelId: data.id})
+          await deleteChannel({channelId: data.id as string})
           return;
         case "leaveConversation":
-          await leaveConversation({conversationId: data.id})
+          await leaveConversation({conversationId: data.id as string})
           return;
         case 'pinChannel':
-          endpoint = `/api/community/channels/${data.id}/pin`;
+          endpoint = `/api/community/channels/${data.id as string}/pin`;
           method = "patch";
           break;
         case "deleteConversation":
-          await deleteConversation({conversationId: data.id})
+          await deleteConversation({conversationId: data.id as string})
           return;
         // Adicione outras mutations aqui
       }
@@ -81,13 +83,14 @@ const CommunitySidebarLeft = ({
       }),
   });
 
-  const handleAction = (action: string, data?: Record<string, unknown>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleAction = (action: string, data?: any) => {
     //Ações que disparam sem confirmação
     if(['pinChannel'].includes(action)){
       actionMutation({
         action,
         data: {
-          id: data.channelId
+          id: data?.channelId
         },
       })
     }
@@ -178,12 +181,12 @@ const CommunitySidebarLeft = ({
           isOpen={true}
           onClose={() => setModalState({ type: null })}
           action={"create"}
-          channel={modalState.data?.channel}
+          channel={modalState.data?.channel as FullChannel | undefined}
           allUsers={allUsers}
-          onConfirm={(data: Record<string, unknown>) =>
+          onConfirm={(data) =>
             actionMutation({
               action: modalState.type as string,
-              data: { ...data, id: (modalState.data?.channel as Record<string, unknown>)?.id },
+              data: { ...data, id: modalState.data?.channel?.id },
             })
           }
           isLoading={isPending}
@@ -210,7 +213,7 @@ const CommunitySidebarLeft = ({
           isOpen={true}
           onClose={() => setModalState({ type: null })}
           user={modalState.data}
-          isCurrentUser={user.id === (modalState.data as Record<string, unknown>).id}
+          isCurrentUser={user.id === modalState.data?.id}
         />
       )}
       {modalState.type === "userSettings" && modalState.data && (
@@ -218,7 +221,7 @@ const CommunitySidebarLeft = ({
           isOpen={true}
           onClose={() => setModalState({ type: null })}
           user={modalState.data}
-          isCurrentUser={user.id === (modalState.data as Record<string, unknown>).id}
+          isCurrentUser={user.id === modalState.data?.id}
         />
       )}
 

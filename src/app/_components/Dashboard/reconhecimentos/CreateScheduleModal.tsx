@@ -133,7 +133,7 @@ async function onSubmit(data: CreateScheduleForm): Promise<void> {
       const year = parseInt(data.year);
       // Filtra apenas os meses que tiveram um valor selecionado
       const entries = Object.entries(data.schedules).filter(
-         ([_, val]) => !!val
+         ([, val]) => !!val
       ) as [string, string][];
 
       if (entries.length === 0) {

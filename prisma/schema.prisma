@@ -53,6 +53,15 @@ enum ReportStatus {
   APPROVED
 }
 
+enum ReportCategory {
+  DENUNCIA
+  SUGESTAO
+  FEEDBACK
+  BUG
+  SOLICITACAO
+  OUTRO
+}
+
 enum AreaRoles {
   CONSULTORIA
   TATICO
@@ -67,6 +76,7 @@ enum AreaRoles {
   DIRETORIA
   CONSELHO
   OUTRO
+  TRAINEE
 }
 
 enum TagAreas {
@@ -138,6 +148,18 @@ enum NotificationType {
   REQUEST_REJECTED
   NEW_MENTION
   GENERAL_ALERT
+  ROOM_RESERVATION
+  ITEM_RESERVATION
+  TASK_ASSIGNED
+  TASK_OVERDUE
+  INITIATIVE_SUBMITTED
+  INITIATIVE_REVIEWED
+  RECOGNITION_RECEIVED
+  MEMBER_REGISTERED
+  PROFILE_INCOMPLETE
+  FEED_INTERACTION
+  COMMUNITY_MESSAGE
+  SYSTEM_ANNOUNCEMENT
 }
 
 enum NotificationScope {
@@ -354,6 +376,10 @@ model User {
   recognitionsSent              Recognition[]                 @relation("UserRecognitionsSent")
   lastActiveAt DateTime? @map("last_active_at")
   createdNotifications          Notification[]               @relation("NotificationCreator")
+  traineeEvaluations            TraineeEvaluation[]          @relation("TraineeEvaluations")
+  evaluatorEvaluations          TraineeEvaluation[]          @relation("EvaluatorEvaluations")
+  ideas                         InovationIdea[]              @relation("IdeaAuthor")
+  ideaVotes                     IdeaVote[]                   @relation("IdeaVotes")
 }
 
 model UserRoleHistory {
@@ -706,19 +732,22 @@ model Project {
 }
 
 model Report {
-  id              String       @id @default(uuid())
+  id              String          @id @default(uuid())
   title           String
   status          ReportStatus
-  content         String       @db.Text
+  category        ReportCategory  @default(OUTRO)
+  isAnonymous     Boolean         @default(false)
+  content         String          @db.Text
   recipientNotes  String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  resolvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   referentId      String?
-  referent        User?        @relation("ReportReferent", fields: [referentId], references: [id], onDelete: SetNull)
+  referent        User?           @relation("ReportReferent", fields: [referentId], references: [id], onDelete: SetNull)
   recipientUserId String?
-  recipientUser   User?        @relation("ReportRecipientUser", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipientUser   User?           @relation("ReportRecipientUser", fields: [recipientUserId], references: [id], onDelete: SetNull)
   recipientRoleId String?
-  recipientRole   Role?        @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id], onDelete: SetNull)
+  recipientRole   Role?           @relation("ReportRecipientRole", fields: [recipientRoleId], references: [id], onDelete: SetNull)
 }
 
 model EstrategyPlan {
@@ -1195,6 +1224,7 @@ model InovationInitiative {
   cultura     String?                      @db.Text
   influencia  String?                      @db.Text
   operacao    String?                      @db.Text
+  implementedIdeas InovationIdea[]         @relation("IdeaToInitiative")
 }
 
 model Link {
@@ -1456,4 +1486,125 @@ model ActionPermission {
   isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// --- TRAINEE EVALUATIONS ---
+
+enum TraineeDepartment {
+  MARKETING
+  ORGANIZACIONAL
+  FINANCEIRO
+}
+
+enum TraineeGradeCategory {
+  AVALIACAO_PROCESSUAL
+  PROVA
+  DESAFIO
+  EXTRA
+}
+
+model TraineeEvaluation {
+  id          String               @id @default(uuid())
+  traineeId   String
+  trainee     User                 @relation("TraineeEvaluations", fields: [traineeId], references: [id], onDelete: Cascade)
+  evaluatorId String
+  evaluator   User                 @relation("EvaluatorEvaluations", fields: [evaluatorId], references: [id], onDelete: Cascade)
+  department  TraineeDepartment
+  category    TraineeGradeCategory
+  grade       Float
+  feedback    String?              @db.Text
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([traineeId, department, category])
+  @@index([traineeId])
+  @@index([evaluatorId])
+}
+
+// --- JR BASEMENT (Repositório de Ideias) ---
+
+enum IdeaCategory {
+  PROCESSO
+  PRODUTO
+  TECNOLOGIA
+  CULTURA
+  OUTRO
+}
+
+enum IdeaStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ARCHIVED
+  IMPLEMENTED
+}
+
+enum IdeaType {
+  INTERNAL
+  EXTERNAL
+}
+
+model InovationIdea {
+  id                  String       @id @default(uuid())
+  title               String
+  description         String       @db.Text
+  category            IdeaCategory
+  status              IdeaStatus   @default(SUBMITTED)
+  ideaType            IdeaType     @default(INTERNAL)
+
+  // Autor
+  authorId            String
+  author              User         @relation("IdeaAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Metadados
+  tags                String[]
+  problemDescription  String?      @db.Text
+  targetAudience      String?
+  partners            String?      @db.Text
+  resources           String[]
+
+  // SMART Scores (1-5)
+  smartSpecific       Int          @default(3)
+  smartMeasurable     Int          @default(3)
+  smartAchievable     Int          @default(3)
+  smartRelevant       Int          @default(3)
+  smartTimeBound      Int          @default(3)
+
+  // SMART Textos descritivos
+  smartSpecificText   String?      @db.Text
+  smartMeasurableText String?      @db.Text
+  smartAchievableText String?      @db.Text
+  smartRelevantText   String?      @db.Text
+  smartTimeBoundText  String?      @db.Text
+
+  // Classificação automática
+  clusterLevel        Int          @default(1) // 1=Embrionária, 2=Em Desenvolvimento, 3=Madura, 4=Pronta
+  priorityScore       Int          @default(0) // % calculado do SMART total
+
+  // Vinculação com iniciativa (se implementada)
+  implementedAsId     String?
+  implementedAs       InovationInitiative? @relation("IdeaToInitiative", fields: [implementedAsId], references: [id], onDelete: SetNull)
+
+  // Votos
+  votes               IdeaVote[]
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([authorId])
+  @@index([status])
+  @@index([priorityScore(sort: Desc)])
+}
+
+model IdeaVote {
+  id        String        @id @default(uuid())
+  ideaId    String
+  idea      InovationIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation("IdeaVotes", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([ideaId, userId])
+  @@index([ideaId])
+  @@index([userId])
 }

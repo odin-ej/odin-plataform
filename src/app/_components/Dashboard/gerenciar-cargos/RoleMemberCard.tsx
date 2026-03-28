@@ -12,6 +12,7 @@ import {
   CircleDollarSign,
   UsersRound,
   UserCog,
+  GraduationCap,
 } from "lucide-react";
 import {
   Card,
@@ -68,6 +69,7 @@ export const areaConfig: Record<
     label: "Gestão de Pessoas",
   },
   [AreaRoles.CONSELHO]: { icon: Gavel, color: "bg-sky-500", label: "Conselho" },
+  [AreaRoles.TRAINEE]: { icon: GraduationCap, color: "bg-emerald-500", label: "Trainee" },
 };
 
 export function isConfigurableArea(

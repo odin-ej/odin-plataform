@@ -1,7 +1,7 @@
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ export async function DELETE(
     const authUser = await getAuthenticatedUser();
     if (!authUser)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
-    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isDirector = await can(authUser, AppAction.MANAGE_JR_POINTS_CONFIG);
     if (!isDirector)
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
 

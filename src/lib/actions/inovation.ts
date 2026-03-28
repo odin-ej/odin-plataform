@@ -1,7 +1,7 @@
 "use server";
 import { prisma } from "@/db";
-import { checkUserPermission } from "../utils";
-import { INOVATION_LEADERS } from "../permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "../permissions";
 import {
   InovationHorizonTypes,
   InovationInitiativeStatus,
@@ -219,7 +219,7 @@ export async function createInovationInitiative(data: CreateInovationValues) {
       targetUsersIds: [gerProd, gerDes, doper]
         .filter(Boolean)
         .map((u) => u!.id),
-      type: "NEW_MENTION",
+      type: "INITIATIVE_SUBMITTED",
       description: `Iniciativa "${data.title}" foi criada e está aguardando aprovação.`,
       link: "/inovacao",
     });
@@ -357,8 +357,7 @@ export async function auditInovationInitiative({
   reviewNotes: string;
 }) {
   const authUser = await getAuthenticatedUser();
-  // Aqui você deve validar se o usuário tem permissão de auditor (ex: checkUserPermission)
-  if (!authUser || !checkUserPermission(authUser, INOVATION_LEADERS))
+  if (!authUser || !await can(authUser, AppAction.REVIEW_INITIATIVES))
     throw new Error("Unauthorized");
 
   try {
@@ -376,7 +375,7 @@ export async function auditInovationInitiative({
 
     createNotification({
       targetUserId: initiative.authorId,
-      type: "NEW_MENTION",
+      type: "INITIATIVE_REVIEWED",
       description: `A Iniciativa "${initiative.title}" foi auditada por ${authUser.name}.`,
       link: "/inovacao",
     });

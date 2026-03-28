@@ -20,7 +20,7 @@ import { EstrategyObjectiveWithGoals } from "@/app/(dashboard)/atualizar-estrate
 interface UpdateData {
   endpoint: "objectives" | "goals";
   id: string;
-  [key: string]: string;
+  [key: string]: string | number | undefined;
 }
 
 interface ObjectiveItemProps {

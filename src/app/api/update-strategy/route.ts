@@ -1,13 +1,13 @@
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { NextResponse } from "next/server";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 export async function GET() {
   try {
     const authUser = await getAuthenticatedUser();
 
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.UPDATE_STRATEGY)) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 

@@ -25,14 +25,16 @@ import {
   NotificationType,
   Prisma,
 } from "@prisma/client";
-import { checkUserPermission, getLabelForRoleArea } from "../utils";
-import { DIRECTORS_ONLY } from "../permissions";
+import { getLabelForRoleArea } from "../utils";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "../permissions";
 import { createNotification } from "./notifications";
 import { S3_UPLOAD } from "../constants";
 
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getPresignedUrlSchema = z.object({
   fileType: z.string(),
   fileSize: z.number(),
@@ -276,7 +278,7 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
 
     if (
       authUser.id !== channel?.createdById &&
-      !checkUserPermission(authUser, DIRECTORS_ONLY)
+      !await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS)
     ) {
       throw new Error("Somente o criador pode deletar o canal.");
     }
@@ -535,8 +537,11 @@ export async function deleteMessage(
     contextId = message?.channelId ?? null;
   }
 
-  if (!message || message.authorId !== authUser.id) {
-    throw new Error("Acesso negado ou mensagem não encontrada.");
+  if (!message) {
+    throw new Error("Mensagem não encontrada.");
+  }
+  if (message.authorId !== authUser.id && !await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS)) {
+    throw new Error("Acesso negado.");
   }
   if (!contextId) {
     throw new Error("Contexto da mensagem não encontrado.");
@@ -735,6 +740,7 @@ export async function createCustomEmoji({
   return { success: true };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const detailsSchemaServer = z.object({
   channelId: z.string(),
   name: z.string().min(3).max(50),
@@ -908,7 +914,7 @@ export async function togglePinChannel(data: {
   const authUser = await getAuthenticatedUser();
   if (!authUser) throw new Error("Não autorizado");
 
-  if (!checkUserPermission(authUser, DIRECTORS_ONLY))
+  if (!await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS))
     throw new Error("Não autorizado");
 
   await prisma.channel.update({

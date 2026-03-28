@@ -2,8 +2,8 @@ import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 
 // --- CONFIGURAÇÃO INICIAL ---
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
@@ -59,7 +59,7 @@ async function fetchAllDriveItems(folderId: string): Promise<DriveItem[]> {
 export async function POST() {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE)) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
     

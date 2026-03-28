@@ -12,6 +12,7 @@ import { Role, InterestCategory, ProfessionalInterest } from "@prisma/client";
 import { orderRolesByHiearchy, uploadFile } from "@/lib/utils";
 import ImageCropModal from "@/app/_components/Global/ImageCropModal";
 import { useSearchParams } from "next/navigation";
+import { UseFormReturn } from "react-hook-form";
 
 interface RegisterAreaProps {
   roles: Role[];
@@ -26,7 +27,7 @@ const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [tabSelected, setTabSelected] = useState<string>("novo");
   // Estado para armazenar a referência do formulário para poder usar o setValue
-  const [formRef, setFormRef] = useState<{ setValue: (name: string, value: File, options?: { shouldValidate?: boolean; shouldDirty?: boolean }) => void } | null>(null);
+  const [formRef, setFormRef] = useState<{ setValue: (name: string, value: unknown, options?: { shouldValidate?: boolean; shouldDirty?: boolean }) => void } | null>(null);
   const query = useSearchParams();
 
   useEffect(() => {
@@ -63,7 +64,9 @@ const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
       // 1. Prepara o upload da imagem de perfil
       if (image && image instanceof File) {
         uploadPromises.push(
-          uploadFile({ file: image, })
+          uploadFile({ file: image }).then((result) =>
+            typeof result === "string" ? result : result.url
+          )
         );
       }
 
@@ -99,7 +102,7 @@ const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
 
       const uploadResults = await Promise.all(uploadPromises);
       if (image && image instanceof File) {
-        finalImageUrl = uploadResults.shift();
+        finalImageUrl = uploadResults.shift() ?? "";
       }
 
       const finalData = {
@@ -131,7 +134,8 @@ const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
     }
   };
 
-  const handleFileSelect = (file: File, form: { setValue: (name: string, value: File, options?: { shouldValidate?: boolean; shouldDirty?: boolean }) => void }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleFileSelect = (file: File, form: UseFormReturn<any>) => {
     if (file) {
       setFormRef(form); // Salva a referência do formulário
       const reader = new FileReader();

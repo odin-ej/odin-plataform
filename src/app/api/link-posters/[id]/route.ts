@@ -1,9 +1,9 @@
 import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { linkPostersUpdateSchema } from "@/lib/schemas/linkPostersSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
@@ -16,7 +16,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.MANAGE_LINK_POSTERS);
 
     if (!hasPermission)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
@@ -61,7 +61,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
     }
 
-    const hasPermission = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const hasPermission = await can(authUser, AppAction.MANAGE_LINK_POSTERS);
 
     if (!hasPermission)
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
