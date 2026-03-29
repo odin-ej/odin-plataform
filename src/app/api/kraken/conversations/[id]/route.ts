@@ -1,6 +1,34 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/db";
 import { getAuthenticatedUser } from "@/lib/server-utils";
+import { s3Client } from "@/lib/aws";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+/** Resolve an S3 key to a signed URL. Returns null on failure. */
+async function resolveIconUrl(key: string | null | undefined): Promise<string | null> {
+  if (!key || key.trim() === "") return null;
+  if (key.startsWith("http://") || key.startsWith("https://")) {
+    try { key = decodeURIComponent(new URL(key).pathname.slice(1)); } catch { return null; }
+  }
+  try {
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_CHAT_BUCKET_NAME!,
+      Key: key,
+    });
+    return await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve iconUrl for an agent object in-place */
+async function resolveAgentIcon<T extends { iconUrl?: string | null }>(
+  agent: T | null
+): Promise<T | null> {
+  if (!agent) return agent;
+  return { ...agent, iconUrl: await resolveIconUrl(agent.iconUrl) };
+}
 
 export async function GET(
   request: Request,
@@ -17,10 +45,15 @@ export async function GET(
       where: { id, userId: authUser.id, isActive: true },
       include: {
         agent: {
-          select: { id: true, displayName: true, color: true },
+          select: { id: true, displayName: true, color: true, iconUrl: true },
         },
         messages: {
           orderBy: { createdAt: "asc" },
+          include: {
+            agent: {
+              select: { id: true, displayName: true, color: true, iconUrl: true },
+            },
+          },
         },
       },
     });
@@ -32,7 +65,34 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(conversation);
+    // Resolve S3 icon URLs for conversation agent and all message agents
+    const iconUrlCache = new Map<string, string | null>();
+    async function getCachedIconUrl(key: string | null | undefined): Promise<string | null> {
+      if (!key) return null;
+      if (iconUrlCache.has(key)) return iconUrlCache.get(key)!;
+      const resolved = await resolveIconUrl(key);
+      iconUrlCache.set(key, resolved);
+      return resolved;
+    }
+
+    const resolvedConvAgent = conversation.agent
+      ? { ...conversation.agent, iconUrl: await getCachedIconUrl(conversation.agent.iconUrl) }
+      : null;
+
+    const resolvedMessages = await Promise.all(
+      conversation.messages.map(async (msg) => ({
+        ...msg,
+        agent: msg.agent
+          ? { ...msg.agent, iconUrl: await getCachedIconUrl(msg.agent.iconUrl) }
+          : null,
+      }))
+    );
+
+    return NextResponse.json({
+      ...conversation,
+      agent: resolvedConvAgent,
+      messages: resolvedMessages,
+    });
   } catch (error) {
     console.error("Erro ao buscar conversa do Kraken:", error);
     return NextResponse.json(
@@ -75,12 +135,15 @@ export async function PATCH(
       data: updateData,
       include: {
         agent: {
-          select: { id: true, displayName: true, color: true },
+          select: { id: true, displayName: true, color: true, iconUrl: true },
         },
       },
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json({
+      ...updated,
+      agent: await resolveAgentIcon(updated.agent),
+    });
   } catch (error) {
     console.error("Erro ao atualizar conversa do Kraken:", error);
     return NextResponse.json(

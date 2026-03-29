@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { KrakenAgentConfig, KrakenRouterResult, KrakenTokenUsage } from "./types";
+import { executeAction } from "./actions/executor";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -7,7 +8,6 @@ const anthropic = new Anthropic({
 
 /**
  * Classify user intent using the Kraken router (Haiku — cheap & fast).
- * Returns which agent should handle the request.
  */
 export async function classifyIntent(
   message: string,
@@ -26,8 +26,10 @@ export async function classifyIntent(
     messages: [{ role: "user", content: message }],
   });
 
-  const text =
+  let text =
     response.content[0].type === "text" ? response.content[0].text : "";
+
+  text = text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 
   try {
     const parsed = JSON.parse(text);
@@ -37,6 +39,21 @@ export async function classifyIntent(
       context_needed: parsed.context_needed || [],
     };
   } catch {
+    const jsonMatch = text.match(/\{[\s\S]*"agent"[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          agent: parsed.agent || "kraken_fallback",
+          query_refined: parsed.query_refined || message,
+          context_needed: parsed.context_needed || [],
+        };
+      } catch {
+        // Extraction also failed
+      }
+    }
+
+    console.warn("[Kraken Router] Failed to parse intent JSON:", text.slice(0, 200));
     return {
       agent: "kraken_fallback",
       query_refined: message,
@@ -46,97 +63,210 @@ export async function classifyIntent(
 }
 
 /**
- * Call an agent with streaming. Returns a ReadableStream of SSE events
- * and a promise that resolves with the full response + token usage.
+ * Call an agent with streaming + tool execution.
+ * Returns a ReadableStream of SSE events and a Promise for the final result.
+ *
+ * IMPORTANT: There is exactly ONE ReadableStream and ONE execution path.
+ * Tool calls are deduplicated — create/update/delete actions only execute once.
  */
 export async function callAgentStream(params: {
   agent: KrakenAgentConfig;
   systemPrompt: string;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   userMessage: string;
+  tools?: Array<{ name: string; description: string; input_schema: Record<string, unknown> }>;
+  userId?: string;
+  userName?: string;
 }): Promise<{
   stream: ReadableStream<Uint8Array>;
   result: Promise<{ fullText: string; usage: KrakenTokenUsage; latencyMs: number }>;
 }> {
   const startTime = Date.now();
   let fullText = "";
-  let usage: KrakenTokenUsage = { inputTokens: 0, outputTokens: 0 };
-
-  const allMessages = [
-    ...params.messages,
-    { role: "user" as const, content: params.userMessage },
-  ];
-
-  const anthropicStream = anthropic.messages.stream({
-    model: params.agent.model,
-    max_tokens: params.agent.maxTokens,
-    system: [
-      {
-        type: "text",
-        text: params.systemPrompt,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: allMessages,
-  });
-
+  const totalUsage: KrakenTokenUsage = { inputTokens: 0, outputTokens: 0 };
   const encoder = new TextEncoder();
 
-  const result = new Promise<{
+  // External resolve/reject for the result promise
+  let resolveResult!: (v: { fullText: string; usage: KrakenTokenUsage; latencyMs: number }) => void;
+  let rejectResult!: (e: Error) => void;
+
+  const resultPromise = new Promise<{
     fullText: string;
     usage: KrakenTokenUsage;
     latencyMs: number;
-  }>((resolve, reject) => {
-    anthropicStream.on("finalMessage", (message) => {
-      usage = {
-        inputTokens: message.usage.input_tokens,
-        outputTokens: message.usage.output_tokens,
-        cacheCreationInputTokens:
-          (message.usage as Record<string, number>).cache_creation_input_tokens ?? 0,
-        cacheReadInputTokens:
-          (message.usage as Record<string, number>).cache_read_input_tokens ?? 0,
-      };
-      resolve({
-        fullText,
-        usage,
-        latencyMs: Date.now() - startTime,
-      });
-    });
-
-    anthropicStream.on("error", (err) => {
-      reject(err);
-    });
+  }>((res, rej) => {
+    resolveResult = res;
+    rejectResult = rej;
   });
 
+  function emit(controller: ReadableStreamDefaultController<Uint8Array>, data: Record<string, unknown>) {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+  }
+
+  // === SINGLE ReadableStream — the ONLY execution path ===
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const event of anthropicStream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            const text = event.delta.text;
-            fullText += text;
-            const sseData = JSON.stringify({ type: "token", data: text });
-            controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let runMessages: any[] = [
+          ...params.messages.map((m) => ({ role: m.role, content: m.content })),
+          { role: "user", content: params.userMessage },
+        ];
+
+        const systemConfig = [
+          {
+            type: "text",
+            text: params.systemPrompt,
+            cache_control: { type: "ephemeral" },
+          },
+        ];
+
+        // Track executed create actions across ALL loop iterations
+        const executedCreateActions = new Set<string>();
+        const disableToolsNextIteration = false;
+
+        // Tool use loop — max 3 iterations (query → tool → response)
+        for (let iteration = 0; iteration < 3; iteration++) {
+          const streamParams: Record<string, unknown> = {
+            model: params.agent.model,
+            max_tokens: params.agent.maxTokens,
+            system: systemConfig,
+            messages: runMessages,
+          };
+
+          // Only provide tools if we haven't just completed a create action
+          if (params.tools && params.tools.length > 0 && !disableToolsNextIteration) {
+            streamParams.tools = params.tools;
           }
+
+          console.log(`[Kraken] Iteration ${iteration} | Model: ${params.agent.model} | MaxTokens: ${params.agent.maxTokens} | Tools: ${streamParams.tools ? (streamParams.tools as unknown[]).length : 0} | Messages: ${runMessages.length}`);
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const response = await anthropic.messages.create(streamParams as any);
+
+          console.log(`[Kraken] Response stop_reason: ${response.stop_reason} | Content blocks: ${response.content.map((b: {type: string}) => b.type).join(', ')}`);
+
+          // Accumulate usage
+          totalUsage.inputTokens += response.usage.input_tokens;
+          totalUsage.outputTokens += response.usage.output_tokens;
+          totalUsage.cacheCreationInputTokens =
+            (totalUsage.cacheCreationInputTokens ?? 0) +
+            ((response.usage as Record<string, number>).cache_creation_input_tokens ?? 0);
+          totalUsage.cacheReadInputTokens =
+            (totalUsage.cacheReadInputTokens ?? 0) +
+            ((response.usage as Record<string, number>).cache_read_input_tokens ?? 0);
+
+          // Find tool_use blocks
+          const toolUseBlocks = response.content.filter(
+            (b: { type: string }) => b.type === "tool_use"
+          );
+
+          // Stream all text blocks to frontend
+          for (const block of response.content) {
+            if (block.type === "text" && block.text) {
+              fullText += block.text;
+              emit(controller, { type: "token", data: block.text });
+            }
+          }
+
+          // If no tool calls or stop_reason is not tool_use → done
+          if (toolUseBlocks.length === 0 || response.stop_reason !== "tool_use") {
+            break;
+          }
+
+          // Execute tool calls
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolResults: any[] = [];
+          let executedACreateThisIteration = false;
+
+          for (const toolBlock of toolUseBlocks) {
+            const tb = toolBlock as { type: "tool_use"; id: string; name: string; input: Record<string, unknown> };
+
+            // Detect mutative actions (create, update, delete)
+            const isMutativeAction =
+              tb.name.startsWith("criar_") ||
+              tb.name.startsWith("enviar_") ||
+              tb.name.startsWith("solicitar_") ||
+              tb.name === "cancelar_reserva" ||
+              tb.name === "atualizar_meta";
+
+            const fingerprint = `${tb.name}:${JSON.stringify(tb.input)}`;
+
+            // DEDUP: Skip if this exact mutative action was already executed
+            if (isMutativeAction && executedCreateActions.has(fingerprint)) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: tb.id,
+                content: "✅ Esta ação já foi executada com sucesso nesta conversa.",
+              });
+              continue;
+            }
+
+            // Notify frontend
+            emit(controller, {
+              type: "action_executing",
+              data: { toolName: tb.name, input: tb.input },
+            });
+
+            // Execute the action
+            console.log(`[Kraken Tool] Executing: ${tb.name}`, JSON.stringify(tb.input).slice(0, 200));
+            const actionResult = await executeAction(
+              tb.name,
+              tb.input,
+              { userId: params.userId || "", userName: params.userName || "" }
+            );
+            console.log(`[Kraken Tool] Result: ${actionResult.success ? 'SUCCESS' : 'FAILED'} — ${actionResult.message.slice(0, 100)}`);
+
+            // Notify frontend of result
+            emit(controller, {
+              type: "action_result",
+              data: {
+                toolName: tb.name,
+                success: actionResult.success,
+                message: actionResult.message,
+              },
+            });
+
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: tb.id,
+              content: actionResult.message,
+            });
+
+            // Track successful mutative actions
+            if (isMutativeAction && actionResult.success) {
+              executedCreateActions.add(fingerprint);
+              executedACreateThisIteration = true;
+            }
+          }
+
+          // If we executed a mutative action (create/update/delete), STOP the loop.
+          // The action result message is already streamed to the user.
+          // Continuing would make Claude produce duplicate summary text.
+          if (executedACreateThisIteration) {
+            break;
+          }
+
+          // Only continue loop for read-only tool calls (list rooms, list tasks, etc.)
+          runMessages = [
+            ...runMessages,
+            { role: "assistant", content: response.content },
+            { role: "user", content: toolResults },
+          ];
         }
-        const doneData = JSON.stringify({ type: "done", data: "" });
-        controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
+
+        emit(controller, { type: "done", data: "" });
         controller.close();
+        resolveResult({ fullText, usage: totalUsage, latencyMs: Date.now() - startTime });
       } catch (err) {
-        const errorData = JSON.stringify({
-          type: "error",
-          data: err instanceof Error ? err.message : "Unknown error",
-        });
-        controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+        emit(controller, { type: "error", data: err instanceof Error ? err.message : "Unknown error" });
         controller.close();
+        rejectResult(err instanceof Error ? err : new Error(String(err)));
       }
     },
   });
 
-  return { stream, result };
+  return { stream, result: resultPromise };
 }
 
 /**

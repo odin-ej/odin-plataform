@@ -21,6 +21,7 @@ import {
   getNotifications,
   markNotificationsAsRead,
 } from "@/lib/actions/notifications";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const Header = () => {
   const router = useRouter();
@@ -84,11 +85,14 @@ const Header = () => {
 
   return (
     <header className="flex items-center justify-between px-4 bg-[#010d26] h-16 border-b-2 border-[#0126fb]">
+      <div className='flex items-center gap-4'>
+              <SidebarTrigger />
       <SearchCommand
       groups={searchGroups}
         placeholder="Pesquisar páginas..."
         triggerLabel="Para onde você quer ir?"
       />
+      </div>
       <div className="flex gap-6 items-center relative">
         <Popover
           open={isPopoverOpen}

@@ -23,40 +23,58 @@ export default function AdminKrakenContent() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0126fb]">
           <Bot className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Kraken IA</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold text-white">Kraken IA</h1>
+          <p className="text-sm text-white/50">
             Painel de controle do sistema multi-agente
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-6 rounded-xl border-2 border-[#0126fb]/30 bg-[#010d26] p-1 h-auto">
+          <TabsTrigger
+            value="overview"
+            className="flex items-center gap-2 rounded-lg text-white/60 data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-none hover:text-white transition-colors py-2"
+          >
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral</span>
           </TabsTrigger>
-          <TabsTrigger value="agents" className="flex items-center gap-2">
+          <TabsTrigger
+            value="agents"
+            className="flex items-center gap-2 rounded-lg text-white/60 data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-none hover:text-white transition-colors py-2"
+          >
             <Bot className="h-4 w-4" />
             <span className="hidden sm:inline">Agentes</span>
           </TabsTrigger>
-          <TabsTrigger value="knowledge" className="flex items-center gap-2">
+          <TabsTrigger
+            value="knowledge"
+            className="flex items-center gap-2 rounded-lg text-white/60 data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-none hover:text-white transition-colors py-2"
+          >
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Knowledge</span>
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center gap-2">
+          <TabsTrigger
+            value="metrics"
+            className="flex items-center gap-2 rounded-lg text-white/60 data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-none hover:text-white transition-colors py-2"
+          >
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Métricas</span>
           </TabsTrigger>
-          <TabsTrigger value="rate-limits" className="flex items-center gap-2">
+          <TabsTrigger
+            value="rate-limits"
+            className="flex items-center gap-2 rounded-lg text-white/60 data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-none hover:text-white transition-colors py-2"
+          >
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Rate Limits</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
+          <TabsTrigger
+            value="settings"
+            className="flex items-center gap-2 rounded-lg text-white/60 data-[state=active]:bg-[#0126fb] data-[state=active]:text-white data-[state=active]:shadow-none hover:text-white transition-colors py-2"
+          >
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Config</span>
           </TabsTrigger>

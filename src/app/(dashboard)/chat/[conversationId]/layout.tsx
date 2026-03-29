@@ -1,7 +1,6 @@
 import { constructMetadata } from "@/lib/metadata";
 import { ReactNode } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { prisma } from "@/db";
 
 export async function generateMetadata({
   params,
@@ -9,11 +8,21 @@ export async function generateMetadata({
   params: Promise<{ conversationId: string }>;
 }) {
   const { conversationId } = await params;
-  const title = await fetch(`${API_URL}/api/conversations/${conversationId}`).then((res) => res.json()).then((data) => data.title);
+
+  let title = "Kraken";
+  try {
+    const conv = await prisma.krakenConversation.findUnique({
+      where: { id: conversationId },
+      select: { title: true },
+    });
+    if (conv?.title) title = conv.title;
+  } catch {
+    // Ignore — use default title
+  }
 
   return constructMetadata({
-    title: title ? `${title}` : "Chat IA",
-    description: `Conversa com a IA sobre ${title || "tópicos diversos"}.`,
+    title,
+    description: `Conversa com o Kraken sobre ${title}.`,
   });
 }
 

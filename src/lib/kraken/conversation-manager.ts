@@ -1,4 +1,4 @@
-import prisma from "@/db";
+import { prisma } from "@/db";
 import { callAgent } from "./claude-client";
 
 const MAX_RECENT_MESSAGES = 6;
@@ -158,15 +158,54 @@ export async function updateConversationAfterResponse(params: {
     totalOutputTokens: (conversation?.totalOutputTokens ?? 0) + params.outputTokens,
   };
 
-  // Auto-generate title from first user message
+  // Auto-generate smart title from first user message using Haiku (cheap & fast)
   if (!conversation?.title && params.firstMessage) {
-    updateData.title = params.firstMessage.slice(0, 100);
+    // Set a temporary title immediately (so UI shows something)
+    updateData.title = params.firstMessage.slice(0, 60);
+
+    // Generate a smart title async (non-blocking)
+    generateSmartTitle(params.conversationId, params.firstMessage).catch(() => {});
   }
 
   await prisma.krakenConversation.update({
     where: { id: params.conversationId },
     data: updateData,
   });
+}
+
+/**
+ * Generate a smart title for a conversation using Haiku.
+ * Runs async so it doesn't block the response.
+ */
+async function generateSmartTitle(conversationId: string, firstMessage: string) {
+  try {
+    const result = await callAgent({
+      model: "claude-haiku-4-5-20251001",
+      maxTokens: 30,
+      systemPrompt:
+        "Gere um titulo CURTO (maximo 6 palavras) para esta conversa. " +
+        "O titulo deve resumir o assunto principal. " +
+        "NAO use aspas, NAO use emoji, NAO use pontuacao final. " +
+        "Exemplos: 'Reserva sala de talentos', 'OKRs janeiro 2026', 'Duvida sobre FECS', 'Redigir email comercial'. " +
+        "Responda APENAS com o titulo, nada mais.",
+      userMessage: firstMessage,
+    });
+
+    const title = result.text
+      .replace(/^["']|["']$/g, "") // remove quotes
+      .replace(/\.+$/, "") // remove trailing dots
+      .trim()
+      .slice(0, 80);
+
+    if (title.length > 2) {
+      await prisma.krakenConversation.update({
+        where: { id: conversationId },
+        data: { title },
+      });
+    }
+  } catch {
+    // Silent fail — temporary title from firstMessage is already set
+  }
 }
 
 /**

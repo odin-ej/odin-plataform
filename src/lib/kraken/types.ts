@@ -36,6 +36,7 @@ export interface KrakenAgentConfig {
   requiresRag: boolean;
   ragScope: string[];
   color: string | null;
+  iconUrl: string | null;
 }
 
 // --- Rate Limit ---

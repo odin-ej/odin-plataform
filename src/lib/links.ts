@@ -45,7 +45,7 @@ export const generalLinks: Links[] = [
     icon: LayoutDashboard,
   },
   {
-    name: "Chat IA",
+    name: "Kraken",
     href: "/chat",
     icon: MessageSquare,
   },
@@ -147,10 +147,10 @@ export const restrictedLinks: RestrictedLinks[] = [
     roles: [],
   },
   {
-    name: "Conhecimento da IA",
-    href: "/conhecimento-ia",
+    name: "Kraken IA",
+    href: "/admin-kraken",
     icon: BrainCog,
-    requiredAction: AppAction.MANAGE_AI_KNOWLEDGE,
+    requiredAction: AppAction.MANAGE_KRAKEN,
     roles: [],
   },
   {
