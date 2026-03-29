@@ -67,7 +67,7 @@ export function useKrakenChat(): UseKrakenChatReturn {
 
     (async () => {
       try {
-        const res = await fetch(`/api/kraken?conversationId=${conversationId}`);
+        const res = await fetch(`/api/kraken/conversations/${conversationId}`);
         const data = await res.json();
         if (data.messages && Array.isArray(data.messages)) {
           const loaded: KrakenMessage[] = data.messages.map(
