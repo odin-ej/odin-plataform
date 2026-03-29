@@ -1,8 +1,8 @@
 import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { DeleteObjectCommand, CopyObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
@@ -43,7 +43,7 @@ export async function PATCH(
       );
     }
     const isOwner = fileToRename.ownerId === authUser.id;
-    if (!isOwner && !checkUserPermission(authUser, DIRECTORS_ONLY))
+    if (!isOwner && !await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE))
       return NextResponse.json({ message: "Não autorizado" }, { status: 403 });
 
     const bucket = process.env.ORACULO_S3_BUCKET_NAME!;
@@ -121,7 +121,7 @@ export async function DELETE(
       );
 
     const isOwner = fileToDelete.ownerId === authUser.id;
-    if (!isOwner && !checkUserPermission(authUser, DIRECTORS_ONLY))
+    if (!isOwner && !await can(authUser, AppAction.MANAGE_AI_KNOWLEDGE))
       return NextResponse.json({ message: "Não autorizado" }, { status: 403 });
 
     await s3Client.send(

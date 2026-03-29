@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { reserveRequestToConectionsSchema } from "@/lib/schemas/requestToConectionsSchema";
-import { checkUserPermission } from "@/lib/utils"; // Sua função de verificação de permissão
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { prisma } from "@/db";
 import { revalidatePath } from "next/cache";
@@ -60,10 +60,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return new NextResponse("Solicitação não encontrada", { status: 404 });
     }
 
-    const userIsAssessor = checkUserPermission(authUser, {
-      ...DIRECTORS_ONLY,
-      allowedRoles: ["Gerente de Conexões"],
-    });
+    const userIsAssessor = await can(authUser, AppAction.MANAGE_ROOM_RESERVATIONS);
 
     let updatedRequest;
 
@@ -83,7 +80,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const notification = await prisma.notification.create({
         data: {
           link: `/central-de-reservas`,
-          type: 'NEW_MENTION',
+          type: 'ROOM_RESERVATION',
           notification: `A solicitação de reserva: ${originalRequest.title} foi alterada para ${status === 'PENDING' ? 'Pendente' : status === 'APPROVED' ? 'Aprovada' : status === 'REQUESTED' ? 'Solicitada ao Apoio' : 'Rejeitada'}.`,
         },
       })

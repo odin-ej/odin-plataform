@@ -17,7 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 interface UpdateData {
   endpoint: "objectives" | "goals";
   id: string;
-  [key: string]: string | number | undefined;
+  [key: string]: string | number | undefined; // Permite outros campos como 'name', 'description', etc.
 }
 
 export function StrategyObjectivesSection({ initialObjectives }: Props) {

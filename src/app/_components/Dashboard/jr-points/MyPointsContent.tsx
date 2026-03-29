@@ -34,9 +34,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import HistoryItemDetailsModal from "./HistoryItemDetailsModal";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
+import HistoryItemDetailsModal, { HistoryItemData } from "./HistoryItemDetailsModal";
 
 interface HistoryData {
   tags: TagWithAction[];
@@ -55,6 +55,7 @@ const fetchMyPoints = async (userId: string): Promise<MyPointsData> => {
 
 const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const userId = user?.id;
   const queryClient = useQueryClient();
 
@@ -78,10 +79,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const [selectedView, setSelectedView] = useState<string>("current");
   const [activeTab, setActiveTab] = useState<string>("tags");
   const requestForm = useForm<FormDataType>();
-  const [viewingItem, setViewingItem] = useState<{
-    type: "tag" | "solicitation" | "report";
-    data: TagWithAction | FullJRPointsSolicitation | FullJRPointsReport;
-  } | null>(null);
+  const [viewingItem, setViewingItem] = useState<HistoryItemData | null>(null);
 
   // --- BUSCA DE DADOS ---
   const { data, isLoading, isError } = useQuery({
@@ -166,7 +164,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
 
   const isPendingRequest = isCreating || isUpdating;
 
-  const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+  const isDirector = canDo(AppAction.MANAGE_JR_POINTS_CONFIG);
 
   const {
     myPoints,
@@ -361,7 +359,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
     item: TagWithAction | FullJRPointsSolicitation | FullJRPointsReport,
     type: "tag" | "solicitation" | "report"
   ) => {
-    setViewingItem({ data: item, type });
+    setViewingItem({ data: item, type } as HistoryItemData);
   };
 
   const getStatusBadge = (status: string) => {

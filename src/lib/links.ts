@@ -24,17 +24,18 @@ import {
   UsersRound
 } from "lucide-react";
 import { JrPointIconWhite } from "@/app/_components/Global/JrPointsIcon";
+import { AppAction } from "./permissions";
 
 interface Links {
   name: string;
   href: string;
   icon: React.ElementType;
-  exMemberCanAccess?: boolean;
 }
 
 interface RestrictedLinks extends Links {
   roles: Pick<Role, "name">[];
   areas?: AreaRoles[];
+  requiredAction?: AppAction;
 }
 
 export const generalLinks: Links[] = [
@@ -44,22 +45,19 @@ export const generalLinks: Links[] = [
     icon: LayoutDashboard,
   },
   {
-    name: "Chat IA",
+    name: "Kraken",
     href: "/chat",
     icon: MessageSquare,
-    exMemberCanAccess: false,
   },
   {
     name: "JR Points",
     href: "/jr-points",
     icon: JrPointIconWhite,
-    exMemberCanAccess: false,
   },
   {
     name: "Metas da Casinha",
     href: "/metas",
     icon: Goal,
-    exMemberCanAccess: false,
   },
   {
     name: "Área Cultural",
@@ -70,7 +68,6 @@ export const generalLinks: Links[] = [
     name: "Tarefas",
     href: "/tarefas",
     icon: ClipboardList,
-    exMemberCanAccess: false,
   },
   {
     name: "Reports",
@@ -81,19 +78,16 @@ export const generalLinks: Links[] = [
     name: "Central de Reservas",
     href: "/central-de-reservas",
     icon: CalendarClock,
-    exMemberCanAccess: false,
   },
   {
     name: "Oráculo",
     href: "/oraculo",
     icon: EyeIcon,
-    exMemberCanAccess: false,
   },
   {
     name: 'Comunidade',
     href: '/comunidade',
     icon: UsersRound,
-    exMemberCanAccess: true,
   },
   {
     name: 'Inovação',
@@ -104,7 +98,6 @@ export const generalLinks: Links[] = [
     name: 'Reconhecimentos',
     href: '/reconhecimentos',
     icon: Trophy,
-    exMemberCanAccess: false,
   }
 ];
 
@@ -113,19 +106,16 @@ export const personalLinks: Links[] = [
     name: "Minhas Notas",
     href: "/minhas-notas",
     icon: GraduationCap,
-    exMemberCanAccess: false,
   },
   {
     name: "Minhas Pendências",
     href: "/minhas-pendencias",
     icon: Clock,
-    exMemberCanAccess: false,
   },
   {
     name: "Meus Pontos",
     href: "/meus-pontos",
     icon: Award,
-    exMemberCanAccess: false,
   },
   {
     name: "Meu Perfil",
@@ -139,141 +129,70 @@ export const restrictedLinks: RestrictedLinks[] = [
     name: "Usuários",
     href: "/usuarios",
     icon: Users,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_USERS,
+    roles: [],
   },
   {
     name: "Solicitações de cadastro",
     href: "/aprovacao-cadastro",
     icon: TicketCheck,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.APPROVE_REGISTRATIONS,
+    roles: [],
   },
   {
     name: "Atualizar Estrategia",
     href: "/atualizar-estrategia",
     icon: Goal,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-      { name: "Gerente de Performance" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.UPDATE_STRATEGY,
+    roles: [],
   },
   {
-    name: "Conhecimento da IA",
-    href: "/conhecimento-ia",
+    name: "Kraken IA",
+    href: "/admin-kraken",
     icon: BrainCog,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_KRAKEN,
+    roles: [],
   },
   {
     name: "Gerenciar Link Posters",
     href: "/gerenciar-link-posters",
     icon: Link,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_LINK_POSTERS,
+    roles: [],
   },
   {
     name: "Gerenciar Cargos",
     href: "/gerenciar-cargos",
     icon: BookUser,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_ROLES,
+    roles: [],
   },
   {
     name: "Gerenciar JR Points",
     href: "/gerenciar-jr-points",
     icon: JrPointIconWhite,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_JR_POINTS_CONFIG,
+    roles: [],
   },
   {
     name: "Gerenciar Notificações",
     href: "/gerenciar-notificacoes",
     icon: Bell,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_NOTIFICATIONS,
+    roles: [],
   },
   {
     name: "Gerenciar Trainees",
     href: "/gerenciar-trainees",
     icon: GraduationCap,
-     roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_TRAINEES,
+    roles: [],
   },
   {
     name: "Gerenciar Permissões",
     href: "/gerenciar-permissoes",
     icon: Shield,
-    roles: [
-      { name: "Conselho" },
-      { name: "Diretor(a) Presidente" },
-      { name: "Diretor(a) de Gestão de Pessoas" },
-      { name: "Diretor(a) de Mercado" },
-      { name: "Diretor(a) de Operações" },
-      { name: "Diretor(a) de Projetos" },
-    ],
-    exMemberCanAccess: false,
+    requiredAction: AppAction.MANAGE_PERMISSIONS,
+    roles: [],
   },
 ];

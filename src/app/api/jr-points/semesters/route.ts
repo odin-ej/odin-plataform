@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
@@ -26,7 +26,7 @@ const semesterCreateSchema = z.object({
 export async function POST(request: Request) {
   try {
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.MANAGE_JR_POINTS_CONFIG)) {
       return NextResponse.json({ message: "Acesso negado." }, { status: 403 });
     }
 

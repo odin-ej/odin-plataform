@@ -6,8 +6,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { JrPointIconBlue } from "../../Global/JrPointsIcon";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission, exportToExcel } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
+import { exportToExcel } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { JrPointsPageData } from "@/app/(dashboard)/jr-points/page";
@@ -79,6 +80,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
   const [selectedEnterpriseView, setSelectedEnterpriseView] =
     useState("current");
     const [selectedVersion, setSelectedVersion] = useState<string>("current");
@@ -312,7 +314,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
     exportToExcel(dataToExport, "tags_empresa_jr_points");
   };
 
-  const isDirector = checkUserPermission(user, DIRECTORS_ONLY);
+  const isDirector = canDo(AppAction.MANAGE_JR_POINTS_CONFIG);
 
   if (isLoadingData) {
     return (

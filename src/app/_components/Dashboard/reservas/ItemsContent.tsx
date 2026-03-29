@@ -358,9 +358,9 @@ const ItemsContent = ({ initialData, isDirector }: ItemsContentProps) => {
     return initialData.reservations.filter((res) => res.userId === user?.id);
   }, [initialData.reservations, user]);
 
-  const handleInvalidSubmit = (errors: Record<string, { message?: string }>) => {
+  const handleInvalidSubmit = (errors: Record<string, unknown>) => {
     console.error("Erros de validação do formulário:", errors);
-    const firstError = Object.values(errors)[0];
+    const firstError = Object.values(errors)[0] as { message?: string } | undefined;
     const firstErrorMessage = firstError?.message;
     toast.error("Formulário inválido", {
       description:

@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const notification = await prisma.notification.create({
       data: {
         link: "/",
-        type: "GENERAL_ALERT",
+        type: "SYSTEM_ANNOUNCEMENT",
         notification: `${authUser.name} criou um novo poster.`,
       
       },

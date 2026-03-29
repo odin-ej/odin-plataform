@@ -4,8 +4,8 @@ import { prisma } from "@/db";
 import { roleUpdateSchema } from "@/lib/schemas/roleSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
-import { checkUserPermission } from "@/lib/utils";
+import { AppAction } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 
 export async function GET(
@@ -43,11 +43,13 @@ export async function PATCH(
 ) {
   try {
     const user = await getAuthenticatedUser();
-
-    const hasPermission = checkUserPermission(user, DIRECTORS_ONLY);
-
-    if (!user || !hasPermission) {
+    if (!user) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = await can(user, AppAction.MANAGE_ROLES);
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Sem permissão" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -87,11 +89,13 @@ export async function DELETE(
 ) {
   try {
     const user = await getAuthenticatedUser();
-
-    const hasPermission = checkUserPermission(user, DIRECTORS_ONLY);
-
-    if (!user || !hasPermission) {
+    if (!user) {
       return NextResponse.json({ message: "Não autorizado" }, { status: 401 });
+    }
+
+    const hasPermission = await can(user, AppAction.MANAGE_ROLES);
+    if (!hasPermission) {
+      return NextResponse.json({ message: "Sem permissão" }, { status: 403 });
     }
 
     const { id } = await params;

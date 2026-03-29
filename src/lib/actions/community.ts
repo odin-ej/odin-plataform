@@ -25,8 +25,9 @@ import {
   NotificationType,
   Prisma,
 } from "@prisma/client";
-import { checkUserPermission, getLabelForRoleArea } from "../utils";
-import { DIRECTORS_ONLY } from "../permissions";
+import { getLabelForRoleArea } from "../utils";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "../permissions";
 import { createNotification } from "./notifications";
 import { S3_UPLOAD } from "../constants";
 
@@ -246,7 +247,7 @@ export async function deleteConversation({
     await prisma.directConversation.delete({ where: { id: conversationId } });
 
     await createNotification({
-      type: NotificationType.NEW_MENTION,
+      type: "COMMUNITY_MESSAGE" as NotificationType,
       description: `A conversa "${conversation.title || "Sem Título"}" foi deletada pelo criador(a).`,
       link: `/comunidade`,
       targetUsersIds: conversation.participants.map(p => p.id)
@@ -277,13 +278,13 @@ export async function deleteChannel({ channelId }: { channelId: string }) {
 
     if (
       authUser.id !== channel?.createdById &&
-      !checkUserPermission(authUser, DIRECTORS_ONLY)
+      !await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS)
     ) {
       throw new Error("Somente o criador pode deletar o canal.");
     }
 
     await createNotification({
-      type: NotificationType.NEW_MENTION,
+      type: "COMMUNITY_MESSAGE" as NotificationType,
       description: `O canal "${channel.name}" foi deletado pelo criador(a).`,
       link: `/comunidade`,
       targetUsersIds: (await prisma.channelMember.findMany({
@@ -446,7 +447,7 @@ export async function sendMessage(
 
 
     await createNotification({
-      type: NotificationType.NEW_MENTION,
+      type: "COMMUNITY_MESSAGE" as NotificationType,
       description: notificationMessage,
       link: contextType === "channel" ? `/comunidade/canais/${contextId}` : `/comunidade/conversas/${contextId}`,
       ...(channel && {targetUsersIds: channel?.members.filter((member) => member.id !== authUser.id).map((member) => member.userId)}),
@@ -539,7 +540,7 @@ export async function deleteMessage(
   if (!message) {
     throw new Error("Mensagem não encontrada.");
   }
-  if (message.authorId !== authUser.id && !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (message.authorId !== authUser.id && !await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS)) {
     throw new Error("Acesso negado.");
   }
   if (!contextId) {
@@ -913,7 +914,7 @@ export async function togglePinChannel(data: {
   const authUser = await getAuthenticatedUser();
   if (!authUser) throw new Error("Não autorizado");
 
-  if (!checkUserPermission(authUser, DIRECTORS_ONLY))
+  if (!await can(authUser, AppAction.MANAGE_COMMUNITY_CHANNELS))
     throw new Error("Não autorizado");
 
   await prisma.channel.update({
@@ -929,7 +930,7 @@ export async function togglePinChannel(data: {
   });
 
   await createNotification({
-    type: NotificationType.NEW_MENTION,
+    type: "COMMUNITY_MESSAGE" as NotificationType,
     description: `O canal foi ${
       data.isPinned ? "fixado" : "desfixado"
     } na lista de canais.`,
@@ -1035,7 +1036,7 @@ export async function removeChannelMember(data: {
   });
 
   await createNotification({
-    type: NotificationType.NEW_MENTION,
+    type: "COMMUNITY_MESSAGE" as NotificationType,
     description: `Você foi removido do canal.`,
     link: `/comunidade`,
     targetUserId: deletedMember.userId,

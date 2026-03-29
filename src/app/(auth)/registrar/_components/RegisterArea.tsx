@@ -27,7 +27,7 @@ const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [tabSelected, setTabSelected] = useState<string>("novo");
   // Estado para armazenar a referência do formulário para poder usar o setValue
-  const [formRef, setFormRef] = useState<{ setValue: (name: string, value: File, options?: { shouldValidate?: boolean; shouldDirty?: boolean }) => void } | null>(null);
+  const [formRef, setFormRef] = useState<{ setValue: (name: string, value: unknown, options?: { shouldValidate?: boolean; shouldDirty?: boolean }) => void } | null>(null);
   const query = useSearchParams();
 
   useEffect(() => {
@@ -102,7 +102,7 @@ const RegisterArea = ({ roles, interestCategories }: RegisterAreaProps) => {
 
       const uploadResults = await Promise.all(uploadPromises);
       if (image && image instanceof File) {
-        finalImageUrl = uploadResults.shift() ?? '';
+        finalImageUrl = uploadResults.shift() ?? "";
       }
 
       const finalData = {

@@ -13,6 +13,7 @@
     "migrate:drive": "ts-node --require tsconfig-paths/register scripts/migrate-drive.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@aws-amplify/adapter-nextjs": "^1.6.8",
     "@aws-sdk/client-cognito-identity-provider": "^3.840.0",
     "@aws-sdk/client-s3": "^3.840.0",
@@ -70,6 +71,7 @@
     "next": "15.5.7",
     "next-themes": "^0.4.6",
     "open-next": "^0.0.1",
+    "openai": "^6.33.0",
     "pdf-parse": "^1.1.1",
     "pgvector": "^0.2.1",
     "prisma": "^6.11.0",

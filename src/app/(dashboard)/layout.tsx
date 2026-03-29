@@ -4,6 +4,10 @@ import { cookies } from "next/headers";
 import AppSidebar from "../_components/Sidebar/app-sidebar";
 import Header from "../_components/Global/Header";
 import Footer from "../_components/Global/Footer";
+import { AllowedActionsProvider } from "@/lib/auth/AllowedActionsProvider";
+import { getUserAllowedActions } from "@/lib/actions/server-helpers";
+import { getAuthenticatedUser } from "@/lib/server-utils";
+import { AppAction } from "@/lib/permissions";
 
 export default async function Layout({
   children,
@@ -13,18 +17,28 @@ export default async function Layout({
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
+  const user = await getAuthenticatedUser();
+  let allowedActions: AppAction[] = [];
+  try {
+    allowedActions = user ? await getUserAllowedActions(user) : [];
+  } catch (error) {
+    console.error("[layout] Failed to load allowed actions:", error);
+  }
+
   return (
     <div className="flex min-h-screen overflow-hidden">
       <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar />
-        {/* CORREÇÃO: O 'main' agora é uma coluna flex que também ocupa toda a altura disponível */}
-        <main className="flex flex-1 flex-col bg-[#00205e] overflow-x-auto">
-          <Header />
-          <SidebarTrigger />
-          {/* CORREÇÃO: O conteúdo principal cresce para empurrar o footer para baixo */}
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </main>
+        <AllowedActionsProvider allowedActions={allowedActions}>
+          <AppSidebar />
+          {/* CORREÇÃO: O 'main' agora é uma coluna flex que também ocupa toda a altura disponível */}
+          <main className="flex flex-1 flex-col bg-[#00205e] overflow-x-auto">
+            <Header />
+            
+            {/* CORREÇÃO: O conteúdo principal cresce para empurrar o footer para baixo */}
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </main>
+        </AllowedActionsProvider>
       </SidebarProvider>
     </div>
   );

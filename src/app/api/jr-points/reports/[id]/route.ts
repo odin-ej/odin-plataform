@@ -1,15 +1,15 @@
 import { prisma } from "@/db";
 import { s3Client } from "@/lib/aws";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const authUser = await getAuthenticatedUser();
-  if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+  if (!authUser || !await can(authUser, AppAction.APPROVE_JR_POINTS)) {
     return NextResponse.json({ message: "Não autorizado" }, { status: 403 });
   }
   const {id} = await params

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/db";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
+import { can } from "@/lib/actions/server-helpers";
 import { revalidatePath } from "next/cache";
 import { itemReservationSchema } from "../../../../../lib/schemas/reservationsSchema";
 
@@ -20,7 +20,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ message: "Reserva não encontrada" }, { status: 404 });
     }
     const isOwner = reservation.userId === authUser.id;
-    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isDirector = await can(authUser, AppAction.MANAGE_ITEM_RESERVATIONS);
     if (!isOwner && !isDirector) {
       return NextResponse.json({ message: "Sem permissão para editar esta reserva" }, { status: 403 });
     }
@@ -79,7 +79,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ message: "Reserva não encontrada" }, { status: 404 });
     }
     const isOwner = reservation.userId === authUser.id;
-    const isDirector = checkUserPermission(authUser, DIRECTORS_ONLY);
+    const isDirector = await can(authUser, AppAction.MANAGE_ITEM_RESERVATIONS);
     if (!isOwner && !isDirector) {
       return NextResponse.json({ message: "Sem permissão para apagar esta reserva" }, { status: 403 });
     }

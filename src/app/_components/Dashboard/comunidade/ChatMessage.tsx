@@ -264,7 +264,7 @@ const ChatMessage = ({
                       >
                         {reactionData.customEmoji ? (
                           <CustomEmojiImage
-                            emoji={reactionData.customEmoji}
+                            emoji={reactionData.customEmoji as CustomEmoji}
                             onEmojiSelect={() => {
                               toggleReactionMutation({
                                 customEmojiId: reactionData.customEmojiId ?? undefined,

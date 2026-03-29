@@ -1,25 +1,33 @@
 import { z } from "zod";
 import { Prisma, ReportCategory, ReportStatus } from "@prisma/client";
 
-// ─── Schema para criar report ────────────────────────────────────────
+// ─── Schema base (sem refine) — usado para o formulário ──────────────
 
-export const reportSchema = z
-  .object({
-    title: z.string().min(5, "O título deve ter pelo menos 5 caracteres."),
-    content: z.string().min(20, "A descrição precisa de mais detalhes."),
-    category: z.nativeEnum(ReportCategory).default("OUTRO"),
-    isAnonymous: z.boolean().default(false),
-    status: z.nativeEnum(ReportStatus).optional(),
-    recipientUserId: z.string().optional(),
-    recipientRoleId: z.string().optional(),
-    recipientNotes: z.string().optional(),
-  })
-  .refine((data) => data.recipientUserId || data.recipientRoleId, {
+const baseReportSchema = z.object({
+  title: z.string().min(5, "O título deve ter pelo menos 5 caracteres."),
+  content: z.string().min(20, "A descrição precisa de mais detalhes."),
+  category: z.nativeEnum(ReportCategory),
+  isAnonymous: z.boolean(),
+  status: z.nativeEnum(ReportStatus).optional(),
+  recipientUserId: z.string().optional(),
+  recipientRoleId: z.string().optional(),
+  recipientNotes: z.string().optional(),
+});
+
+// Tipo para o formulário (useForm<ReportFormValues>)
+export type ReportFormValues = z.infer<typeof baseReportSchema>;
+
+// Schema base exportado para o resolver do formulário
+export { baseReportSchema };
+
+// Schema completo com validação — usado no server action
+export const reportSchema = baseReportSchema.refine(
+  (data) => data.recipientUserId || data.recipientRoleId,
+  {
     message: "É necessário selecionar um destinatário (utilizador ou cargo).",
     path: ["recipientUserId"],
-  });
-
-export type ReportFormValues = z.infer<typeof reportSchema>;
+  }
+);
 
 // ─── Tipo estendido para listagem ────────────────────────────────────
 

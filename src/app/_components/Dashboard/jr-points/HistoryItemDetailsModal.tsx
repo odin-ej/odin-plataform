@@ -45,7 +45,7 @@ interface AttachmentRecord {
   fileType: string;
 }
 
-type HistoryItemData =
+export type HistoryItemData =
   | { type: "tag"; data: TagWithAction }
   | { type: "solicitation"; data: FullJRPointsSolicitation }
   | { type: "report"; data: FullJRPointsReport };
@@ -249,11 +249,6 @@ const HistoryItemDetailsModal = ({
                   icon={<Calendar size={16} />}
                   label="Data da Ação"
                   value={format(new Date(data.datePerformed), "dd/MM/yyyy")}
-                />
-                <DetailRow
-                  icon={<Building size={16} />}
-                  label="É para a empresa?"
-                  value={"isForEnterprise" in data && data.isForEnterprise ? "Sim" : "Não"}
                 />
                 <DetailRow
                   icon={<User size={16} />}

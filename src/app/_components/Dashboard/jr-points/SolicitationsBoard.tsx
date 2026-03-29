@@ -100,7 +100,7 @@ const SolicitationsBoard = ({
   solicitations: FullJRPointsSolicitation[];
   reports: FullJRPointsReport[];
   allTagTemplates: TagTemplate[];
-  onCardClick: (item: (FullJRPointsSolicitation & { type: "solicitation" }) | (FullJRPointsReport & { type: "report" })) => void;
+  onCardClick: (item: (FullJRPointsSolicitation | FullJRPointsReport) & { type: "solicitation" | "report" }) => void;
 }) => {
   const [activeTab, setActiveTab] = useState<
     "PENDING" | "APPROVED" | "REJECTED"

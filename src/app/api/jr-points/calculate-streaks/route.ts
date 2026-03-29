@@ -2,8 +2,8 @@ import { z } from "zod";
 import { prisma } from "@/db";
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { can } from "@/lib/actions/server-helpers";
+import { AppAction } from "@/lib/permissions";
 import { differenceInDays } from "date-fns";
 import { Prisma } from "@prisma/client";
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   try {
     // Autenticação e Autorização
     const authUser = await getAuthenticatedUser();
-    if (!authUser || !checkUserPermission(authUser, DIRECTORS_ONLY)) {
+    if (!authUser || !await can(authUser, AppAction.MANAGE_JR_POINTS_CONFIG)) {
       return NextResponse.json({ message: "Acesso negado" }, { status: 403 });
     }
 

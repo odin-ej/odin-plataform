@@ -21,8 +21,8 @@ import ModalConfirm from "../../Global/ModalConfirm";
 
 // --- Autenticação e Permissões ---
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { checkUserPermission } from "@/lib/utils";
-import { DIRECTORS_ONLY } from "@/lib/permissions";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import { formatInTimeZone } from "date-fns-tz";
 
 // --- Tipos e Schemas ---
@@ -59,13 +59,11 @@ const SalasEaufbaContent = ({ initialData }: SalasEaufbaPageProps) => {
   // --- Hooks ---
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { canDo } = useAllowedActions();
 
   const data = initialData
 
-  const userHasAllowedRole = checkUserPermission(user, {
-    ...DIRECTORS_ONLY,
-    allowedRoles: ["Gerente de Conexões"],
-  });
+  const userHasAllowedRole = canDo(AppAction.MANAGE_ROOM_RESERVATIONS);
 
   const form = useForm<ReserveRequestFormValues>({
     resolver: zodResolver(formValidationSchema),

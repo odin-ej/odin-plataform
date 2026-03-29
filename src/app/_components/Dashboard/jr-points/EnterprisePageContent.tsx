@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Plus, CheckCircle, X, Building } from "lucide-react";
 import { toast } from "sonner";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { FieldValues, useForm, UseFormReturn } from "react-hook-form";
 import ModalConfirm from "../../Global/ModalConfirm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
@@ -58,7 +58,10 @@ const EnterprisePageContent = ({
   );
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<(Record<string, unknown> & { type: string; id: string }) | null>(null);
-  const [reviewingRequest, setReviewingRequest] = useState<((FullJRPointsSolicitation | FullJRPointsReport) & { type: string }) | null>(null);
+  const [reviewingRequest, setReviewingRequest] = useState<
+    | ((FullJRPointsSolicitation | FullJRPointsReport) & { type: "solicitation" | "report" })
+    | null
+  >(null);
   const [selectedUser, setSelectedUser] = useState<UserRankingInfo | EnterpriseInfo | null>(
     null
   );
@@ -85,6 +88,7 @@ const EnterprisePageContent = ({
       escalationCondition: "",
       versionName: "",
       implementationDate: "",
+      startDate: "",
       endDate: "",
     },
   });
@@ -270,7 +274,7 @@ const EnterprisePageContent = ({
     item: Record<string, unknown> & { id: string },
     type: "tag-template" | "action-type" | "version" | "semester"
   ) => {
-    form.reset(item as Parameters<typeof form.reset>[0]); // Preenche o formulário com os dados do item
+    form.reset(item as Record<string, unknown>); // Preenche o formulário com os dados do item
     setEditingItem({ ...item, type });
     // Reutiliza o mesmo modal de criação/edição para versões e semestres
     if (type === "version" || type === "semester") {
@@ -281,14 +285,14 @@ const EnterprisePageContent = ({
             ? format(new Date(item.implementationDate as string), "yyyy-MM-dd")
             : "",
           endDate: item.endDate ? format(new Date(item.endDate as string), "yyyy-MM-dd") : "",
-        } as Parameters<typeof form.reset>[0]);
+        });
       }
       if (type === "semester") {
         form.reset({
           ...item,
           startDate: item.startDate ? format(new Date(item.startDate as string), "yyyy-MM-dd") : "",
           endDate: item.endDate ? format(new Date(item.endDate as string), "yyyy-MM-dd") : "",
-        } as Parameters<typeof form.reset>[0]);
+        });
       }
       setModalType(type);
       setIsCreateModalOpen(true);
@@ -314,7 +318,7 @@ const EnterprisePageContent = ({
     });
   };
 
-  const handleOpenReviewModal = (item: (FullJRPointsSolicitation & { type: "solicitation" }) | (FullJRPointsReport & { type: "report" })) => {
+  const handleOpenReviewModal = (item: (FullJRPointsSolicitation | FullJRPointsReport) & { type: "solicitation" | "report" }) => {
     setReviewingRequest(item);
     setIsReviewModalOpen(true);
   };
@@ -710,7 +714,7 @@ const EnterprisePageContent = ({
         <CustomModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          form={form as unknown as UseFormReturn<Record<string, unknown>>}
+          form={form as unknown as UseFormReturn<FieldValues>}
           onSubmit={(data) => editItem(data)}
           fields={getFieldsForType(editingItem.type as "tag-template" | "action-type", form as unknown as UseFormReturn<Record<string, unknown>>)}
           title={`Editar ${editingItem.type === "tag-template" ? "Modelo de Tag" : "Tipo de Ação"}`}
@@ -727,7 +731,7 @@ const EnterprisePageContent = ({
           setEditingItem(null);
           form.reset();
         }}
-        form={form as unknown as UseFormReturn<Record<string, unknown>>}
+        form={form as unknown as UseFormReturn<FieldValues>}
         onSubmit={
           editingItem
             ? (data) => editItem(data)

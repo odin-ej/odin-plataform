@@ -4,30 +4,29 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import SearchCommand, { CommandGroupData } from "./Custom/SearchCommand";
 
 import { generalLinks, personalLinks, restrictedLinks } from "@/lib/links";
-import { checkUserPermission } from "@/lib/utils";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
+import { AppAction } from "@/lib/permissions";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Bell } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Prisma } from "@prisma/client";
 import NotificationCard from "./NotificationCard";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export type NotificationType = Prisma.NotificationUserGetPayload<{
-  include: { notification: true };
-}>;
+import {
+  getNotifications,
+  markNotificationsAsRead,
+} from "@/lib/actions/notifications";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const Header = () => {
   const router = useRouter();
   const { user } = useAuth(); // Obtém o usuário do seu contexto de autenticação
+  const { canDo } = useAllowedActions();
 
   // Hook useMemo para calcular os links pesquisáveis com base nas permissões do usuário.
   // Isso garante que a filtragem só seja executada quando o usuário mudar.
@@ -37,29 +36,15 @@ const Header = () => {
       return [];
     }
 
-    // 1. Filtra os links gerais
-    const filteredGeneralLinks = generalLinks.filter((link) => {
-      if (link.exMemberCanAccess === false && user.isExMember) {
-        return false;
-      }
-      return true;
-    });
+    // 1. Links gerais (todos os membros veem)
+    const filteredGeneralLinks = [...generalLinks];
 
-    // 2. Filtra os links pessoais
-    const filteredPersonalLinks = personalLinks.filter((link) => {
-      if (link.exMemberCanAccess === false && user.isExMember) {
-        return false;
-      }
-      return true;
-    });
+    // 2. Links pessoais (todos os membros veem)
+    const filteredPersonalLinks = [...personalLinks];
 
-    // 3. Filtra os links restritos
+    // 3. Filtra os links restritos por permissão usando canDo
     const filteredRestrictedLinks = restrictedLinks.filter((link) =>
-      checkUserPermission(user, {
-        allowedRoles: link.roles.map((r) => r.name),
-        allowedAreas: link.areas,
-        allowExMembers: link.exMemberCanAccess === true,
-      })
+      link.requiredAction ? canDo(link.requiredAction) : canDo(AppAction.MANAGE_USERS)
     );
 
     // 4. Combina todos os links permitidos em um único array
@@ -79,39 +64,35 @@ const Header = () => {
         })),
       },
     ];
-  }, [user, router]);
+  }, [user, router, canDo]);
 
   const queryClient = useQueryClient();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const { mutate: markAllAsRead } = useMutation({
-    mutationFn: async () => {
-      await axios.patch(
-        `${API_URL}/api/users/${user!.id}/notifications/mark-all-read`
-      );
-    },
+    mutationFn: () => markNotificationsAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
     },
   });
 
   const { data: notifications } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: async () => {
-      const notifications = await axios.get(
-        `${API_URL}/api/users/${user!.id}/notifications`
-      );
-      return notifications.data as NotificationType[];
-    },
+    queryKey: ["notifications", user?.id],
+    queryFn: () => getNotifications(10),
+    enabled: !!user,
+    refetchInterval: 30000,
   });
 
   return (
     <header className="flex items-center justify-between px-4 bg-[#010d26] h-16 border-b-2 border-[#0126fb]">
+      <div className='flex items-center gap-4'>
+              <SidebarTrigger />
       <SearchCommand
       groups={searchGroups}
         placeholder="Pesquisar páginas..."
         triggerLabel="Para onde você quer ir?"
       />
+      </div>
       <div className="flex gap-6 items-center relative">
         <Popover
           open={isPopoverOpen}

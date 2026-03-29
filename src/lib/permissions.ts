@@ -69,7 +69,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/usuarios": DIRECTORS_ONLY,
   "/atualizar-estrategia": STRATEGY_LEADERS,
   "/aprovacao-cadastro": DIRECTORS_ONLY,
-  "/conhecimento-ia": DIRECTORS_ONLY,
+  "/admin-kraken": DIRECTORS_ONLY,
   "/gerenciar-link-posters": DIRECTORS_ONLY,
   "/gerenciar-cargos": DIRECTORS_ONLY,
   "/gerenciar-jr-points": DIRECTORS_ONLY,
@@ -82,13 +82,11 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/chat": MEMBERS_ONLY,
   "/oraculo": MEMBERS_ONLY,
   "/jr-points": MEMBERS_ONLY,
-  "/central-reservas": MEMBERS_ONLY,
+  "/central-de-reservas": MEMBERS_ONLY,
   "/reconhecimentos": MEMBERS_ONLY,
   "/metas": MEMBERS_ONLY,
-  "/pendencias": MEMBERS_ONLY,
   "/meus-pontos": MEMBERS_ONLY,
   "/minhas-pendencias": MEMBERS_ONLY,
-  "/salas-eaufba": MEMBERS_ONLY,
   "/comunidade": ANYONE_LOGGED_IN,
   "/perfil": ANYONE_LOGGED_IN,
   "/cultural": ANYONE_LOGGED_IN,
@@ -134,6 +132,19 @@ export enum AppAction {
 
   // Notificações
   MANAGE_NOTIFICATIONS       = "manage_notifications",
+
+  // Gestão e Administração
+  MANAGE_PERMISSIONS         = "manage_permissions",
+  MANAGE_TRAINEES            = "manage_trainees",
+  MANAGE_FEED                = "manage_feed",
+  MANAGE_COMMUNITY_CHANNELS  = "manage_community_channels",
+  MANAGE_CULTURE             = "manage_culture",
+  VIEW_REPORTS               = "view_reports",
+  MANAGE_TASKS               = "manage_tasks",
+
+  // Kraken IA
+  MANAGE_KRAKEN              = "manage_kraken",
+  MANAGE_KRAKEN_KNOWLEDGE    = "manage_kraken_knowledge",
 }
 
 /**
@@ -142,7 +153,7 @@ export enum AppAction {
  */
 export const ACTION_METADATA: Record<AppAction, { label: string; description: string }> = {
   [AppAction.MANAGE_ROOM_RESERVATIONS]: {
-    label: "Gerenciar Reservas de Salas EAUFBA",
+    label: "Gerenciar Reservas de Salas",
     description: "Criar, editar e cancelar qualquer reserva de sala",
   },
   [AppAction.VIEW_ALL_ROOM_RESERVATIONS]: {
@@ -200,6 +211,42 @@ export const ACTION_METADATA: Record<AppAction, { label: string; description: st
   [AppAction.MANAGE_NOTIFICATIONS]: {
     label: "Gerenciar Notificações",
     description: "Criar, editar e enviar notificações personalizadas para membros",
+  },
+  [AppAction.MANAGE_PERMISSIONS]: {
+    label: "Gerenciar Permissões",
+    description: "Configurar políticas de acesso e atribuir permissões a cargos e membros",
+  },
+  [AppAction.MANAGE_TRAINEES]: {
+    label: "Gerenciar Trainees",
+    description: "Administrar o programa de trainees, incluindo aprovação e acompanhamento",
+  },
+  [AppAction.MANAGE_FEED]: {
+    label: "Gerenciar Feed",
+    description: "Criar, editar e remover publicações do feed da plataforma",
+  },
+  [AppAction.MANAGE_COMMUNITY_CHANNELS]: {
+    label: "Gerenciar Canais da Comunidade",
+    description: "Criar, editar e moderar canais de comunicação da comunidade",
+  },
+  [AppAction.MANAGE_CULTURE]: {
+    label: "Gerenciar Cultura",
+    description: "Administrar conteúdos e eventos da área cultural",
+  },
+  [AppAction.VIEW_REPORTS]: {
+    label: "Visualizar Relatórios",
+    description: "Acessar e visualizar relatórios gerenciais e operacionais",
+  },
+  [AppAction.MANAGE_TASKS]: {
+    label: "Gerenciar Tarefas",
+    description: "Criar, editar e atribuir tarefas para membros da equipe",
+  },
+  [AppAction.MANAGE_KRAKEN]: {
+    label: "Gerenciar Kraken IA",
+    description: "Administrar o sistema de IA multi-agente Kraken: agentes, knowledge base, rate limits e métricas",
+  },
+  [AppAction.MANAGE_KRAKEN_KNOWLEDGE]: {
+    label: "Gerenciar Conhecimento do Kraken",
+    description: "Upload e gestão de documentos da knowledge base do Kraken",
   },
 } as const;
 
