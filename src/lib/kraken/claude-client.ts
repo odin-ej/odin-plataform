@@ -149,12 +149,13 @@ export async function callAgentStream(params: {
           // Accumulate usage
           totalUsage.inputTokens += response.usage.input_tokens;
           totalUsage.outputTokens += response.usage.output_tokens;
+          const usageAny = response.usage as unknown as Record<string, number>;
           totalUsage.cacheCreationInputTokens =
             (totalUsage.cacheCreationInputTokens ?? 0) +
-            ((response.usage as Record<string, number>).cache_creation_input_tokens ?? 0);
+            (usageAny.cache_creation_input_tokens ?? 0);
           totalUsage.cacheReadInputTokens =
             (totalUsage.cacheReadInputTokens ?? 0) +
-            ((response.usage as Record<string, number>).cache_read_input_tokens ?? 0);
+            (usageAny.cache_read_input_tokens ?? 0);
 
           // Find tool_use blocks
           const toolUseBlocks = response.content.filter(
