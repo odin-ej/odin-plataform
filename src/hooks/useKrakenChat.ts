@@ -10,7 +10,7 @@ interface KrakenMessage {
   agentId?: string;
   agentName?: string;
   agentColor?: string;
-  agentIconUrl?: string;
+  agentIconUrl?: string | Blob;
   cached?: boolean;
   templateUsed?: boolean;
   createdAt: string;
@@ -44,7 +44,7 @@ export function useKrakenChat(): UseKrakenChatReturn {
     id: string;
     name: string;
     color?: string;
-    iconUrl?: string;
+    iconUrl: string | Blob | undefined;
   } | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(
     urlConversationId ?? null
@@ -72,7 +72,7 @@ export function useKrakenChat(): UseKrakenChatReturn {
         const data = await res.json();
         if (data.messages && Array.isArray(data.messages)) {
           const loaded: KrakenMessage[] = data.messages.map(
-            (m: { id: string; role: string; content: string; agentId?: string; agent?: { displayName: string; color: string }; createdAt: string }) => ({
+            (m: { id: string; role: string; content: string; agentId?: string; agent?: { displayName: string; color: string; iconUrl?: string }; createdAt: string }) => ({
               id: m.id,
               role: m.role as "user" | "assistant",
               content: m.content,
