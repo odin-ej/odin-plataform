@@ -58,6 +58,7 @@ const ReservationsContent = ({
 
   const queryClient = useQueryClient();
   const isDirector = canDo(AppAction.MANAGE_ROOM_RESERVATIONS);
+  const canManageItems = canDo(AppAction.MANAGE_ITEM_RESERVATIONS);
   const canManageReservations = isDirector;
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -222,7 +223,7 @@ const ReservationsContent = ({
         items: reservableItems,
         reservations: itemReservations,
       }}
-      isDirector={isDirector}
+      isDirector={canManageItems}
     />
   );
 
@@ -246,7 +247,7 @@ const ReservationsContent = ({
           events={allEvents}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}
-          isDirector={isDirector}
+          isDirector={canManageItems}
         />
       </div>
 

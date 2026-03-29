@@ -90,3 +90,14 @@ export const PORTUGUESE_STOP_WORDS = new Set([
 
 // ─── Status de usuário online ───────────────────────────────────────
 export const ONLINE_THRESHOLD_MINUTES = 5;
+
+// ─── Kraken IA ──────────────────────────────────────────────────────
+export const KRAKEN = {
+  CACHE_TTL_DAYS: 7,
+  CACHE_SIMILARITY_THRESHOLD: 0.92,
+  TEMPLATE_SIMILARITY_THRESHOLD: 0.92,
+  RAG_SIMILARITY_THRESHOLD: 0.7,
+  RAG_TOP_K: 5,
+  MAX_RECENT_MESSAGES: 6,
+  CONVERSATION_SUMMARY_MODEL: "claude-haiku-4-5-20251001",
+} as const;
