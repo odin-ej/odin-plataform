@@ -1,4 +1,4 @@
-import prisma from "@/db";
+import { prisma } from "@/db";
 import { generateEmbeddings, embeddingToSql } from "../embeddings";
 import { chunkText } from "./chunker";
 

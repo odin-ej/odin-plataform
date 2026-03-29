@@ -3,6 +3,25 @@ import { AppAction } from "@/lib/permissions";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { can } from "@/lib/actions/server-helpers";
 import { NextResponse } from "next/server";
+import { s3Client } from "@/lib/aws";
+import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+/** Resolve an S3 key to a signed URL. Verifies key exists first. */
+async function resolveIconUrl(key: string | null): Promise<string | null> {
+  if (!key || key.trim() === "") return null;
+  if (key.includes("X-Amz-Signature")) return key;
+  if (key.startsWith("http://") || key.startsWith("https://")) {
+    try { key = decodeURIComponent(new URL(key).pathname.slice(1)); } catch { return null; }
+  }
+  const bucket = process.env.AWS_S3_CHAT_BUCKET_NAME!;
+  try {
+    await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 3600 });
+  } catch {
+    return null;
+  }
+}
 
 export async function GET() {
   try {
@@ -23,7 +42,15 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(agents);
+    // Resolve S3 keys → signed URLs in parallel
+    const agentsWithUrls = await Promise.all(
+      agents.map(async (agent) => ({
+        ...agent,
+        iconUrl: await resolveIconUrl(agent.iconUrl),
+      }))
+    );
+
+    return NextResponse.json(agentsWithUrls);
   } catch (error) {
     console.error("[Kraken Agents] GET error:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
@@ -43,7 +70,7 @@ export async function POST(request: Request) {
       data: {
         id: body.id,
         displayName: body.displayName,
-        mythology: body.mythology,
+        category: body.category,
         description: body.description,
         model: body.model,
         maxTokens: body.maxTokens ?? 1024,

@@ -1616,7 +1616,7 @@ model IdeaVote {
 model KrakenAgent {
   id            String   @id // ex: 'odin_ia', 'oraculo', 'kraken_router'
   displayName   String
-  mythology     String   // 'nórdica', 'grega', 'egípcia'
+  category      String?  // ex: 'nórdica', 'grega', 'egípcia', 'disney', 'scooby doo', etc (opcional)
   description   String   @db.Text
   model         String   // ex: 'claude-haiku-4-5-20251001', 'claude-sonnet-4-6'
   maxTokens     Int      @default(1024)

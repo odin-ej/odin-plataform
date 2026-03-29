@@ -1,4 +1,4 @@
-import prisma from "@/db";
+import { prisma } from "@/db";
 import { generateEmbedding, embeddingToSql } from "../embeddings";
 
 interface TemplateMatch {

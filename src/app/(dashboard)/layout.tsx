@@ -33,7 +33,7 @@ export default async function Layout({
           {/* CORREÇÃO: O 'main' agora é uma coluna flex que também ocupa toda a altura disponível */}
           <main className="flex flex-1 flex-col bg-[#00205e] overflow-x-auto">
             <Header />
-            <SidebarTrigger />
+            
             {/* CORREÇÃO: O conteúdo principal cresce para empurrar o footer para baixo */}
             <div className="flex-1">{children}</div>
             <Footer />

@@ -1,8 +1,9 @@
-import prisma from "@/db";
+import { prisma } from "@/db";
 import { callAgentStream } from "./claude-client";
 import { getConversationContext } from "./conversation-manager";
 import { searchKnowledge, formatRagContext } from "./rag/retriever";
 import { KrakenAgentConfig } from "./types";
+import { getOdinToolDefinitions } from "./odin-actions";
 
 // In-memory agent config cache (60s TTL)
 const agentCache = new Map<string, { config: KrakenAgentConfig; timestamp: number }>();
@@ -34,6 +35,7 @@ export async function getAgentConfig(
     requiresRag: agent.requiresRag,
     ragScope: agent.ragScope,
     color: agent.color,
+    iconUrl: agent.iconUrl,
   };
 
   agentCache.set(agentId, { config, timestamp: Date.now() });
@@ -51,10 +53,23 @@ async function buildSystemPrompt(
 ): Promise<string> {
   let prompt = agent.systemPrompt;
 
+  // Inject current date/time context (critical for date-aware actions)
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const todayStr = now.toISOString().split("T")[0];
+  prompt += `\n\n# CONTEXTO TEMPORAL\nData e hora atual: ${dateStr}, ${now.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })}\nHoje em formato ISO: ${todayStr}\nAmanhã em formato ISO: ${tomorrowStr}\nANO ATUAL: ${now.getFullYear()}\nUSE SEMPRE estas datas quando o usuário disser "hoje" ou "amanhã". NUNCA invente datas.`;
+
   // Inject RAG context if needed
   if (agent.requiresRag && agent.ragScope.length > 0) {
     const ragResults = await searchKnowledge(query, agent.id);
     const ragContext = formatRagContext(ragResults);
+    console.log(`[RAG] Agent: ${agent.id} | Query: "${query.slice(0, 50)}" | Results: ${ragResults.length} | Context length: ${ragContext.length} chars`);
+    if (ragResults.length > 0) {
+      console.log(`[RAG] Sources: ${[...new Set(ragResults.map(r => r.sourceName))].join(', ').slice(0, 200)}`);
+      console.log(`[RAG] First 500 chars of context:\n${ragContext.slice(0, 500)}`);
+    }
     prompt = prompt.replace("{RAG_CONTEXT}", ragContext);
   } else {
     prompt = prompt.replace("{RAG_CONTEXT}", "Nenhum contexto adicional disponível.");
@@ -127,11 +142,23 @@ export async function executeAgent(params: {
 
   messages.push(...recentMessages);
 
+  // Get tools for odin_ia agent (platform actions)
+  const tools = params.agentId === "odin_ia" ? getOdinToolDefinitions() : undefined;
+
+  // Get user name for action context
+  const user = await prisma.user.findUnique({
+    where: { id: params.userId },
+    select: { name: true },
+  });
+
   // Execute with streaming
   return callAgentStream({
     agent,
     systemPrompt,
     messages,
     userMessage: params.query,
+    tools,
+    userId: params.userId,
+    userName: user?.name || "",
   });
 }

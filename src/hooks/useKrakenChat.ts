@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useParams } from "next/navigation";
 
 interface KrakenMessage {
   id: string;
@@ -9,6 +10,7 @@ interface KrakenMessage {
   agentId?: string;
   agentName?: string;
   agentColor?: string;
+  agentIconUrl?: string;
   cached?: boolean;
   templateUsed?: boolean;
   createdAt: string;
@@ -18,7 +20,9 @@ interface UseKrakenChatReturn {
   messages: KrakenMessage[];
   isLoading: boolean;
   isRouting: boolean;
-  activeAgent: { id: string; name: string; color?: string } | null;
+  activeAgent: {
+    iconUrl: string | Blob | undefined; id: string; name: string; color?: string 
+} | null;
   conversationId: string | null;
   error: string | null;
   sendMessage: (message: string) => Promise<void>;
@@ -28,6 +32,11 @@ interface UseKrakenChatReturn {
 }
 
 export function useKrakenChat(): UseKrakenChatReturn {
+  const params = useParams();
+  const urlConversationId = Array.isArray(params.conversationId)
+    ? params.conversationId[0]
+    : (params.conversationId as string | undefined);
+
   const [messages, setMessages] = useState<KrakenMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRouting, setIsRouting] = useState(false);
@@ -35,10 +44,56 @@ export function useKrakenChat(): UseKrakenChatReturn {
     id: string;
     name: string;
     color?: string;
+    iconUrl?: string;
   } | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(
+    urlConversationId ?? null
+  );
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const loadedConvRef = useRef<string | null>(null);
+
+  // Sync conversationId from URL
+  useEffect(() => {
+    if (urlConversationId && urlConversationId !== conversationId) {
+      setConversationId(urlConversationId);
+    }
+  }, [urlConversationId]);
+
+  // Load existing messages when conversationId changes
+  useEffect(() => {
+    if (!conversationId || loadedConvRef.current === conversationId) return;
+    loadedConvRef.current = conversationId;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/kraken/conversations/${conversationId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.messages && Array.isArray(data.messages)) {
+          const loaded: KrakenMessage[] = data.messages.map(
+            (m: { id: string; role: string; content: string; agentId?: string; agent?: { displayName: string; color: string }; createdAt: string }) => ({
+              id: m.id,
+              role: m.role as "user" | "assistant",
+              content: m.content,
+              agentId: m.agentId ?? undefined,
+              agentName: m.agent?.displayName ?? undefined,
+              agentColor: m.agent?.color ?? undefined,
+              agentIconUrl: m.agent?.iconUrl ?? undefined,
+              createdAt: m.createdAt,
+            })
+          );
+          setMessages(loaded);
+        }
+      } catch {
+        // Conversation may not exist yet — ignore
+      }
+    })();
+  }, [conversationId]);
+
+  // Track the latest activeAgent in a ref so the callback doesn't go stale
+  const activeAgentRef = useRef(activeAgent);
+  activeAgentRef.current = activeAgent;
 
   const sendMessage = useCallback(
     async (message: string) => {
@@ -96,6 +151,7 @@ export function useKrakenChat(): UseKrakenChatReturn {
         const decoder = new TextDecoder();
         let assistantContent = "";
         let assistantMsgAdded = false;
+        let currentAgent = activeAgentRef.current;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -115,11 +171,14 @@ export function useKrakenChat(): UseKrakenChatReturn {
               switch (event.type) {
                 case "agent_start":
                   setIsRouting(false);
-                  setActiveAgent({
+                  currentAgent = {
                     id: event.agent || "",
                     name: event.data || "",
                     color: event.color,
-                  });
+                    iconUrl: event.iconUrl,
+                  };
+                  setActiveAgent(currentAgent);
+                  activeAgentRef.current = currentAgent;
                   break;
 
                 case "token":
@@ -132,9 +191,10 @@ export function useKrakenChat(): UseKrakenChatReturn {
                         id: `assistant-${Date.now()}`,
                         role: "assistant",
                         content: assistantContent,
-                        agentId: activeAgent?.id,
-                        agentName: activeAgent?.name,
-                        agentColor: activeAgent?.color,
+                        agentId: currentAgent?.id,
+                        agentName: currentAgent?.name,
+                        agentColor: currentAgent?.color,
+                        agentIconUrl: currentAgent?.iconUrl,
                         createdAt: new Date().toISOString(),
                       },
                     ]);
@@ -152,6 +212,38 @@ export function useKrakenChat(): UseKrakenChatReturn {
                     });
                   }
                   break;
+
+                case "action_executing":
+                  // Show "executing action" indicator in chat
+                  assistantContent += `\n\n⚡ *Executando: ${event.data?.toolName}...*\n`;
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastMsg = updated[updated.length - 1];
+                    if (lastMsg && lastMsg.role === "assistant") {
+                      updated[updated.length - 1] = { ...lastMsg, content: assistantContent };
+                    }
+                    return updated;
+                  });
+                  break;
+
+                case "action_result": {
+                  // Replace the "executing" text with the result
+                  const icon = event.data?.success ? "✅" : "❌";
+                  assistantContent = assistantContent.replace(
+                    /\n\n⚡ \*Executando:.*?\*\n$/,
+                    ""
+                  );
+                  assistantContent += `\n\n${icon} ${event.data?.message || "Ação concluída."}\n`;
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastMsg = updated[updated.length - 1];
+                    if (lastMsg && lastMsg.role === "assistant") {
+                      updated[updated.length - 1] = { ...lastMsg, content: assistantContent };
+                    }
+                    return updated;
+                  });
+                  break;
+                }
 
                 case "done":
                   break;
@@ -176,7 +268,7 @@ export function useKrakenChat(): UseKrakenChatReturn {
         abortControllerRef.current = null;
       }
     },
-    [conversationId, isLoading, activeAgent]
+    [conversationId, isLoading]
   );
 
   const clearError = useCallback(() => setError(null), []);

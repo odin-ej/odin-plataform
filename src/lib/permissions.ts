@@ -69,7 +69,6 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/usuarios": DIRECTORS_ONLY,
   "/atualizar-estrategia": STRATEGY_LEADERS,
   "/aprovacao-cadastro": DIRECTORS_ONLY,
-  "/conhecimento-ia": DIRECTORS_ONLY,
   "/admin-kraken": DIRECTORS_ONLY,
   "/gerenciar-link-posters": DIRECTORS_ONLY,
   "/gerenciar-cargos": DIRECTORS_ONLY,

@@ -1,6 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { NextResponse } from "next/server";
-import { routeMessage, getFallbackResponse } from "@/lib/kraken/router";
+import { routeMessage, getFallbackResponse, getGreetingResponse } from "@/lib/kraken/router";
 import { executeAgent, getAgentConfig } from "@/lib/kraken/agent-executor";
 import {
   getOrCreateConversation,
@@ -13,6 +13,45 @@ import { findCachedResponse, cacheResponse } from "@/lib/kraken/cache/semantic-c
 import { findTemplateMatch } from "@/lib/kraken/cache/template-matcher";
 import { emitActivity } from "@/lib/kraken/activity";
 import { calculateCost } from "@/lib/kraken/types";
+import { s3Client } from "@/lib/aws";
+import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+async function resolveIconUrl(key: string | null | undefined): Promise<string | null> {
+  if (!key || key.trim() === "") return null;
+  // Already a signed URL — return as-is
+  if (key.includes("X-Amz-Signature")) return key;
+  // Extract key from full S3 URL
+  if (key.startsWith("http://") || key.startsWith("https://")) {
+    try { key = decodeURIComponent(new URL(key).pathname.slice(1)); } catch { return null; }
+  }
+  // Images are uploaded to the knowledge-base bucket (CHAT_BUCKET)
+  // Try knowledge-base first (where uploads go), then user-avatars as fallback
+  const buckets = [
+    process.env.AWS_S3_CHAT_BUCKET_NAME,      // odin-platform-knowledge-base (primary)
+    process.env.AWS_S3_BUCKET_NAME,           // odin-platform-user-avatars (fallback)
+  ].filter(Boolean) as string[];
+
+  for (const bucket of buckets) {
+    try {
+      // Verify the key actually exists before generating URL
+      await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    } catch {
+      // Also try with kraken-agents/ prefix
+      try {
+        const prefixedKey = `kraken-agents/${key}`;
+        await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: prefixedKey }));
+        const command = new GetObjectCommand({ Bucket: bucket, Key: prefixedKey });
+        return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      } catch {
+        continue;
+      }
+    }
+  }
+  return null;
+}
 
 /**
  * POST /api/kraken — Main Kraken chat endpoint.
@@ -79,7 +118,9 @@ export async function POST(request: Request) {
 
       await incrementDailyUsage(user.id, 0, 0);
 
-      return streamTextResponse(templateMatch.response, templateMatch.agentId);
+      const tmplAgent = templateMatch.agentId ? await getAgentConfig(templateMatch.agentId) : null;
+      const tmplIconUrl = tmplAgent?.iconUrl ? await resolveIconUrl(tmplAgent.iconUrl) : null;
+      return streamTextResponse(templateMatch.response, templateMatch.agentId, tmplAgent ? { displayName: tmplAgent.displayName, color: tmplAgent.color, iconUrl: tmplIconUrl } : undefined);
     }
 
     // 5. Semantic cache check
@@ -103,7 +144,9 @@ export async function POST(request: Request) {
 
       await incrementDailyUsage(user.id, 0, 0);
 
-      return streamTextResponse(cacheHit.response, cacheHit.agent);
+      const cacheAgent = cacheHit.agent ? await getAgentConfig(cacheHit.agent) : null;
+      const cacheIconUrl = cacheAgent?.iconUrl ? await resolveIconUrl(cacheAgent.iconUrl) : null;
+      return streamTextResponse(cacheHit.response, cacheHit.agent, cacheAgent ? { displayName: cacheAgent.displayName, color: cacheAgent.color, iconUrl: cacheIconUrl } : undefined);
     }
 
     // 6. Route to agent
@@ -112,6 +155,22 @@ export async function POST(request: Request) {
     });
 
     const routing = await routeMessage(message.trim());
+
+    // Handle greeting
+    if (routing.agent === "kraken_greeting") {
+      const greetingResponse = getGreetingResponse();
+      await saveAssistantMessage({
+        conversationId: conversation.id,
+        content: greetingResponse,
+        agentId: "kraken_router",
+        inputTokens: 0,
+        outputTokens: 0,
+        cached: false,
+        templateUsed: false,
+        latencyMs: 0,
+      });
+      return streamTextResponse(greetingResponse, "kraken_router", { displayName: "Kraken", color: "#534AB7", iconUrl: null });
+    }
 
     // Handle fallback
     if (routing.agent === "kraken_fallback") {
@@ -126,7 +185,7 @@ export async function POST(request: Request) {
         templateUsed: false,
         latencyMs: 0,
       });
-      return streamTextResponse(fallbackResponse, "kraken_router");
+      return streamTextResponse(fallbackResponse, "kraken_router", { displayName: "Kraken", color: "#534AB7", iconUrl: null });
     }
 
     // 7. Check agent access for user's role
@@ -146,7 +205,9 @@ export async function POST(request: Request) {
         templateUsed: false,
         latencyMs: 0,
       });
-      return streamTextResponse(msg, routing.agent);
+      const deniedAgent = await getAgentConfig(routing.agent);
+      const deniedIconUrl = deniedAgent?.iconUrl ? await resolveIconUrl(deniedAgent.iconUrl) : null;
+      return streamTextResponse(msg, routing.agent, deniedAgent ? { displayName: deniedAgent.displayName, color: deniedAgent.color, iconUrl: deniedIconUrl } : undefined);
     }
 
     // 8. Execute agent with streaming
@@ -154,7 +215,7 @@ export async function POST(request: Request) {
     if (!agentConfig) {
       const msg =
         "Este agente está temporariamente desativado. Tente novamente mais tarde.";
-      return streamTextResponse(msg, null);
+      return streamTextResponse(msg, null, { displayName: "Kraken", color: "#534AB7", iconUrl: null });
     }
 
     await emitActivity("agent_start", { query: message.slice(0, 100) }, {
@@ -230,11 +291,13 @@ export async function POST(request: Request) {
 
     // Return SSE stream with agent info header
     const encoder = new TextEncoder();
+    const resolvedIconUrl = await resolveIconUrl(agentConfig.iconUrl);
     const agentInfoEvent = `data: ${JSON.stringify({
       type: "agent_start",
       data: agentConfig.displayName,
       agent: routing.agent,
       color: agentConfig.color,
+      iconUrl: resolvedIconUrl,
     })}\n\n`;
 
     const prefixedStream = new ReadableStream<Uint8Array>({
@@ -281,15 +344,17 @@ import { prisma } from "@/db";
  * Helper to stream a simple text response as SSE.
  * Used for cached/template/fallback responses.
  */
-function streamTextResponse(text: string, agentId: string | null) {
+function streamTextResponse(text: string, agentId: string | null, agentInfo?: { displayName: string; color: string | null; iconUrl: string | null }) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       if (agentId) {
         const agentEvent = JSON.stringify({
           type: "agent_start",
-          data: agentId,
+          data: agentInfo?.displayName || agentId,
           agent: agentId,
+          color: agentInfo?.color || "#0126fb",
+          iconUrl: agentInfo?.iconUrl || null,
         });
         controller.enqueue(encoder.encode(`data: ${agentEvent}\n\n`));
       }

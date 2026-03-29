@@ -1,13 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,21 +70,42 @@ export default function SettingsTab() {
       if (!res.ok) throw new Error("Falha ao buscar métricas");
       const data = await res.json();
 
+      // Flatten nested objects into rows
       const rows: string[][] = [];
+      const flatData: Record<string, unknown>[] = [];
 
       if (Array.isArray(data)) {
-        if (data.length > 0) {
-          rows.push(Object.keys(data[0]));
-          data.forEach((item: Record<string, unknown>) => {
-            rows.push(Object.values(item).map(String));
-          });
-        }
+        flatData.push(...data);
       } else if (typeof data === "object" && data !== null) {
-        rows.push(Object.keys(data));
-        rows.push(Object.values(data as Record<string, unknown>).map(String));
+        // API returns { key: value, ... } — flatten each value
+        for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+          if (Array.isArray(value)) {
+            flatData.push(...(value as Record<string, unknown>[]).map((v) =>
+              typeof v === "object" && v !== null ? v as Record<string, unknown> : { [key]: v }
+            ));
+          } else {
+            flatData.push({ metrica: key, valor: String(value) });
+          }
+        }
       }
 
-      const csvContent = rows.map((row) => row.join(",")).join("\n");
+      if (flatData.length > 0) {
+        const headers = Object.keys(flatData[0]);
+        rows.push(headers);
+        flatData.forEach((item) => {
+          rows.push(headers.map((h) => {
+            const val = item[h];
+            const str = String(val ?? "");
+            // Escape values containing separator or quotes
+            return str.includes(";") || str.includes('"') || str.includes("\n")
+              ? `"${str.replace(/"/g, '""')}"` : str;
+          }));
+        });
+      }
+
+      // Use semicolon separator + BOM for Excel compatibility
+      const BOM = "\uFEFF";
+      const csvContent = BOM + rows.map((row) => row.join(";")).join("\n");
       const blob = new Blob([csvContent], {
         type: "text/csv;charset=utf-8;",
       });
@@ -115,26 +129,26 @@ export default function SettingsTab() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-lg font-semibold">Configurações</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-lg font-semibold text-white">Configurações</h2>
+        <p className="text-sm text-white/50">
           Configurações locais do painel Kraken
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+      <div className="rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] shadow-lg">
+        <div className="px-6 pt-6 pb-4">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <Settings className="h-5 w-5 text-[#0126fb]" />
             Parâmetros Gerais
-          </CardTitle>
-          <CardDescription>
+          </h3>
+          <p className="text-sm text-white/50 mt-1">
             Estas configurações são salvas localmente no navegador
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
+          </p>
+        </div>
+        <div className="px-6 pb-6 flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="cacheTtl">Cache TTL (dias)</Label>
+              <Label htmlFor="cacheTtl" className="text-white/80">Cache TTL (dias)</Label>
               <Input
                 id="cacheTtl"
                 type="number"
@@ -147,14 +161,15 @@ export default function SettingsTab() {
                     parseInt(e.target.value) || 7
                   )
                 }
+                className="border-2 border-white/30 bg-transparent text-white focus:border-[#0126fb]"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/40">
                 Tempo de vida do cache de respostas
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="cacheThreshold">
+              <Label htmlFor="cacheThreshold" className="text-white/80">
                 Threshold de similaridade do cache
               </Label>
               <Input
@@ -170,14 +185,15 @@ export default function SettingsTab() {
                     parseFloat(e.target.value) || 0.92
                   )
                 }
+                className="border-2 border-white/30 bg-transparent text-white focus:border-[#0126fb]"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/40">
                 Valor entre 0.0 e 1.0 para matching de cache
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="templateThreshold">
+              <Label htmlFor="templateThreshold" className="text-white/80">
                 Threshold de similaridade dos templates
               </Label>
               <Input
@@ -193,14 +209,15 @@ export default function SettingsTab() {
                     parseFloat(e.target.value) || 0.92
                   )
                 }
+                className="border-2 border-white/30 bg-transparent text-white focus:border-[#0126fb]"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/40">
                 Valor entre 0.0 e 1.0 para matching de templates
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="defaultModel">
+              <Label htmlFor="defaultModel" className="text-white/80">
                 Modelo padrão para novos agentes
               </Label>
               <Select
@@ -209,26 +226,26 @@ export default function SettingsTab() {
                   updateSetting("defaultModel", value)
                 }
               >
-                <SelectTrigger id="defaultModel">
+                <SelectTrigger id="defaultModel" className="bg-[#00205e] border-2 border-[#0126fb] text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="claude-haiku-4-5-20251001">
+                <SelectContent className="bg-[#00205e] border border-[#0126fb]/30 text-white">
+                  <SelectItem value="claude-haiku-4-5-20251001" className="text-white hover:!bg-[#00205e] hover:!text-[#f5b719] focus:!bg-[#0126fb]/20 focus:!text-white">
                     Claude Haiku 4.5
                   </SelectItem>
-                  <SelectItem value="claude-sonnet-4-6">
+                  <SelectItem value="claude-sonnet-4-6" className="text-white hover:!bg-[#00205e] hover:!text-[#f5b719] focus:!bg-[#0126fb]/20 focus:!text-white">
                     Claude Sonnet 4.6
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/40">
                 Modelo selecionado ao criar novos agentes
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button onClick={saveSettings}>
+            <Button onClick={saveSettings} className="bg-[#0126fb] text-white hover:bg-[#0126fb]/80">
               {saved ? (
                 <>
                   <Check className="mr-2 h-4 w-4" />
@@ -239,28 +256,29 @@ export default function SettingsTab() {
               )}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
+      <div className="rounded-2xl border-2 border-[#0126fb]/30 bg-[#010d26] shadow-lg">
+        <div className="px-6 pt-6 pb-4">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <Download className="h-5 w-5 text-[#0126fb]" />
             Exportação
-          </CardTitle>
-          <CardDescription>Exporte dados do Kraken</CardDescription>
-        </CardHeader>
-        <CardContent>
+          </h3>
+          <p className="text-sm text-white/50 mt-1">Exporte dados do Kraken</p>
+        </div>
+        <div className="px-6 pb-6">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={handleExportCsv}
             disabled={exporting}
+            className="border-2 border-white/30 text-white hover:bg-white/10 hover:text-[#f5b719]"
           >
             <Download className="mr-2 h-4 w-4" />
             {exporting ? "Exportando..." : "Exportar Métricas (CSV)"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

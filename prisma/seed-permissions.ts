@@ -4,6 +4,7 @@
  *
  * Execução: npx ts-node prisma/seed-permissions.ts
  */
+import 'dotenv/config'
 const { AreaRoles, PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
@@ -126,6 +127,8 @@ const ACTION_SEED: Array<{
   { actionKey: "manage_culture", label: "Gerenciar Cultura", description: "Administrar conteúdos e eventos da área cultural", policyId: "policy-directors-only" },
   { actionKey: "view_reports", label: "Visualizar Relatórios", description: "Acessar e visualizar relatórios gerenciais e operacionais", policyId: "policy-directors-only" },
   { actionKey: "manage_tasks", label: "Gerenciar Tarefas", description: "Criar, editar e atribuir tarefas para membros da equipe", policyId: "policy-directors-only" },
+  { actionKey: "manage_kraken", label: "Gerenciar Agentes de IA", description: "Gerenciar agentes de IA do chat", policyId: "policy-directors-only" },
+  { actionKey: "manage_kraken_knowledge", label: "Gerenciar Conhecimento do Kraken", description: "Gerir conhecimento dos agentes de IA", policyId: "policy-directors-only" },
 ];
 
 async function seedPermissions() {

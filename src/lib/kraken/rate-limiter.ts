@@ -1,4 +1,4 @@
-import prisma from "@/db";
+import { prisma } from "@/db";
 import { AreaRoles } from "@prisma/client";
 import { KrakenRateLimitResult } from "./types";
 
