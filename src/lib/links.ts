@@ -154,13 +154,6 @@ export const restrictedLinks: RestrictedLinks[] = [
     roles: [],
   },
   {
-    name: "Kraken IA",
-    href: "/admin-kraken",
-    icon: BrainCog,
-    requiredAction: AppAction.MANAGE_KRAKEN,
-    roles: [],
-  },
-  {
     name: "Gerenciar Link Posters",
     href: "/gerenciar-link-posters",
     icon: Link,
