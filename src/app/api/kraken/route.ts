@@ -149,12 +149,32 @@ export async function POST(request: Request) {
       return streamTextResponse(cacheHit.response, cacheHit.agent, cacheAgent ? { displayName: cacheAgent.displayName, color: cacheAgent.color, iconUrl: cacheIconUrl } : undefined);
     }
 
-    // 6. Route to agent
+    // 6. Route to agent (with conversation continuity)
     await emitActivity("routing", { query: message.slice(0, 100) }, {
       userId: user.id,
     });
 
-    const routing = await routeMessage(message.trim());
+    // Check if conversation already has an agent — keep it for short/continuity messages
+    const lastAgentMsg = await prisma.krakenMessage.findFirst({
+      where: { conversationId: conversation.id, role: "assistant", agentId: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { agentId: true },
+    });
+
+    const conversationAgent = lastAgentMsg?.agentId ?? null;
+
+    // Short messages or confirmations should stay with the same agent
+    const isContinuation = conversationAgent && (
+      message.trim().length < 40 ||
+      /^(sim|não|confirmo|confirma|ok|certo|pode|isso|exato|beleza|top|valeu|obrigad|cancela|muda|altera)/i.test(message.trim())
+    );
+
+    let routing;
+    if (isContinuation) {
+      routing = { agent: conversationAgent, query_refined: message.trim(), context_needed: [] as string[] };
+    } else {
+      routing = await routeMessage(message.trim());
+    }
 
     // Handle greeting
     if (routing.agent === "kraken_greeting") {

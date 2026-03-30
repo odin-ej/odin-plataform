@@ -67,7 +67,7 @@ export function useKrakenChat(): UseKrakenChatReturn {
 
     (async () => {
       try {
-        const res = await fetch(`/api/kraken?conversationId=${conversationId}`);
+        const res = await fetch(`/api/kraken/conversations/${conversationId}`);
         const data = await res.json();
         if (data.messages && Array.isArray(data.messages)) {
           const loaded: KrakenMessage[] = data.messages.map(
@@ -141,6 +141,10 @@ export function useKrakenChat(): UseKrakenChatReturn {
         );
         if (newConversationId && !conversationId) {
           setConversationId(newConversationId);
+          // Update URL so refresh preserves the conversation
+          if (typeof window !== "undefined") {
+            window.history.replaceState(null, "", `/chat/${newConversationId}`);
+          }
         }
 
         // Read SSE stream
