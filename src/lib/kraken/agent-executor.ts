@@ -92,7 +92,7 @@ async function buildSystemPrompt(
           return `### ${obj.objective}\n${obj.description}\n${goalsText}`;
         }).join("\n\n");
 
-        const pepContext = `\n\n# PEP (Planejamento Estratégico) — DADOS ATUAIS DA PLATAFORMA\n## Missão: ${plan.mission}\n## Visão: ${plan.vision}\n\n## Objetivos Macro e Indicadores\n${objectives}\n\n⚠️ Estes são os objetivos MACRO do PEP. Os OKRs por ÁREA (DOPER, DMER, DPJTS, DPES, etc) estão nos Repasses Hórus e Painéis de Bordo disponíveis via RAG acima. Sempre priorize os dados mais RECENTES (2026 sobre 2025).`;
+        const pepContext = `\n\n# PEP (Planejamento Estratégico) — INDICADORES MACRO DA PLATAFORMA\n## Missão: ${plan.mission}\n## Visão: ${plan.vision}\n\n## Objetivos Macro e Indicadores\n${objectives}\n\n⚠️ IMPORTANTE: Combine ESTES indicadores macro com os dados dos Repasses Hórus (RAG acima) para dar uma visão completa. Os Repasses trazem a análise MENSAL por área com contexto, desafios e direcionamentos. Priorize dados de 2026 sobre 2025.`;
 
         prompt += pepContext;
         prompt = prompt.replace("{STRATEGY_DATA}", pepContext);
