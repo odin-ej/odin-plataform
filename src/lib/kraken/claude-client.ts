@@ -242,9 +242,17 @@ export async function callAgentStream(params: {
           }
 
           // If we executed a mutative action (create/update/delete), STOP the loop.
-          // The action result message is already streamed to the user.
-          // Continuing would make Claude produce duplicate summary text.
+          // Append the action result to fullText so it gets saved in the conversation.
           if (executedACreateThisIteration) {
+            // Add action results to the saved text so reloading shows the full response
+            for (const tr of toolResults) {
+              const content = typeof tr.content === "string" ? tr.content : "";
+              if (content && !content.startsWith("✅ Esta ação já foi")) {
+                const separator = fullText.endsWith("\n") ? "" : "\n\n";
+                fullText += separator + content;
+                emit(controller, { type: "token", data: separator + content });
+              }
+            }
             break;
           }
 
