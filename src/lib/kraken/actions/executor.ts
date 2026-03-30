@@ -116,23 +116,37 @@ function fmtDate(d: Date | string): string {
 /** Parse "amanhã", "hoje", or YYYY-MM-DD into a date string */
 function parseDateInput(raw: string): string {
   const lower = raw.toLowerCase().trim();
-  const now = new Date();
+
+  // Get current date in São Paulo timezone (avoids UTC offset issues on Vercel)
+  function todaySP(): string {
+    return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  }
+  function addDays(dateStr: string, days: number): string {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(y, m - 1, d + days);
+    return dt.toLocaleDateString("en-CA");
+  }
+
   if (lower.includes("amanhã") || lower.includes("amanha") || lower === "tomorrow") {
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
+    return addDays(todaySP(), 1);
   }
   if (lower.includes("hoje") || lower === "today") {
-    return now.toISOString().split("T")[0];
+    return todaySP();
   }
-  // Already a date string like 2025-07-24
+  // Already a date string like 2026-03-30
   if (/^\d{4}-\d{2}-\d{2}$/.test(lower)) return lower;
   // DD/MM/YYYY
   const brMatch = lower.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (brMatch) return `${brMatch[3]}-${brMatch[2].padStart(2, "0")}-${brMatch[1].padStart(2, "0")}`;
-  // Fallback: try to parse
+  // DD/MM (assume current year)
+  const brShort = lower.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (brShort) {
+    const year = todaySP().split("-")[0];
+    return `${year}-${brShort[2].padStart(2, "0")}-${brShort[1].padStart(2, "0")}`;
+  }
+  // Fallback: try to parse, but localize to SP
   const parsed = new Date(raw);
-  if (!isNaN(parsed.getTime())) return parsed.toISOString().split("T")[0];
+  if (!isNaN(parsed.getTime())) return parsed.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
   return raw;
 }
 
@@ -224,22 +238,31 @@ async function createRoomReservation(
     };
   }
 
-  // Build DateTime objects (São Paulo timezone)
+  // Build DateTime objects (São Paulo timezone -03:00)
   const dateObj = new Date(dateStr + "T00:00:00-03:00");
   const hourEnterObj = new Date(dateStr + "T" + input.startTime + ":00-03:00");
   const hourLeaveObj = new Date(dateStr + "T" + input.endTime + ":00-03:00");
 
-  // Check conflicts — only check time overlap, ignore status field
-  const conflicts = await prisma.roomReservation.findMany({
+  // Check conflicts — use wide date range (±1 day) to handle UTC offset mismatches
+  // then filter by actual time overlap
+  const dayBefore = new Date(dateObj.getTime() - 24 * 60 * 60 * 1000);
+  const dayAfter = new Date(dateObj.getTime() + 48 * 60 * 60 * 1000);
+
+  const potentialConflicts = await prisma.roomReservation.findMany({
     where: {
       roomId: room.id,
-      date: { gte: new Date(dateStr + "T00:00:00-03:00"), lte: new Date(dateStr + "T23:59:59-03:00") },
-      AND: [
-        { hourEnter: { lt: hourLeaveObj } },
-        { hourLeave: { gt: hourEnterObj } },
-      ],
+      date: { gte: dayBefore, lte: dayAfter },
     },
     include: { user: { select: { name: true } } },
+  });
+
+  // Filter for actual time overlaps on the same calendar day
+  const conflicts = potentialConflicts.filter((c) => {
+    // Check if same calendar day (SP timezone)
+    const cDate = c.date.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    if (cDate !== dateStr) return false;
+    // Check time overlap: existing.start < new.end AND existing.end > new.start
+    return c.hourEnter < hourLeaveObj && c.hourLeave > hourEnterObj;
   });
 
   if (conflicts.length > 0) {

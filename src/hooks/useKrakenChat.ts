@@ -141,6 +141,10 @@ export function useKrakenChat(): UseKrakenChatReturn {
         );
         if (newConversationId && !conversationId) {
           setConversationId(newConversationId);
+          // Update URL so refresh preserves the conversation
+          if (typeof window !== "undefined") {
+            window.history.replaceState(null, "", `/chat/${newConversationId}`);
+          }
         }
 
         // Read SSE stream
