@@ -56,9 +56,10 @@ async function buildSystemPrompt(
   // Inject current date/time context (critical for date-aware actions)
   const now = new Date();
   const dateStr = now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const [ty, tm, td] = todayStr.split("-").map(Number);
+  const tomorrowDate = new Date(ty, tm - 1, td + 1);
+  const tomorrowStr = tomorrowDate.toLocaleDateString("en-CA");
   prompt += `\n\n# CONTEXTO TEMPORAL\nData e hora atual: ${dateStr}, ${now.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })}\nHoje em formato ISO: ${todayStr}\nAmanhã em formato ISO: ${tomorrowStr}\nANO ATUAL: ${now.getFullYear()}\nUSE SEMPRE estas datas quando o usuário disser "hoje" ou "amanhã". NUNCA invente datas.`;
 
   // Inject RAG context if needed
@@ -73,6 +74,32 @@ async function buildSystemPrompt(
     prompt = prompt.replace("{RAG_CONTEXT}", ragContext);
   } else {
     prompt = prompt.replace("{RAG_CONTEXT}", "Nenhum contexto adicional disponível.");
+  }
+
+  // Inject live PEP strategy data (macro objectives + goals from DB)
+  if (agent.id === "horus_ia" || prompt.includes("{STRATEGY_DATA}")) {
+    try {
+      const plan = await prisma.estrategyPlan.findFirst({
+        include: {
+          estrategyObjectives: { include: { goals: true } },
+        },
+      });
+      if (plan) {
+        const objectives = plan.estrategyObjectives.map((obj) => {
+          const goalsText = obj.goals.map((g) =>
+            `  - ${g.title}: meta ${g.goal}, atual ${g.value} (${Number(g.value) > 0 && Number(g.goal) > 0 ? ((Number(g.value) / Number(g.goal)) * 100).toFixed(1) + "%" : "sem dados"})`
+          ).join("\n");
+          return `### ${obj.objective}\n${obj.description}\n${goalsText}`;
+        }).join("\n\n");
+
+        const pepContext = `\n\n# PEP (Planejamento Estratégico) — DADOS ATUAIS DA PLATAFORMA\n## Missão: ${plan.mission}\n## Visão: ${plan.vision}\n\n## Objetivos Macro e Indicadores\n${objectives}\n\n⚠️ Estes são os objetivos MACRO do PEP. Os OKRs por ÁREA (DOPER, DMER, DPJTS, DPES, etc) estão nos Repasses Hórus e Painéis de Bordo disponíveis via RAG acima. Sempre priorize os dados mais RECENTES (2026 sobre 2025).`;
+
+        prompt += pepContext;
+        prompt = prompt.replace("{STRATEGY_DATA}", pepContext);
+      }
+    } catch (err) {
+      console.warn("[Agent] Failed to load PEP data:", (err as Error).message);
+    }
   }
 
   // Inject user permissions context
