@@ -182,7 +182,7 @@ async function onSubmit(data: CreateScheduleForm): Promise<void> {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="p-6 space-y-6 flex-1 overflow-hidden">
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
               
               {/* Seletor de Ano */}
               <div className="flex items-center gap-4 bg-black/20 p-4 rounded-lg border border-gray-800">
@@ -238,13 +238,19 @@ async function onSubmit(data: CreateScheduleForm): Promise<void> {
                           name={`schedules.${m.value}`}
                           render={({ field }) => (
                             <FormItem>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <Select
+                                key={`select-month-${m.value}`}
+                                onValueChange={(val) => {
+                                  form.setValue(`schedules.${m.value}`, val, { shouldDirty: true });
+                                }}
+                                value={field.value || ""}
+                              >
                                 <FormControl>
                                   <SelectTrigger className="bg-black/40 border-gray-700 text-white h-9 text-xs">
                                     <SelectValue placeholder="Valor da cultura..." />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className="bg-[#010d26] border-gray-700 text-white">
+                                <SelectContent className="bg-[#010d26] border-gray-700 text-white z-[200]">
                                   {values?.map((v) => (
                                     <SelectItem key={v.id} value={v.id}>
                                       {v.name}
