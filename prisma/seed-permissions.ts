@@ -70,10 +70,9 @@ const BUILTIN_POLICIES = [
     rules: [{ allowedAreas: [AreaRoles.OPERACOES, AreaRoles.DIRETORIA], allowedRoleIds: [] }],
   },
   // ─── Fecs Week Game (rebrand temporario do JR Points) ──────────────
-  // Aprovadores do evento. As regras comecam vazias: apos rodar o seed,
-  // crie o cargo "Aprovador Fecs Week" via /gerenciar-cargos, atribua
-  // aos usuarios escolhidos via /usuarios e adicione o roleId aqui pelo
-  // admin /gerenciar-permissoes (ou edite o seed com o ID gerado).
+  // Aprovadores do evento: Diretoria e Presidencia. Para acrescentar
+  // outros papeis (cargos especificos), edite a policy via UI em
+  // /gerenciar-permissoes.
   {
     id: "policy-fecs-week-approvers",
     name: "Aprovadores Fecs Week",
@@ -82,7 +81,9 @@ const BUILTIN_POLICIES = [
     allowExMembers: false,
     isPublic: false,
     isBuiltIn: true,
-    rules: [{ allowedAreas: [], allowedRoleIds: [] }],
+    rules: [
+      { allowedAreas: [AreaRoles.DIRETORIA, AreaRoles.PRESIDENCIA], allowedRoleIds: [] },
+    ],
   },
 ];
 
