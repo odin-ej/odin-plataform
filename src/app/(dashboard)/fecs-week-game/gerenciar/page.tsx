@@ -20,7 +20,7 @@ import EnterprisePageContent from "@/app/_components/Dashboard/jr-points/Enterpr
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { cookies } from "next/headers";
 import { JrEnterprisePointsPageData } from "@/app/(dashboard)/gerenciar-jr-points/page";
 import { PointsBrandingProvider } from "@/app/_components/Global/PointsBrandingProvider";
@@ -69,10 +69,12 @@ async function getPageData(): Promise<JrEnterprisePointsPageData> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({
-    pathname: "/fecs-week-game/gerenciar",
-    user: user!,
-  });
+  // Usa o sistema dinamico de permissoes (RoutePermission do banco) para que
+  // mudancas em /gerenciar-permissoes refletem sem redeploy.
+  const hasPermission = await canAccessRoute(
+    user!,
+    "/fecs-week-game/gerenciar"
+  );
   if (!hasPermission) return <DeniedAccess />;
   return (
     <PointsBrandingProvider value={FECS_WEEK_BRANDING}>

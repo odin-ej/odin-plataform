@@ -19,7 +19,7 @@
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { constructMetadata } from "@/lib/metadata";
 import MyPointsContent from "@/app/_components/Dashboard/jr-points/MyPointsContent";
 import { MyPointsData } from "@/app/(dashboard)/meus-pontos/page";
@@ -68,10 +68,12 @@ const Page = async () => {
     return <div className="p-8 text-white">Usuário não autenticado.</div>;
   }
 
-  const hasPermission = verifyAccess({
-    pathname: "/fecs-week-game/meus-pontos",
-    user: authUser,
-  });
+  // Usa o sistema dinamico de permissoes (RoutePermission do banco) para que
+  // mudancas em /gerenciar-permissoes refletem sem redeploy.
+  const hasPermission = await canAccessRoute(
+    authUser,
+    "/fecs-week-game/meus-pontos"
+  );
   if (!hasPermission) return <DeniedAccess />;
 
   const initialData = await getMyPoints({ id: authUser.id });
