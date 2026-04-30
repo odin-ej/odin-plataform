@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import CustomTable, { ColumnDef } from "../../Global/Custom/CustomTable";
 import { format } from "date-fns";
 import CustomSelect from "../../Global/Custom/CustomSelect";
+import { usePointsBranding } from "../../Global/PointsBrandingProvider";
 
 interface DataManagementPanelProps {
   onImport: (data: Record<string, unknown>[]) => void;
@@ -52,6 +53,8 @@ const DataManagementPanel = ({
   setItemToDelete,
   isDisabled,
 }: DataManagementPanelProps) => {
+  // Branding atual (JR Points por padrao; Fecs Week dentro dos wrappers).
+  const branding = usePointsBranding();
   const [file, setFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [selectedSnapshotSemesterId, setSelectedSnapshotSemesterId] =
@@ -248,7 +251,7 @@ const DataManagementPanel = ({
             <History className="mr-2 h-5 w-5" /> Inicializar Semestre (Snapshot)
           </h3>
           <p className="text-sm text-gray-400 flex-grow">
-            Selecione um semestre para iniciar o JR Points. Os dados do semestre anterior serão salvos. Lembre-se de <strong>ativar</strong> o semestre escolhido, desativando o anterior.
+            Selecione um semestre para iniciar o {branding.systemName}. Os dados do semestre anterior serão salvos. Lembre-se de <strong>ativar</strong> o semestre escolhido, desativando o anterior.
           </p>
           <CustomSelect
             placeholder="Selecione um semestre para iniciar..."

@@ -32,6 +32,7 @@ import SolicitationsBoard, {
 } from "./SolicitationsBoard";
 import RequestReviewModal from "./RequestViewModal";
 import { format } from "date-fns";
+import { usePointsBranding } from "../../Global/PointsBrandingProvider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -49,6 +50,8 @@ const EnterprisePageContent = ({
   initialData: JrEnterprisePointsPageData;
 }) => {
   const queryClient = useQueryClient();
+  // Branding atual (JR Points por padrao; Fecs Week dentro dos wrappers).
+  const branding = usePointsBranding();
   const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
   const [isUserTagsModalOpen, setIsUserTagsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -314,7 +317,7 @@ const EnterprisePageContent = ({
       action: () => snapshotMutation(semesterId),
       title: "Confirmar Criação de Snapshot",
       description:
-        "Esta ação criará uma cópia de segurança do JR Points atual e reiniciará ele por completo. Não pode ser desfeita. Você realmente deseja fazer isso?",
+        `Esta ação criará uma cópia de segurança do ${branding.systemName} atual e reiniciará ele por completo. Não pode ser desfeita. Você realmente deseja fazer isso?`,
     });
   };
 
@@ -550,8 +553,8 @@ const EnterprisePageContent = ({
       <CustomCard
         value={0}
         type="introduction"
-        title="Controle do JR Points"
-        description="Controle todo o funcionamento do JR-Points, gerenciando pontuação, ações, modelos e categorias."
+        title={branding.manageHeaderTitle}
+        description={branding.manageHeaderDescription}
         icon={JrPointIconBlue}
         className="mt-6"
       />

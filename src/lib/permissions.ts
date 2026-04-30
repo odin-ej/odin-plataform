@@ -65,6 +65,21 @@ export const STRATEGY_LEADERS: PermissionCheck = {
   allowExMembers: false,
 };
 
+/**
+ * Aprovadores do evento Fecs Week Game.
+ *
+ * Concede acesso a `/fecs-week-game/gerenciar` apenas a membros que possuam
+ * o cargo "Aprovador Fecs Week" (criado via /gerenciar-cargos durante a
+ * configuracao do evento). Em conjunto com o remap da action
+ * `APPROVE_JR_POINTS` (via /gerenciar-permissoes) para a policy
+ * `policy-fecs-week-approvers`, esses usuarios passam a aprovar as
+ * solicitacoes de pontos do evento.
+ */
+export const FECS_WEEK_APPROVERS: PermissionCheck = {
+  allowedRoles: ["Aprovador Fecs Week"],
+  allowExMembers: false,
+};
+
 export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/usuarios": DIRECTORS_ONLY,
   "/atualizar-estrategia": STRATEGY_LEADERS,
@@ -92,6 +107,14 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionCheck> = {
   "/cultural": ANYONE_LOGGED_IN,
   "/reports": ANYONE_LOGGED_IN,
   "/": ANYONE_LOGGED_IN,
+  "/areas/operacoes": {
+    allowedAreas: [AreaRoles.OPERACOES, AreaRoles.DIRETORIA],
+    allowExMembers: false,
+  },
+  // ─── Fecs Week Game (rebrand temporario do JR Points) ──────────────
+  "/fecs-week-game": MEMBERS_ONLY,
+  "/fecs-week-game/meus-pontos": MEMBERS_ONLY,
+  "/fecs-week-game/gerenciar": FECS_WEEK_APPROVERS,
 };
 
 
@@ -145,6 +168,9 @@ export enum AppAction {
   // Kraken IA
   MANAGE_KRAKEN              = "manage_kraken",
   MANAGE_KRAKEN_KNOWLEDGE    = "manage_kraken_knowledge",
+
+  // Áreas
+  ACCESS_AREA_OPERACOES      = "access_area_operacoes",
 }
 
 /**
@@ -247,6 +273,10 @@ export const ACTION_METADATA: Record<AppAction, { label: string; description: st
   [AppAction.MANAGE_KRAKEN_KNOWLEDGE]: {
     label: "Gerenciar Conhecimento do Kraken",
     description: "Upload e gestão de documentos da knowledge base do Kraken",
+  },
+  [AppAction.ACCESS_AREA_OPERACOES]: {
+    label: "Acessar Área de Operações",
+    description: "Acessar o hub da área de Operações",
   },
 } as const;
 
