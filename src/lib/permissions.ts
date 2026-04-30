@@ -68,15 +68,14 @@ export const STRATEGY_LEADERS: PermissionCheck = {
 /**
  * Aprovadores do evento Fecs Week Game.
  *
- * Concede acesso a `/fecs-week-game/gerenciar` apenas a membros que possuam
- * o cargo "Aprovador Fecs Week" (criado via /gerenciar-cargos durante a
- * configuracao do evento). Em conjunto com o remap da action
+ * Concede acesso a `/fecs-week-game/gerenciar` a membros das areas de
+ * Diretoria e Presidencia. Em conjunto com o remap da action
  * `APPROVE_JR_POINTS` (via /gerenciar-permissoes) para a policy
  * `policy-fecs-week-approvers`, esses usuarios passam a aprovar as
  * solicitacoes de pontos do evento.
  */
 export const FECS_WEEK_APPROVERS: PermissionCheck = {
-  allowedRoles: ["Aprovador Fecs Week"],
+  allowedAreas: [AreaRoles.DIRETORIA, AreaRoles.PRESIDENCIA],
   allowExMembers: false,
 };
 
