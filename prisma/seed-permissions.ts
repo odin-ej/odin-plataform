@@ -60,6 +60,30 @@ const BUILTIN_POLICIES = [
     isBuiltIn: true,
     rules: [{ allowedAreas: [AreaRoles.TATICO], allowedRoleIds: [] }],
   },
+  {
+    id: "policy-operacoes-area",
+    name: "Área de Operações",
+    description: "Acesso à área de Operações (membros de Operações e Diretoria)",
+    allowExMembers: false,
+    isPublic: false,
+    isBuiltIn: true,
+    rules: [{ allowedAreas: [AreaRoles.OPERACOES, AreaRoles.DIRETORIA], allowedRoleIds: [] }],
+  },
+  // ─── Fecs Week Game (rebrand temporario do JR Points) ──────────────
+  // Aprovadores do evento. As regras comecam vazias: apos rodar o seed,
+  // crie o cargo "Aprovador Fecs Week" via /gerenciar-cargos, atribua
+  // aos usuarios escolhidos via /usuarios e adicione o roleId aqui pelo
+  // admin /gerenciar-permissoes (ou edite o seed com o ID gerado).
+  {
+    id: "policy-fecs-week-approvers",
+    name: "Aprovadores Fecs Week",
+    description:
+      "Aprovadores designados para o evento Fecs Week Game. Acesso a /fecs-week-game/gerenciar e (apos remap) aprovacao de solicitacoes.",
+    allowExMembers: false,
+    isPublic: false,
+    isBuiltIn: true,
+    rules: [{ allowedAreas: [], allowedRoleIds: [] }],
+  },
 ];
 
 // ─── Mapeamento de rotas → política ──────────────────────────────────
@@ -95,6 +119,11 @@ const ROUTE_SEED: Array<{
   { path: "/perfil", label: "Meu Perfil", policyId: "policy-anyone-logged-in" },
   { path: "/cultural", label: "Área Cultural", policyId: "policy-anyone-logged-in" },
   { path: "/reports", label: "Reports", policyId: "policy-anyone-logged-in" },
+  { path: "/areas/operacoes", label: "Área de Operações", policyId: "policy-operacoes-area" },
+  // ─── Fecs Week Game (rebrand temporario do JR Points) ──────────────
+  { path: "/fecs-week-game", label: "Fecs Week Game", policyId: "policy-members-only" },
+  { path: "/fecs-week-game/meus-pontos", label: "Meus Pontos - Fecs Week", policyId: "policy-members-only" },
+  { path: "/fecs-week-game/gerenciar", label: "Gerenciar Fecs Week Game", policyId: "policy-fecs-week-approvers" },
 ];
 
 // ─── Mapeamento de ações → política ──────────────────────────────────
@@ -129,19 +158,22 @@ const ACTION_SEED: Array<{
   { actionKey: "manage_tasks", label: "Gerenciar Tarefas", description: "Criar, editar e atribuir tarefas para membros da equipe", policyId: "policy-directors-only" },
   { actionKey: "manage_kraken", label: "Gerenciar Agentes de IA", description: "Gerenciar agentes de IA do chat", policyId: "policy-directors-only" },
   { actionKey: "manage_kraken_knowledge", label: "Gerenciar Conhecimento do Kraken", description: "Gerir conhecimento dos agentes de IA", policyId: "policy-directors-only" },
+  { actionKey: "access_area_operacoes", label: "Acessar Área de Operações", description: "Acessar o hub da área de Operações", policyId: "policy-operacoes-area" },
 ];
 
 async function seedPermissions() {
   console.log("🔐 Seeding permissions...");
 
+  // Mapa de seed ID → ID real no banco (para resolver referências)
+  const policyIdMap = new Map<string, string>();
+
   // 1. Criar/atualizar políticas built-in
   for (const policy of BUILTIN_POLICIES) {
     const { rules, ...policyData } = policy;
 
-    await prisma.permissionPolicy.upsert({
-      where: { id: policy.id },
+    const upserted = await prisma.permissionPolicy.upsert({
+      where: { name: policyData.name },
       update: {
-        name: policyData.name,
         description: policyData.description,
         allowExMembers: policyData.allowExMembers,
         isPublic: policyData.isPublic,
@@ -149,32 +181,42 @@ async function seedPermissions() {
       create: policyData,
     });
 
+    // Usar o ID real do banco (pode ser UUID gerado ou o ID fixo do seed)
+    const realPolicyId = upserted.id;
+
     // Deletar regras existentes e recriar
-    await prisma.policyRule.deleteMany({ where: { policyId: policy.id } });
+    await prisma.policyRule.deleteMany({ where: { policyId: realPolicyId } });
     for (const rule of rules) {
       await prisma.policyRule.create({
         data: {
-          policyId: policy.id,
+          policyId: realPolicyId,
           allowedAreas: rule.allowedAreas,
           allowedRoleIds: rule.allowedRoleIds,
         },
       });
     }
+
+    // Mapear o ID do seed para o ID real do banco
+    policyIdMap.set(policy.id, realPolicyId);
   }
   console.log(`  ✅ ${BUILTIN_POLICIES.length} políticas criadas/atualizadas`);
 
+  // Helper para resolver policyId (seed ID → ID real do banco)
+  const resolvePolicyId = (seedPolicyId: string) => policyIdMap.get(seedPolicyId) || seedPolicyId;
+
   // 2. Criar/atualizar permissões de rota
   for (const route of ROUTE_SEED) {
+    const resolvedPolicyId = resolvePolicyId(route.policyId);
     await prisma.routePermission.upsert({
       where: { path: route.path },
       update: {
         label: route.label,
-        policyId: route.policyId,
+        policyId: resolvedPolicyId,
       },
       create: {
         path: route.path,
         label: route.label,
-        policyId: route.policyId,
+        policyId: resolvedPolicyId,
         isActive: true,
       },
     });
@@ -183,18 +225,19 @@ async function seedPermissions() {
 
   // 3. Criar/atualizar permissões de ação
   for (const action of ACTION_SEED) {
+    const resolvedPolicyId = resolvePolicyId(action.policyId);
     await prisma.actionPermission.upsert({
       where: { actionKey: action.actionKey },
       update: {
         label: action.label,
         description: action.description,
-        policyId: action.policyId,
+        policyId: resolvedPolicyId,
       },
       create: {
         actionKey: action.actionKey,
         label: action.label,
         description: action.description,
-        policyId: action.policyId,
+        policyId: resolvedPolicyId,
         isActive: true,
       },
     });

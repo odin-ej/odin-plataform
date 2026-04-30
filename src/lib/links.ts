@@ -17,6 +17,7 @@ import {
   Link,
   Megaphone,
   MessageSquare,
+  Settings2,
   Shield,
   TicketCheck,
   Users,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { JrPointIconWhite } from "@/app/_components/Global/JrPointsIcon";
 import { AppAction } from "./permissions";
+import { FECS_WEEK_ACTIVE } from "./branding";
 
 interface Links {
   name: string;
@@ -38,6 +40,26 @@ interface RestrictedLinks extends Links {
   requiredAction?: AppAction;
 }
 
+interface AreaLink extends Links {
+  requiredAction: AppAction;
+}
+
+// Link de pontuacao geral exibido na sidebar.
+// Durante o Fecs Week Game (FECS_WEEK_ACTIVE === true), a entrada aponta
+// para a rota do evento; caso contrario, retorna ao link tradicional do
+// JR Points. As rotas continuam acessiveis via URL direta nos dois casos.
+const pointsGeneralLink: Links = FECS_WEEK_ACTIVE
+  ? {
+      name: "Fecs Week Game",
+      href: "/fecs-week-game",
+      icon: JrPointIconWhite,
+    }
+  : {
+      name: "JR Points",
+      href: "/jr-points",
+      icon: JrPointIconWhite,
+    };
+
 export const generalLinks: Links[] = [
   {
     name: "Início",
@@ -49,11 +71,7 @@ export const generalLinks: Links[] = [
     href: "/chat",
     icon: MessageSquare,
   },
-  {
-    name: "JR Points",
-    href: "/jr-points",
-    icon: JrPointIconWhite,
-  },
+  pointsGeneralLink,
   {
     name: "Metas da Casinha",
     href: "/metas",
@@ -101,6 +119,21 @@ export const generalLinks: Links[] = [
   }
 ];
 
+// Link pessoal de pontos exibido na sidebar.
+// Durante o Fecs Week Game, aponta para a rota pessoal do evento; caso
+// contrario, retorna ao caminho tradicional do JR Points.
+const myPointsPersonalLink: Links = FECS_WEEK_ACTIVE
+  ? {
+      name: "Meus Pontos (Fecs Week)",
+      href: "/fecs-week-game/meus-pontos",
+      icon: Award,
+    }
+  : {
+      name: "Meus Pontos",
+      href: "/meus-pontos",
+      icon: Award,
+    };
+
 export const personalLinks: Links[] = [
   {
     name: "Minhas Notas",
@@ -112,15 +145,20 @@ export const personalLinks: Links[] = [
     href: "/minhas-pendencias",
     icon: Clock,
   },
-  {
-    name: "Meus Pontos",
-    href: "/meus-pontos",
-    icon: Award,
-  },
+  myPointsPersonalLink,
   {
     name: "Meu Perfil",
     href: "/perfil",
     icon: CircleUser,
+  },
+];
+
+export const areaLinks: AreaLink[] = [
+  {
+    name: "Operações",
+    href: "/areas/operacoes",
+    icon: Settings2,
+    requiredAction: AppAction.ACCESS_AREA_OPERACOES,
   },
 ];
 
@@ -167,13 +205,25 @@ export const restrictedLinks: RestrictedLinks[] = [
     requiredAction: AppAction.MANAGE_ROLES,
     roles: [],
   },
-  {
-    name: "Gerenciar JR Points",
-    href: "/gerenciar-jr-points",
-    icon: JrPointIconWhite,
-    requiredAction: AppAction.MANAGE_JR_POINTS_CONFIG,
-    roles: [],
-  },
+  // Gerenciamento da pontuacao. Durante o Fecs Week Game, o link aponta para
+  // a rota administrativa do evento. A action `MANAGE_JR_POINTS_CONFIG`
+  // continua a mesma — basta remapea-la para `policy-fecs-week-approvers` em
+  // /gerenciar-permissoes para que os aprovadores designados enxerguem o link.
+  FECS_WEEK_ACTIVE
+    ? {
+        name: "Gerenciar Fecs Week",
+        href: "/fecs-week-game/gerenciar",
+        icon: JrPointIconWhite,
+        requiredAction: AppAction.MANAGE_JR_POINTS_CONFIG,
+        roles: [],
+      }
+    : {
+        name: "Gerenciar JR Points",
+        href: "/gerenciar-jr-points",
+        icon: JrPointIconWhite,
+        requiredAction: AppAction.MANAGE_JR_POINTS_CONFIG,
+        roles: [],
+      },
   {
     name: "Gerenciar Notificações",
     href: "/gerenciar-notificacoes",

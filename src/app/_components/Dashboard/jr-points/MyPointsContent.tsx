@@ -37,6 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
 import { AppAction } from "@/lib/permissions";
 import HistoryItemDetailsModal, { HistoryItemData } from "./HistoryItemDetailsModal";
+import { usePointsBranding } from "../../Global/PointsBrandingProvider";
 
 interface HistoryData {
   tags: TagWithAction[];
@@ -58,6 +59,8 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
   const { canDo } = useAllowedActions();
   const userId = user?.id;
   const queryClient = useQueryClient();
+  // Branding atual (JR Points por padrao; Fecs Week dentro dos wrappers).
+  const branding = usePointsBranding();
 
   // --- ESTADOS GERAIS DO COMPONENTE ---
   const [requestType, setRequestType] = useState<"solicitation" | "report">(
@@ -790,7 +793,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
       </div>
       <div className="w-full sm:w-auto flex-shrink-0 mt-4">
         <label className="text-md font-semibold mb-2 text-[#f5b719]">
-          Ver Histórico de JR Points
+          Ver Histórico de {branding.systemName}
         </label>
         <Select value={selectedView} onValueChange={setSelectedView}>
           <SelectTrigger className="w-full sm:w-[240px] bg-[#00205e] border-[#0126fb] text-white">
@@ -798,7 +801,7 @@ const MyPointsContent = ({ initialData }: { initialData: MyPointsData }) => {
           </SelectTrigger>
           <SelectContent className="bg-[#00205e] text-white border-[#0126fb]">
             <SelectItem className="bg-transparent" value="current">
-              JR Points Atual
+              {branding.systemName} Atual
             </SelectItem>
             {mySemesterScores?.map((score) => (
               <SelectItem key={score.id} value={score.id}>

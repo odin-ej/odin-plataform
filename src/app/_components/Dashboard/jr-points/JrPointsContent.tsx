@@ -33,6 +33,7 @@ import {
 } from "./SolicitationsBoard";
 import { Badge } from "@/components/ui/badge";
 import { getLabelForArea } from "./AdminActionsModal";
+import { usePointsBranding } from "../../Global/PointsBrandingProvider";
 
 // --- Tipagem para os Dados ---
 // Define a estrutura de um item na tabela de ranking
@@ -81,6 +82,9 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { canDo } = useAllowedActions();
+  // Branding atual (JR Points por padrao; Fecs Week quando dentro de
+  // <PointsBrandingProvider value={FECS_WEEK_BRANDING}> nas paginas wrapper).
+  const branding = usePointsBranding();
   const [selectedEnterpriseView, setSelectedEnterpriseView] =
     useState("current");
     const [selectedVersion, setSelectedVersion] = useState<string>("current");
@@ -342,7 +346,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
       <div className="grid grid-cols-1 gap-6 mb-8">
         <CustomCard
           type={"introduction"}
-          title="JR Points"
+          title={branding.homeHeaderTitle}
           value={0} // Este valor poderia ser o total de pontos da empresa
           description="Acompanhe o ranking de pontos dos sócios e a pontuação geral da empresa."
           icon={JrPointIconBlue}
@@ -353,7 +357,7 @@ const JrPointsContent = ({ initialData }: JrPointsContentProps) => {
             title="Meus Pontos"
             value={myPoints}
             description="Veja o seu extrato detalhado de pontos."
-            href="/meus-pontos"
+            href={branding.myPointsPath}
             icon={Award}
             className="col-span-1"
           />
