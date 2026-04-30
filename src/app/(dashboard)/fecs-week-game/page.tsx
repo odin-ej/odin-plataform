@@ -24,7 +24,7 @@
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import JrPointsContent, {
   RankingItem,
@@ -75,7 +75,9 @@ const Page = async () => {
     getPageData(),
   ]);
   if (!user) return <div>Não autenticado.</div>;
-  const hasPermission = verifyAccess({ pathname: "/fecs-week-game", user: user! });
+  // Usa o sistema dinamico de permissoes (RoutePermission do banco) para que
+  // mudancas em /gerenciar-permissoes refletem sem redeploy.
+  const hasPermission = await canAccessRoute(user, "/fecs-week-game");
   if (!hasPermission) return <DeniedAccess />;
 
   const myPoints =
