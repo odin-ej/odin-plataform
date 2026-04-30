@@ -85,6 +85,40 @@ const BUILTIN_POLICIES = [
       { allowedAreas: [AreaRoles.DIRETORIA, AreaRoles.PRESIDENCIA], allowedRoleIds: [] },
     ],
   },
+  // ─── Membros Ativos sem Trainees ───────────────────────────────────
+  // Substitui o antigo bloqueio hardcoded da sidebar. Cobre todas as
+  // areas atuais exceto TRAINEE. Use esta policy nas rotas que NAO
+  // devem ser visiveis para trainees. Trocar para `policy-members-only`
+  // (via /gerenciar-permissoes) libera trainees na rota correspondente.
+  {
+    id: "policy-active-non-trainee",
+    name: "Membros Ativos (sem Trainees)",
+    description:
+      "Qualquer membro ativo que nao seja trainee. Usado para bloquear trainees em rotas que historicamente nao apareciam para eles na sidebar.",
+    allowExMembers: false,
+    isPublic: false,
+    isBuiltIn: true,
+    rules: [
+      {
+        allowedAreas: [
+          AreaRoles.CONSULTORIA,
+          AreaRoles.TATICO,
+          AreaRoles.PRESIDENCIA,
+          AreaRoles.MARKETING,
+          AreaRoles.COMERCIAL,
+          AreaRoles.ADMINISTRATIVO_FINANCEIRO,
+          AreaRoles.OPERACOES,
+          AreaRoles.PESSOAS,
+          AreaRoles.PROJETOS,
+          AreaRoles.MERCADO,
+          AreaRoles.DIRETORIA,
+          AreaRoles.CONSELHO,
+          AreaRoles.OUTRO,
+        ],
+        allowedRoleIds: [],
+      },
+    ],
+  },
 ];
 
 // ─── Mapeamento de rotas → política ──────────────────────────────────
@@ -94,7 +128,12 @@ const ROUTE_SEED: Array<{
   label: string;
   policyId: string;
 }> = [
-  { path: "/", label: "Início", policyId: "policy-anyone-logged-in" },
+  // ─── Acesso comum (rotas com bloqueio historico de trainees) ──────
+  // Trainees nao apareciam nesses links na sidebar (hardcoded). Migradas
+  // para `policy-active-non-trainee` para que o bloqueio agora seja
+  // gerenciavel pela UI (/gerenciar-permissoes). Para liberar trainees
+  // em alguma rota, edite a policy associada na UI.
+  { path: "/", label: "Início", policyId: "policy-active-non-trainee" },
   { path: "/usuarios", label: "Usuários", policyId: "policy-directors-only" },
   { path: "/atualizar-estrategia", label: "Atualizar Estratégia", policyId: "policy-strategy-leaders" },
   { path: "/aprovacao-cadastro", label: "Aprovação de Cadastro", policyId: "policy-directors-only" },
@@ -105,25 +144,27 @@ const ROUTE_SEED: Array<{
   { path: "/gerenciar-notificacoes", label: "Gerenciar Notificações", policyId: "policy-directors-only" },
   { path: "/gerenciar-permissoes", label: "Gerenciar Permissões", policyId: "policy-directors-only" },
   { path: "/gerenciar-trainees", label: "Gerenciar Trainees", policyId: "policy-directors-only" },
+  // /minhas-notas e /perfil: trainees JA podiam ver. Mantidas inclusivas.
   { path: "/minhas-notas", label: "Minhas Notas", policyId: "policy-members-only" },
-  { path: "/tarefas", label: "Tarefas", policyId: "policy-members-only" },
-  { path: "/inovacao", label: "Inovação", policyId: "policy-anyone-logged-in" },
-  { path: "/chat", label: "Chat IA", policyId: "policy-members-only" },
-  { path: "/oraculo", label: "Oráculo", policyId: "policy-members-only" },
-  { path: "/jr-points", label: "JR Points", policyId: "policy-members-only" },
-  { path: "/central-de-reservas", label: "Central de Reservas", policyId: "policy-members-only" },
-  { path: "/reconhecimentos", label: "Reconhecimentos", policyId: "policy-members-only" },
-  { path: "/metas", label: "Metas", policyId: "policy-members-only" },
-  { path: "/meus-pontos", label: "Meus Pontos", policyId: "policy-members-only" },
-  { path: "/minhas-pendencias", label: "Minhas Pendências", policyId: "policy-members-only" },
-  { path: "/comunidade", label: "Comunidade", policyId: "policy-anyone-logged-in" },
   { path: "/perfil", label: "Meu Perfil", policyId: "policy-anyone-logged-in" },
-  { path: "/cultural", label: "Área Cultural", policyId: "policy-anyone-logged-in" },
-  { path: "/reports", label: "Reports", policyId: "policy-anyone-logged-in" },
+  // Demais rotas: bloqueavam trainees na sidebar → policy-active-non-trainee.
+  { path: "/tarefas", label: "Tarefas", policyId: "policy-active-non-trainee" },
+  { path: "/inovacao", label: "Inovação", policyId: "policy-active-non-trainee" },
+  { path: "/chat", label: "Chat IA", policyId: "policy-active-non-trainee" },
+  { path: "/oraculo", label: "Oráculo", policyId: "policy-active-non-trainee" },
+  { path: "/jr-points", label: "JR Points", policyId: "policy-active-non-trainee" },
+  { path: "/central-de-reservas", label: "Central de Reservas", policyId: "policy-active-non-trainee" },
+  { path: "/reconhecimentos", label: "Reconhecimentos", policyId: "policy-active-non-trainee" },
+  { path: "/metas", label: "Metas", policyId: "policy-active-non-trainee" },
+  { path: "/meus-pontos", label: "Meus Pontos", policyId: "policy-active-non-trainee" },
+  { path: "/minhas-pendencias", label: "Minhas Pendências", policyId: "policy-active-non-trainee" },
+  { path: "/comunidade", label: "Comunidade", policyId: "policy-active-non-trainee" },
+  { path: "/cultural", label: "Área Cultural", policyId: "policy-active-non-trainee" },
+  { path: "/reports", label: "Reports", policyId: "policy-active-non-trainee" },
   { path: "/areas/operacoes", label: "Área de Operações", policyId: "policy-operacoes-area" },
   // ─── Fecs Week Game (rebrand temporario do JR Points) ──────────────
-  { path: "/fecs-week-game", label: "Fecs Week Game", policyId: "policy-members-only" },
-  { path: "/fecs-week-game/meus-pontos", label: "Meus Pontos - Fecs Week", policyId: "policy-members-only" },
+  { path: "/fecs-week-game", label: "Fecs Week Game", policyId: "policy-active-non-trainee" },
+  { path: "/fecs-week-game/meus-pontos", label: "Meus Pontos - Fecs Week", policyId: "policy-active-non-trainee" },
   { path: "/fecs-week-game/gerenciar", label: "Gerenciar Fecs Week Game", policyId: "policy-fecs-week-approvers" },
 ];
 

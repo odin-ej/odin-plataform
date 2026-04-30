@@ -49,3 +49,32 @@ export async function getUserAllowedActions(user: UserForCheck): Promise<AppActi
 
   return allowed;
 }
+
+/**
+ * Retorna os paths de todas as rotas (RoutePermission) que o usuario pode
+ * acessar com base nas policies cadastradas no banco.
+ *
+ * Util para alimentar a sidebar de forma 100% dinamica: o admin gerencia
+ * quem ve cada link via /gerenciar-permissoes (incluindo o controle de
+ * acesso de trainees), sem precisar mexer em codigo.
+ *
+ * @param user Usuario autenticado (com roles e flag isExMember).
+ * @returns    Array com os paths permitidos. Vazio se o usuario nao puder
+ *             acessar nenhuma rota cadastrada.
+ *
+ * @example
+ *   const allowedRoutes = await getUserAllowedRoutes(user);
+ *   // ["/", "/perfil", "/minhas-notas", ...]
+ */
+export async function getUserAllowedRoutes(user: UserForCheck): Promise<string[]> {
+  const routePermissions = await getAllRoutePermissions();
+  const allowed: string[] = [];
+
+  for (const [path, policy] of Object.entries(routePermissions)) {
+    if (checkPolicy(user, policy)) {
+      allowed.push(path);
+    }
+  }
+
+  return allowed;
+}

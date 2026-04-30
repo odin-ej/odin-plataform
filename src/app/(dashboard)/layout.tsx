@@ -5,7 +5,10 @@ import AppSidebar from "../_components/Sidebar/app-sidebar";
 import Header from "../_components/Global/Header";
 import Footer from "../_components/Global/Footer";
 import { AllowedActionsProvider } from "@/lib/auth/AllowedActionsProvider";
-import { getUserAllowedActions } from "@/lib/actions/server-helpers";
+import {
+  getUserAllowedActions,
+  getUserAllowedRoutes,
+} from "@/lib/actions/server-helpers";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { AppAction } from "@/lib/permissions";
 
@@ -19,16 +22,26 @@ export default async function Layout({
 
   const user = await getAuthenticatedUser();
   let allowedActions: AppAction[] = [];
+  let allowedRoutes: string[] = [];
   try {
-    allowedActions = user ? await getUserAllowedActions(user) : [];
+    if (user) {
+      // Carrega acoes e rotas em paralelo para nao gargalar o layout
+      [allowedActions, allowedRoutes] = await Promise.all([
+        getUserAllowedActions(user),
+        getUserAllowedRoutes(user),
+      ]);
+    }
   } catch (error) {
-    console.error("[layout] Failed to load allowed actions:", error);
+    console.error("[layout] Failed to load allowed actions/routes:", error);
   }
 
   return (
     <div className="flex min-h-screen overflow-hidden">
       <SidebarProvider defaultOpen={defaultOpen}>
-        <AllowedActionsProvider allowedActions={allowedActions}>
+        <AllowedActionsProvider
+          allowedActions={allowedActions}
+          allowedRoutes={allowedRoutes}
+        >
           <AppSidebar />
           {/* CORREÇÃO: O 'main' agora é uma coluna flex que também ocupa toda a altura disponível */}
           <main className="flex flex-1 flex-col bg-[#00205e] overflow-x-auto">
