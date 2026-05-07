@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { RegistrationRequestWithRoles } from "@/lib/schemas/memberFormSchema";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { getInterestCategories } from "@/lib/actions/user";
 
 export const metadata = constructMetadata({ title: "Aprovação de Cadastro" });
@@ -49,10 +49,7 @@ const Page = async () => {
   // Busca os dados iniciais
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({
-    pathname: "/aprovacao-cadastro",
-    user: user!,
-  });
+  const hasPermission = await canAccessRoute(user!, "/aprovacao-cadastro");
   if (!hasPermission) return <DeniedAccess />;
   // A lógica de filtro agora vai para o componente cliente.
   // A página do servidor apenas entrega os dados brutos.

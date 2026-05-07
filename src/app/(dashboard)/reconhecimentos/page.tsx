@@ -2,7 +2,7 @@ import RecognitionsContent from "@/app/_components/Dashboard/reconhecimentos/Rec
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { getYearlyValueSchedule } from "../../../lib/actions/recognitions";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,7 @@ const Page = async () => {
 
   const authUser = await getAuthenticatedUser();
 
-  const hasAccess = verifyAccess({
-    user: authUser!,
-    pathname: "/reconhecimentos",
-  });
+  const hasAccess = await canAccessRoute(authUser!, "/reconhecimentos");
 
   if (!hasAccess) return <DeniedAccess />;
   return <>

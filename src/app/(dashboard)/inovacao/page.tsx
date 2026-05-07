@@ -3,7 +3,7 @@ import InovacaoHub from "@/app/_components/Dashboard/inovacao/InovacaoHub";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getAllInovationInitiatives } from "@/lib/actions/inovation";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +16,7 @@ const Page = async () => {
 
   const authUser = await getAuthenticatedUser();
 
-  const hasAccess = verifyAccess({
-    user: authUser!,
-    pathname: "/inovacao",
-  });
+  const hasAccess = await canAccessRoute(authUser!, "/inovacao");
 
   if (!hasAccess) return <DeniedAccess />;
 

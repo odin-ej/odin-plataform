@@ -1,7 +1,7 @@
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { TagWithAction } from "@/lib/schemas/pointsSchema";
 import { EnterpriseSemesterScore, Prisma, Semester } from "@prisma/client";
@@ -73,7 +73,7 @@ const Page = async () => {
     getPageData(),
   ]);
   if (!user) return <div>Não autenticado.</div>;
-  const hasPermission = verifyAccess({ pathname: "/jr-points", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/jr-points");
   if (!hasPermission) return <DeniedAccess />;
   const myPoints =
     data.usersRanking.find((u) => u.id === user.id)?.totalPoints || 0;

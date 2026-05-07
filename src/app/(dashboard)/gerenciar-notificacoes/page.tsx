@@ -2,7 +2,7 @@ import ManageNotificationsContent from "@/app/_components/Dashboard/gerenciar-no
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { getManagedNotifications } from "@/lib/actions/notifications";
 import { prisma } from "@/db";
 
@@ -11,7 +11,7 @@ export const metadata = constructMetadata({ title: "Gerenciar Notificações" })
 
 const Page = async () => {
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/gerenciar-notificacoes", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/gerenciar-notificacoes");
   if (!hasPermission) return <DeniedAccess />;
 
   const [notifications, roles, users] = await Promise.all([

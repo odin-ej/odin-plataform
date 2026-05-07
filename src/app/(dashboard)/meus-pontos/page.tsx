@@ -4,7 +4,7 @@ import {  User, UserPoints, UserSemesterScore } from "@prisma/client";
 import { TagWithAction, TagTemplateWithAction, } from "@/lib/schemas/pointsSchema";
 import { cookies } from "next/headers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { constructMetadata } from "@/lib/metadata";
 import MyPointsContent from "@/app/_components/Dashboard/jr-points/MyPointsContent";
 
@@ -55,7 +55,7 @@ const Page = async () => {
     return <div className="p-8 text-white">Usuário não autenticado.</div>;
   }
 
-  const hasPermission = verifyAccess({ pathname: "/meus-pontos", user: authUser });
+  const hasPermission = await canAccessRoute(authUser, "/meus-pontos");
   if (!hasPermission) return <DeniedAccess />;
   
   // A função getMyPoints agora retorna o objeto completo

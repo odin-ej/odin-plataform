@@ -3,7 +3,7 @@ import HomeContent from "../_components/Dashboard/home/HomeContent";
 import { AreaRoles, Goal, LinkPoster, LinkPosterArea, UsefulLink } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 import { cookies } from "next/headers";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import DeniedAccess from "../_components/Global/DeniedAccess";
 import { redirect } from "next/navigation";
 
@@ -117,7 +117,7 @@ export default async function Home() {
     redirect("/minhas-notas");
   }
 
-  const hasPermission = verifyAccess({ pathname: "/", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/");
   if (!hasPermission) return <DeniedAccess />;
 
   const prioridade: Record<LinkPosterArea, number> = {

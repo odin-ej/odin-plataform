@@ -3,7 +3,7 @@ import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { ExtendedReport } from "@/lib/schemas/reportSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { User, Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -53,7 +53,7 @@ async function getPageData(): Promise<ReportsPageData> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/reports", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/reports");
   if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="md:p-8 p-4 overflow-x-auto">

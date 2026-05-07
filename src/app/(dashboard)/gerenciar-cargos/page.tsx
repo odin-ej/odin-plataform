@@ -3,7 +3,7 @@ import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { Prisma, Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -52,10 +52,7 @@ async function getPageData(): Promise<RolesManagementPageProps> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({
-    pathname: "/gerenciar-cargos",
-    user: user!,
-  });
+  const hasPermission = await canAccessRoute(user!, "/gerenciar-cargos");
   if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="sm:p-8 p-4">

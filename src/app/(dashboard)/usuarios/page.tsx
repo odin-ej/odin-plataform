@@ -4,7 +4,7 @@ import { getInterestCategories } from "@/lib/actions/user";
 import { constructMetadata } from "@/lib/metadata";
 import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { Role } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -75,7 +75,7 @@ const Page = async () => {
 
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <div>Não autenticado</div>;
-  const hasPermission = verifyAccess({ pathname: "/usuarios", user: authUser });
+  const hasPermission = await canAccessRoute(authUser, "/usuarios");
   if (!hasPermission) return <DeniedAccess />;
 
   const interestCategories = await getInterestCategories()

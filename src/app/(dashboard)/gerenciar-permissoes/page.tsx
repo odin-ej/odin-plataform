@@ -2,7 +2,7 @@ import ManagePermissionsContent from "@/app/_components/Dashboard/gerenciar-perm
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import {
   getPoliciesWithUsage,
   getRoutePermissionsList,
@@ -16,7 +16,7 @@ export const metadata = constructMetadata({ title: "Gerenciar Permissões" });
 
 const Page = async () => {
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/gerenciar-permissoes", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/gerenciar-permissoes");
   if (!hasPermission) return <DeniedAccess />;
 
   const [policies, routes, actions, policyOptions, roles] = await Promise.all([

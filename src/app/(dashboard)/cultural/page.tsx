@@ -5,7 +5,7 @@ import { MemberWithFullRoles } from "@/lib/schemas/memberFormSchema";
 import { fullStrategy } from "../atualizar-estrategia/page";
 import { cookies } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { InterestCategory, ProfessionalInterest, Role, Semester } from "@prisma/client";
 
@@ -93,7 +93,7 @@ const Page = async () => {
   const { allUsers, estrategy, mondayStats, roles, interestCategories, professionalInterests, semesters } = await getPageData();
   if (!allUsers || !estrategy || !mondayStats) return null;
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/cultural", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/cultural");
   if (!hasPermission) return <DeniedAccess />;
   const initialData = { estrategy, allUsers, mondayStats, roles, interestCategories, professionalInterests, semesters };
   return (

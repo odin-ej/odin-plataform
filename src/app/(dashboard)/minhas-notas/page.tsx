@@ -4,7 +4,7 @@ import { getTraineeEvaluations } from "@/lib/actions/trainee";
 import { getNotifications } from "@/lib/actions/notifications";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { AreaRoles } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,7 @@ const Page = async () => {
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <div>Não autenticado</div>;
 
-  const hasPermission = verifyAccess({
-    pathname: "/minhas-notas",
-    user: authUser,
-  });
+  const hasPermission = await canAccessRoute(authUser, "/minhas-notas");
   if (!hasPermission) return <DeniedAccess />;
 
   const [evaluations, initialNotifications] = await Promise.all([

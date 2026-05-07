@@ -3,7 +3,7 @@ import { EstrategyObjective, Goal } from "@prisma/client";
 import { constructMetadata } from "@/lib/metadata";
 import { cookies } from "next/headers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { getAuthenticatedUser } from "@/lib/server-utils";
 
 export const metadata = constructMetadata({ title: "Metas da Casinha" });
@@ -43,7 +43,7 @@ async function getPageData(): Promise<MetasPageProps> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/metas", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/metas");
   if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">
