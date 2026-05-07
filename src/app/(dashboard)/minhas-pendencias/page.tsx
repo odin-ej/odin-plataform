@@ -4,7 +4,7 @@ import { constructMetadata } from "@/lib/metadata";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { cookies } from "next/headers";
 
 // Tipagem para os dados da página
@@ -45,10 +45,7 @@ async function getPageData(): Promise<MyPendenciesPageData> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({
-    pathname: "/minhas-pendencias",
-    user: user!,
-  });
+  const hasPermission = await canAccessRoute(user!, "/minhas-pendencias");
   if (!hasPermission) return <DeniedAccess />;
   return (
     <div className="p-4 sm:p-8">

@@ -9,7 +9,7 @@ import {
   TagTemplateWithAction
 } from "@/lib/schemas/pointsSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import {  JRPointsVersion, Prisma, Semester, User, } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -70,7 +70,7 @@ async function getPageData(): Promise<JrEnterprisePointsPageData> {
 const Page = async () => {
   const initialData = await getPageData();
   const user = await getAuthenticatedUser();
-  const hasPermission = verifyAccess({ pathname: "/gerenciar-jr-points", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/gerenciar-jr-points");
   if(!hasPermission) return <DeniedAccess />
   return (
     <div className="md:p-8 p-4">

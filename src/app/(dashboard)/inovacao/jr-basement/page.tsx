@@ -2,7 +2,7 @@ import BasementContent from "@/app/_components/Dashboard/inovacao/JRBasement/Bas
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getAllIdeas, getMyIdeas } from "@/lib/actions/basement";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +13,7 @@ export const metadata = {
 const Page = async () => {
   const authUser = await getAuthenticatedUser();
 
-  const hasAccess = verifyAccess({
-    user: authUser!,
-    pathname: "/inovacao",
-  });
+  const hasAccess = await canAccessRoute(authUser!, "/inovacao");
 
   if (!hasAccess) return <DeniedAccess />;
 

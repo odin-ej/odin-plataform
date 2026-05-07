@@ -1,17 +1,14 @@
 "use client";
 import KrakenChatContent from "@/app/_components/Dashboard/chat/KrakenChatContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { verifyAccess } from "@/lib/utils";
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { useAllowedActions } from "@/lib/auth/AllowedActionsProvider";
 
 const ConversationPage = () => {
-  const { user } = useAuth();
+  // Usa o sistema dinamico de permissoes (RoutePermission do banco) propagado
+  // via AllowedActionsProvider, alinhado com o layout/sidebar.
+  const { canAccess } = useAllowedActions();
 
-  const hasAccess = verifyAccess({
-    pathname: `/chat`,
-    user: user!,
-  });
-  if (!hasAccess) return <DeniedAccess />;
+  if (!canAccess("/chat")) return <DeniedAccess />;
 
   return <KrakenChatContent />;
 };

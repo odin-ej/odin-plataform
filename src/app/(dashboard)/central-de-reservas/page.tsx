@@ -5,7 +5,7 @@ import ReservationsContent from "@/app/_components/Dashboard/reservas/Reservatio
 import { RequestWithApplicant } from "@/app/_components/Dashboard/reservas/SalasEaufbaContent";
 import { cookies } from "next/headers";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { constructMetadata } from "@/lib/metadata";
 import { ItemWithRelations } from "@/app/_components/Dashboard/reservas/ItemsContent";
 
@@ -49,10 +49,7 @@ const ReservationsPage = async () => {
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <p>Não autorizado.</p>;
 
-  const hasPermission = verifyAccess({
-    pathname: "/central-de-reservas",
-    user: authUser,
-  });
+  const hasPermission = await canAccessRoute(authUser, "/central-de-reservas");
   if (!hasPermission) return <DeniedAccess />;
 
   // A função getReservationsData buscará todos os dados em paralelo no servidor

@@ -5,7 +5,7 @@ import { getAssignableUsers } from "@/lib/permissions";
 import { MemberWithRoles } from "@/lib/schemas/memberFormSchema";
 import { FullTask } from "@/lib/schemas/projectsAreaSchema";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { cookies } from "next/headers";
 
 // Tipagem para os dados da página
@@ -48,7 +48,7 @@ const Page = async () => {
   const { tasks, users } = await getPagesData();
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <div>Não autenticado</div>;
-  const hasPermission = verifyAccess({ pathname: "/tarefas", user: authUser });
+  const hasPermission = await canAccessRoute(authUser, "/tarefas");
   if (!hasPermission) return <DeniedAccess />;
   const verifiedUsers: MemberWithRoles[] = getAssignableUsers(authUser, users);
   const verifyIsMe = (user: MemberWithRoles) => user.id === authUser.id;

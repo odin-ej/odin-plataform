@@ -144,6 +144,7 @@ const ROUTE_SEED: Array<{
   { path: "/gerenciar-notificacoes", label: "Gerenciar Notificações", policyId: "policy-directors-only" },
   { path: "/gerenciar-permissoes", label: "Gerenciar Permissões", policyId: "policy-directors-only" },
   { path: "/gerenciar-trainees", label: "Gerenciar Trainees", policyId: "policy-directors-only" },
+  { path: "/admin-kraken", label: "Kraken IA - Painel", policyId: "policy-directors-only" },
   // /minhas-notas e /perfil: trainees JA podiam ver. Mantidas inclusivas.
   { path: "/minhas-notas", label: "Minhas Notas", policyId: "policy-members-only" },
   { path: "/perfil", label: "Meu Perfil", policyId: "policy-anyone-logged-in" },

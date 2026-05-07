@@ -2,7 +2,7 @@ import OraculoContent from "@/app/_components/Dashboard/oraculo/OraculoContent";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 
@@ -69,7 +69,7 @@ const Page = async () => {
 
   const authUser = await getAuthenticatedUser();
 
-  const hasPermission = verifyAccess({ pathname: "/oraculo", user: authUser! });
+  const hasPermission = await canAccessRoute(authUser!, "/oraculo");
   if (!hasPermission) return <DeniedAccess />;
 
   return (

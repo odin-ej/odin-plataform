@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 import { prisma } from "@/db";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ const ChatRedirectPage = async () => {
   const user = await getAuthenticatedUser();
   if (!user) redirect("/login");
 
-  const hasPermission = verifyAccess({ pathname: "/chat", user: user! });
+  const hasPermission = await canAccessRoute(user!, "/chat");
   if (!hasPermission) return <DeniedAccess />;
 
   // Find latest active conversation

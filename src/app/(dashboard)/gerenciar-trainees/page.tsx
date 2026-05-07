@@ -3,7 +3,7 @@ import DeniedAccess from "@/app/_components/Global/DeniedAccess";
 import { getTrainees, getTraineeOverview } from "@/lib/actions/trainee";
 import { constructMetadata } from "@/lib/metadata";
 import { getAuthenticatedUser } from "@/lib/server-utils";
-import { verifyAccess } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/actions/server-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +13,7 @@ const Page = async () => {
   const authUser = await getAuthenticatedUser();
   if (!authUser) return <div>Não autenticado</div>;
 
-  const hasPermission = verifyAccess({
-    pathname: "/gerenciar-trainees",
-    user: authUser,
-  });
+  const hasPermission = await canAccessRoute(authUser, "/gerenciar-trainees");
   if (!hasPermission) return <DeniedAccess />;
 
   const [trainees, overview] = await Promise.all([
